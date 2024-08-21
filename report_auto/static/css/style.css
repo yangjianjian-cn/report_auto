@@ -1,0 +1,25 @@
+body {
+    padding: 20px;
+}
+
+.container-custom {
+    width: 90%;
+    margin: 0 auto; /* 如果需要水平居中，可以保留这行 */
+}
+
+.content-area {
+    display: flex;
+    flex-direction: column;
+}
+
+.logo-image {
+    max-width: 90%; /* 确保图像不会超过其容器的宽度 */
+    height: 200px; /* 设置最大高度 */
+}
+
+.img-responsive {
+    max-width: 90%;
+    max-height: 100px; /* 设置最大高度 */
+    width: auto; /* 宽度自动调整 */
+    object-fit: cover; /* 保持图片的宽高比，超出部分裁剪 */
+}
