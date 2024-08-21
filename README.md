@@ -1,0 +1,2 @@
+# report_auto
+asammdf将dat文件转换成csv文件，pandas基于csv文件分析数据，自动生成一份docx报告文件，报告文件中使用PyQt5绘制图表
