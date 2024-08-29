@@ -20,7 +20,7 @@ $("#report_generation").on("click", function () {
 
 $("#report_download").on("click", function () {
     var filenames = uploadedFileName.join(',');
-    console.log(filenames)
     window.location.href = '/report_download?fileName='+filenames
+	uploadedFileName = []
     $("#report_pro_text").append("\r\n已下载...")
 })
