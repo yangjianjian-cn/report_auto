@@ -19,6 +19,8 @@ $("#report_generation").on("click", function () {
 })
 
 $("#report_download").on("click", function () {
-    window.location.href = '/report_download'
+    var filenames = uploadedFileName.join(',');
+    console.log(filenames)
+    window.location.href = '/report_download?fileName='+filenames
     $("#report_pro_text").append("\r\n已下载...")
 })

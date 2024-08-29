@@ -5,9 +5,9 @@ import logging
 import mimetypes
 import os
 
-from flask import Flask, request, render_template, jsonify, send_file, make_response
 from dotenv import load_dotenv
-from config.ConfigReader import ConfigReader
+from flask import Flask, request, render_template, jsonify, send_file, make_response
+
 from tools.parser.dat_csv_doc import dat_csv_docx, docx_zip
 
 app = Flask(__name__)
@@ -35,8 +35,10 @@ def upload():
     filename = upload_file.filename
 
     input_path = app.config['input_path']
-    save_path = f'{input_path}/{filename}'
+    save_path = os.path.join(input_path, filename)
+
     upload_file.save(save_path)
+    upload_file.close()
     print("文件已上传:", save_path)
     return jsonify({'upload_part': True})
 
@@ -44,6 +46,7 @@ def upload():
 # 下载报告
 @app.route('/report_download', methods=['GET'])
 def report_download():
+    fileName = request.args.get('fileName')
     docx_path = app.config['docx_path']
     # 检查 docx_path 是否为空
     if not docx_path:
@@ -62,7 +65,7 @@ def report_download():
     logging.info(f"Input path is valid: {docx_path}")
     logging.info(f"Output path is valid and created if needed: {zip_path}")
     try:
-        zip_file_name, zip_file_path = docx_zip(docx_path, zip_path)
+        zip_file_name, zip_file_path = docx_zip(docx_path, zip_path,fileName)
     except Exception as e:
         logging.error({'generate_report_fail': {e}})
 

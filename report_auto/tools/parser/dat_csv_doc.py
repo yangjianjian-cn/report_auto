@@ -11,9 +11,10 @@ from tools.conversion.redundant_brake_plausibility_check_parser import redundant
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 
 
-def docx_zip(docxPath, zipPath) -> str:
+def docx_zip(docxPath:str, zipPath:str,fileName:str) -> str:
     logging.info(f"docxPath:{docxPath}")
     logging.info(f"zipPath:{zipPath}")
+    logging.info(f"fileName:{fileName}")
 
     # 构建完整的 ZIP 文件路径
     zip_file_name = 'output_files.zip'
@@ -24,10 +25,17 @@ def docx_zip(docxPath, zipPath) -> str:
         # 遍历目录及其子目录
         for root, dirs, files in os.walk(docxPath):
             for file in files:
-                # 构建完整的文件路径
-                file_path = os.path.join(root, file)
-                # 在 ZIP 文件中存储文件
-                zipf.write(file_path, os.path.relpath(file_path, docxPath))
+                basename = os.path.basename(file)  # 获取文件的基本名称
+                filename_without_extension, _ = os.path.splitext(basename)
+
+                logging.info(f"file:{file}")
+                logging.info(f"base_name:{filename_without_extension}")
+
+                if filename_without_extension in fileName:
+                    # 构建完整的文件路径
+                    file_path = os.path.join(root, file)
+                    # 在 ZIP 文件中存储文件
+                    zipf.write(file_path, os.path.relpath(file_path, docxPath))
     logging.info(f"zip_file_path:{zip_file_path}")
     return zip_file_name, zip_file_path
 

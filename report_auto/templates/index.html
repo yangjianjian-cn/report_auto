@@ -52,10 +52,11 @@
 </div>
 </body>
 <script type="text/javascript">
-    var fileSuffix;
-
+    // 全局变量，用于保存上传成功的文件名
+    var uploadedFileName = [];
+    let fileSuffix;
     /* 构建WebUploader对象，实现文件上传*/
-    var uploader = WebUploader
+    const uploader = WebUploader
         .create({
             // swf文件路径
             swf: '../static/swf/Uploader.swf',
@@ -106,6 +107,7 @@
     });
 
     uploader.on('uploadComplete', function (file) {
+        uploadedFileName.push(file.name)
         uploader.removeFile(file);
     });
     // 当有文件添加进队列后，开始上传
