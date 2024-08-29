@@ -12,7 +12,7 @@ pd.set_option('future.no_silent_downcasting', True)
 import matplotlib.pyplot as plt
 import matplotlib
 
-matplotlib.use('TkAgg')  # TkAgg 或者 'Qt5Agg'
+matplotlib.use('Agg')  # TkAgg 或者 'Qt5Agg'
 
 from config.ConfigReader import ConfigReader
 
