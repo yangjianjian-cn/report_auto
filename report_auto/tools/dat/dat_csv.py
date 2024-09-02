@@ -84,7 +84,7 @@ class Ui_Dialog(object):
         logging.info("\r\n开始转换...")
         dat_files = [f for f in os.listdir(path_) if f.endswith('.dat')]
         for dat_file in dat_files:
-            errMsg = dat_csv_conversion(dat_file, path_, outputPath_)
+            errMsg = dat_csv_conversion(dat_file, path_, outputPath_,'IOTest')
             if errMsg.startswith("err:"):
                 self.textBrowser.append(f'文件{dat_file}解析异常:{errMsg}')
             else:

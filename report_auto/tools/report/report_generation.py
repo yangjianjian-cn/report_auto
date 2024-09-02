@@ -1,11 +1,10 @@
 import logging
-import os
-from pathlib import Path
 
 import pandas as pd
 from pandas import DataFrame
 
 from constant.faultType import FAULT_TYPE_MAPPING
+from pojo.MSTReqPOJO import ReqPOJO
 
 pd.set_option('future.no_silent_downcasting', True)
 
@@ -13,8 +12,6 @@ import matplotlib.pyplot as plt
 import matplotlib
 
 matplotlib.use('Agg')  # TkAgg 或者 'Qt5Agg'
-
-from config.ConfigReader import ConfigReader
 
 from docx import Document
 from docx.shared import Inches
@@ -101,26 +98,12 @@ docTemplate: 模板名称
 """
 
 
-def replace_variables_in_doc(replacements, fault_detection_df, csvPath: str, docTemplateName: str,
-                             signals: list) -> str:
-    # 输出目录
-    directory_before_csv = os.path.dirname(csvPath)
-    directory_output = os.path.dirname(directory_before_csv)
-    # 输出文件名
-    output_name = Path(csvPath).stem
+def replace_variables_in_doc(replacements, fault_detection_df, signals: list, req_data: ReqPOJO) -> str:
+    template_file_name, template_path = create_file_path(req_data.template_name, 'docx', req_data.template_path,'template')
+    img_name, img_path = create_file_path(req_data.template_name, 'png', req_data.output_path, 'img')
+    doc_name, output_path = create_file_path(req_data.doc_output_name, 'docx', req_data.output_path, 'docx')
 
-    # config_data = ConfigReader.read_config()
-    # template_path = config_data.get("template_path")
-    # if not template_path:
-    #     logging.error(f"{template_path}模板路径未配置")
-    # if not os.path.exists(template_path):
-    #     logging.error(f"{template_path}路径不存在")
-
-    template_file_name, template_path = create_file_path(docTemplateName, 'docx', directory_output, 'template')
-    img_name, img_path = create_file_path(docTemplateName, 'png', directory_output, 'img')
-    doc_name, output_path = create_file_path(output_name, 'docx', directory_output, 'docx')
-
-    draw_img_in_boa_doc(fault_detection_df, img_path, docTemplateName, signals)
+    draw_img_in_boa_doc(fault_detection_df, img_path, req_data.template_name, signals)
     print("图片路径:", img_path)
 
     # 加载模板文档

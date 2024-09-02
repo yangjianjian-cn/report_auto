@@ -1,6 +1,3 @@
-#!/usr/bin/env python
-# coding=utf-8
-
 import logging
 import mimetypes
 import os
@@ -8,6 +5,7 @@ import os
 from dotenv import load_dotenv
 from flask import Flask, request, render_template, jsonify, send_file, make_response
 
+from pojo.MSTReqPOJO import ReqPOJO
 from tools.parser.dat_csv_doc import dat_csv_docx, docx_zip
 
 app = Flask(__name__)
@@ -26,19 +24,46 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(level
 
 @app.route('/', methods=['GET'])
 def index():
-    return render_template('./index.html')
+    test_project_type = request.args.get('test_project_type', '1')
+    if '1' == test_project_type:
+        test_project_type_val = 'MST_Test'
+        test_project_type_name = 'MST Test'
+    elif '2' == test_project_type:
+        test_project_type_val = 'IO_Test'
+        test_project_type_name = 'I/O Test'
+    else:
+        test_project_type_val = 'MST_Test'
+        test_project_type_name = 'MST Test'
+    return render_template('./index.html',
+                           test_project_type_id=test_project_type,
+                           test_project_type_val=test_project_type_val,
+                           test_project_type_name=test_project_type_name)
 
 
+# 上传dat文件
 @app.route('/upload', methods=['POST'])
 def upload():
     upload_file = request.files['file']
-    filename = upload_file.filename
+    test_team = request.form.get('test_team')
+    test_scenario = request.form.get('test_scenario')
+    test_area = request.form.get('test_area')
+    logging.info(f'测试团队:{test_team},测试场景:{test_scenario}, 测试区域{test_area}')
 
+    filename = upload_file.filename
     input_path = app.config['input_path']
-    save_path = os.path.join(input_path, filename)
+
+    if test_team:
+        input_path = os.path.join(input_path, test_team)
+    if test_scenario:
+        input_path = os.path.join(input_path, test_scenario)
+    if test_area:
+        input_path = os.path.join(input_path, test_area)
+    os.makedirs(input_path, exist_ok=True)  # exist_ok=True 表示如果目录已存在则不报错
+
+    save_path = f'{input_path}/{filename}'
+    logging.info(f"上传目录:{save_path}")
 
     upload_file.save(save_path)
-    upload_file.close()
     print("文件已上传:", save_path)
     return jsonify({'upload_part': True})
 
@@ -47,34 +72,47 @@ def upload():
 @app.route('/report_download', methods=['GET'])
 def report_download():
     fileName = request.args.get('fileName')
-    docx_path = app.config['docx_path']
+    test_team = request.args.get('test_team')
+    output_path = app.config['output_path']
     # 检查 docx_path 是否为空
-    if not docx_path:
+    if not output_path:
         logging.error({'generate_report_fail': f'The docx_path is empty.'})
-    # 检查 datPath 是否存在
-    if not os.path.exists(docx_path):
-        logging.error({'generate_report_fail': f"Error: The directory '{docx_path}' does not exist."})
 
-    zip_path = app.config['zip_path']
-    # 检查 output_path 是否为空
-    if not zip_path:
-        logging.error({'generate_report_fail': f'The zip_path is empty.'})
-    if not os.path.exists(zip_path):
-        os.makedirs(zip_path)
+    output_path = os.path.join(output_path, test_team)
+    if 'MST_Test' == test_team:
+        output_path = os.path.join(output_path, 'docx')
+    elif 'IO_Test' == test_team:
+        output_path = os.path.join(output_path, 'xlsm')
 
-    logging.info(f"Input path is valid: {docx_path}")
-    logging.info(f"Output path is valid and created if needed: {zip_path}")
+    # 检查 output_path 是否存在
+    if not os.path.exists(output_path):
+        logging.error({'generate_report_fail': f"Error: The directory '{output_path}' does not exist."})
+
+    logging.info(f"Input path is valid: {output_path}")
     try:
-        zip_file_name, zip_file_path = docx_zip(docx_path, zip_path,fileName)
+        if 'MST_Test' == test_team:
+            # docx文件打包成zip,下载zip文件
+            zip_path = os.path.join(output_path, test_team)
+            zip_path = os.path.join(zip_path, 'zip')
+            if not os.path.exists(zip_path):
+                os.makedirs(zip_path)
+            logging.info(f"Output path is valid and created if needed: {zip_path}")
+
+            file_name, file_path = docx_zip(output_path, zip_path, fileName)
+        elif 'IO_Test' == test_team:
+            # 直接下载xlsm文件
+            file_name = 'IOTest_Man_Tmplt.xlsm'
+            file_path = os.path.join(output_path, file_name)
+
     except Exception as e:
         logging.error({'generate_report_fail': {e}})
 
     # 获取文件 MIME 类型
-    mime_type, _ = mimetypes.guess_type(zip_file_name)
+    mime_type, _ = mimetypes.guess_type(file_name)
     mime_type = mime_type or 'application/zip'
-    content_disposition = 'attachment; filename*=UTF-8\'\'{}'.format(zip_file_name)
+    content_disposition = 'attachment; filename*=UTF-8\'\'{}'.format(file_name)
 
-    response = make_response(send_file(zip_file_path, mimetype=mime_type))
+    response = make_response(send_file(file_path, mimetype=mime_type))
     response.headers['Content-Disposition'] = content_disposition
 
     return response
@@ -83,32 +121,64 @@ def report_download():
 # 生成报告
 @app.route('/generate_report', methods=['POST'])
 def generate_report():
+    # 解析前端发送的 JSON 数据
+    data = request.get_json()
+    test_team = data['test_team']
+    test_scenario = data['test_scenario']
+    test_area = data['test_area']
+
+    # dat文件目录
     dat_path = app.config['input_path']
-    # 检查 datPath 是否为空
     if not dat_path:
         return jsonify({'generate_report_fail': f'The input path is empty'})
 
-    # 检查 datPath 是否存在
+    # test_team
+    if test_team:
+        dat_path = os.path.join(dat_path, test_team)
+
+    # test_scenario
+    if test_scenario:
+        dat_path = os.path.join(dat_path, test_scenario)
+
+    # test_area
+    if test_area:
+        dat_path = os.path.join(dat_path, test_area)
+
+    # 完整dat_path目录
     if not os.path.exists(dat_path):
         return jsonify({'generate_report_fail': f"Error: The directory '{dat_path}' does not exist."})
 
+    # 输出目录: 测试团队/测试场景
     output_path = app.config['output_path']
-    # 检查 output_path 是否为空
     if not output_path:
         return jsonify({'generate_report_fail': f'The output path is empty.'})
 
-    os.makedirs(output_path, exist_ok=True)  # exist_ok=True 表示如果目录已存在则不报错
+    csv_path = os.path.join(output_path, test_team)
+    csv_path = os.path.join(csv_path, test_scenario)
+    csv_path = os.path.join(csv_path, test_area)
+    os.makedirs(csv_path, exist_ok=True)
 
-    logging.info(f"Input path is valid: {dat_path}")
-    logging.info(f"Output path is valid and created if needed: {output_path}")
+    output_path = os.path.join(output_path, test_team)
+    logging.info(f"dat路径: {dat_path}")
+    logging.info(f"csv路径: {csv_path}")
+    logging.info(f"输出路径: {output_path}")
 
     # 生成报告
     try:
-        dat_csv_docx(dat_path, output_path)
+        req_data = ReqPOJO(
+            dat_path=dat_path,
+            output_path=output_path,
+            csv_path=csv_path,
+            test_team=test_team,
+            test_scenario=test_scenario,
+            test_area=test_area,
+            template_path=app.config['template_path']
+        )
+        final_file_path = dat_csv_docx(req_data)
     except Exception as e:
         return jsonify({'generate_report_fail': {e}})
 
-    return jsonify({'generate_report_success': output_path})
+    return jsonify({'generate_report_success': final_file_path})
 
 
 if __name__ == '__main__':

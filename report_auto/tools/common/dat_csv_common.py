@@ -1,15 +1,11 @@
+import logging
 import os
-
-import pandas as pd
-from asammdf import MDF
-from docx import Document
-from docx.table import Table
-from docx.text.run import Run
 from pathlib import Path
 
-from constant.TestCaseType import TestCaseType
+from asammdf import MDF
 
-import logging
+from pojo.MSTReqPOJO import ReqPOJO
+from tools.common.csv_column_rename import reMstDF, retIODF
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 
@@ -27,22 +23,23 @@ def create_file_path(dat_file: str, output_file_name_ext: str, output_path: str,
 
     # 创建必要的目录
     output_file_path.parent.mkdir(parents=True, exist_ok=True)
-    return output_file_name, str(output_file_path)
+    return target_file, str(output_file_path)
 
 
 """
 文件转换 dat -> csv
-dat_file: dat文件所在目录
-outputPath: csv文件输出目录
+dat_file: dat文件名称
+inputPath: dat文件所在目录， 测试团队/测试区域/测试功能
+outputPath: csv文件输出目录， 测试团队/测试区域
+inputPath: str, outputPath: str,test_team: str,test_type: str,test_area: str
 """
 
 
-def dat_csv_conversion(dat_file: str, inputPath: str, outputPath: str) -> str:
-    filepath = os.path.join(inputPath, dat_file)
+def dat_csv_conversion(dat_file: str, req_data: ReqPOJO) -> str:
+    filepath = os.path.join(req_data.dat_path, dat_file)
     try:
-        # 构建CSV输出文件路径
-        # csv文件名和dat文件保持一致
-        output_file_name, csv_file = create_file_path(dat_file, "csv", outputPath, "csv")
+        # 测试项目/测试区域/测试功能
+        output_file_name, csv_file = create_file_path(dat_file, "csv", req_data.csv_path, "csv")
 
         # MDF数据转换为DataFrame
         mdf = MDF(filepath)
@@ -53,46 +50,14 @@ def dat_csv_conversion(dat_file: str, inputPath: str, outputPath: str) -> str:
         alias_column_names = {item: item.split('\\')[0] for item in column_names}
         df.rename(columns=alias_column_names, inplace=True)
 
-        # 通用特征列
-        dfes_list = ['DFES_numDFC_[0]', 'DFES_numDFC_[1]', 'DFES_numDFC_[2]', 'DFES_numDFC_[3]',
-                     'DFES_numDFC_[4]', 'DFES_numDFC_[5]', 'DFES_numDFC_[6]', 'DFES_numDFC_[7]', 'DFES_numDFC_[8]',
-                     'DFES_numDFC_[9]']
-
-        # 根据dat文件名称，提取特征列
-        if TestCaseType.brake_override_accelerator.value in output_file_name.lower():
-            need_include_column_list = ['Tra_numGear', 'VehV_v', 'APP_r', 'Epm_nEng', 'CEngDsT_t', 'Brk_stMn',
-                                        'Brk_stRed', 'APP_bPlaBrk', 'APP_rUnFlt', 'Brk_st', 'DFC_st.DFC_APPPlausBrk']
-            columns_to_include = need_include_column_list + dfes_list
-            # 二进制字符串 b'',转换为字符串
-            df = df[columns_to_include]
-        elif TestCaseType.main_brake_plausibility_check.value in output_file_name.lower():
-            need_include_column_list = ['Tra_numGear', 'Epm_nEng', 'Brk_stMn', 'Brk_stRed', 'DFC_st.DFC_BrkPlausChk',
-                                        'DDRC_DurDeb.Brk_tiPlausChkDebDef_C', 'Brk_st']
-            columns_to_include = need_include_column_list + dfes_list
-            # 二进制字符串 b'',转换为字符串
-            df = df[columns_to_include]
-        elif TestCaseType.redundant_brake_plausibility_check.value in output_file_name.lower():
-            need_include_column_list = ['Tra_numGear', 'VehV_v', 'Brk_tiMaiSwtDebHiLo_C', 'Brk_stMn', 'Brk_stRed',
-                                        'Brk_st']
-            columns_to_include = need_include_column_list + dfes_list
-            # 二进制字符串 b'',转换为字符串
+        if 'MST_Test' == req_data.test_team:
+            df = reMstDF(df,output_file_name)
+        elif 'IO_Test' == req_data.test_team and 'AnalogueInput' == req_data.test_scenario:
+            columns_to_include = retIODF(req_data.test_area)
             df = df[columns_to_include]
 
-        df['Brk_stMn'] = df['Brk_stMn'].apply(lambda x: x.decode('utf-8'))
-        df['Brk_stRed'] = df['Brk_stRed'].apply(lambda x: x.decode('utf-8'))
-        df['DFES_numDFC_[0]'] = df['DFES_numDFC_[0]'].apply(lambda x: x.decode('utf-8'))
-        df['DFES_numDFC_[1]'] = df['DFES_numDFC_[1]'].apply(lambda x: x.decode('utf-8'))
-        df['DFES_numDFC_[2]'] = df['DFES_numDFC_[2]'].apply(lambda x: x.decode('utf-8'))
-        df['DFES_numDFC_[3]'] = df['DFES_numDFC_[3]'].apply(lambda x: x.decode('utf-8'))
-        df['DFES_numDFC_[4]'] = df['DFES_numDFC_[4]'].apply(lambda x: x.decode('utf-8'))
-        df['DFES_numDFC_[5]'] = df['DFES_numDFC_[5]'].apply(lambda x: x.decode('utf-8'))
-        df['DFES_numDFC_[6]'] = df['DFES_numDFC_[6]'].apply(lambda x: x.decode('utf-8'))
-        df['DFES_numDFC_[7]'] = df['DFES_numDFC_[7]'].apply(lambda x: x.decode('utf-8'))
-        df['DFES_numDFC_[8]'] = df['DFES_numDFC_[8]'].apply(lambda x: x.decode('utf-8'))
-        df['DFES_numDFC_[9]'] = df['DFES_numDFC_[9]'].apply(lambda x: x.decode('utf-8'))
-
-        # dat文件转csv文件
-        df.to_csv(csv_file, index=True)
+        with open(csv_file, 'w', newline='') as f:
+            df.to_csv(f, index=True)
         return csv_file
     except FileNotFoundError:
         return f"err:File not found: {filepath}"

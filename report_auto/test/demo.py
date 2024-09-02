@@ -1,13 +1,12 @@
+import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
 
-import matplotlib.pyplot as plt
-import matplotlib
 matplotlib.use('Qt5Agg')  # TkAgg 或者 'Qt5Agg'
 
 import pandas as pd
-pd.set_option('future.no_silent_downcasting', True)
 
+pd.set_option('future.no_silent_downcasting', True)
 
 # 创建一些示例数据
 x = np.linspace(0, 10, 100)
@@ -28,4 +27,3 @@ plt.legend(handles=[line1, line2], loc='upper right', title='Trigonometric Funct
 plt.legend(handles=[scatter1], loc='lower right', title='Special Points')
 
 plt.show()
-

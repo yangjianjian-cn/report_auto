@@ -1,11 +1,16 @@
+from pathlib import Path
+
 import pandas as pd
 
-from tools.report.report_generation import replace_variables_in_doc
 from constant.replacements import brake_override_accelerator_replacements
+from pojo.MSTReqPOJO import ReqPOJO
+from tools.report.report_generation import replace_variables_in_doc
+
+'''csvPath: str, outputPath: str, docTemplate: str'''
 
 
-def brake_override_accelerator(csvPath: str, docTemplate: str) -> str:
-    df_selected = pd.read_csv(csvPath, encoding='utf8')
+def brake_override_accelerator(req_data: ReqPOJO) -> str:
+    df_selected = pd.read_csv(req_data.csv_path, encoding='utf8')
 
     # 2.Enter initial state
     condition1 = df_selected['Tra_numGear'] >= 1  # 档位
@@ -24,7 +29,8 @@ def brake_override_accelerator(csvPath: str, docTemplate: str) -> str:
     condition19 = data_after_last_timestamp['APP_bPlaBrk'] == 1
     condition20 = data_after_last_timestamp['APP_rUnFlt'] > 0
     condition21 = data_after_last_timestamp['APP_r'] == 0
-    fault_detection_df = data_after_last_timestamp[condition16 & condition17 & condition18 & condition19 & condition20 & condition21]
+    fault_detection_df = data_after_last_timestamp[
+        condition16 & condition17 & condition18 & condition19 & condition20 & condition21]
     end_timestamp = fault_detection_df['timestamps'].iloc[-1] if not fault_detection_df.empty else 0
 
     # 4. Error time
@@ -41,8 +47,12 @@ def brake_override_accelerator(csvPath: str, docTemplate: str) -> str:
     # 6.生成测试报告(前后延5s)
     begin_timestamp = begin_timestamp - 5
     end_timestamp = end_timestamp + 5
-    fault_detection_df = df_selected[(df_selected['timestamps'] >= begin_timestamp) & (df_selected['timestamps'] <= end_timestamp)]
+    fault_detection_df = df_selected[
+        (df_selected['timestamps'] >= begin_timestamp) & (df_selected['timestamps'] <= end_timestamp)]
 
     signals = ['Brk_st', 'APP_bPlaBrk', 'APP_rUnFlt', 'APP_r']
-    output_path = replace_variables_in_doc(replacements, fault_detection_df, csvPath, docTemplate,signals)
+    output_name = Path(req_data.csv_path).stem
+    req_data.doc_output_name = output_name
+
+    output_path = replace_variables_in_doc(replacements, fault_detection_df, signals, req_data)
     return output_path

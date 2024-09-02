@@ -1,15 +1,17 @@
 import logging
+from pathlib import Path
 
 import pandas as pd
 
+from pojo.MSTReqPOJO import ReqPOJO
 from tools.report.report_generation import replace_variables_in_doc
 from constant.replacements import main_brake_plausibility_check_replacements
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 
 
-def main_brake_plausibility_check(csvPath: str, docTemplate: str) -> str:
-    df_selected = pd.read_csv(csvPath, encoding='utf8')
+def main_brake_plausibility_check(req_data: ReqPOJO) -> str:
+    df_selected = pd.read_csv(req_data.csv_path, encoding='utf8')
 
     # Enter initial state
     condition1 = df_selected['Tra_numGear'] == 0  # 0th gear
@@ -65,10 +67,9 @@ def main_brake_plausibility_check(csvPath: str, docTemplate: str) -> str:
     # fault_detection_df['DDRC_DurDeb.Brk_tiPlausChkDebDef_C'] = fault_detection_df['DDRC_DurDeb.Brk_tiPlausChkDebDef_C'].div(1000).round().astype
     fault_detection_df.loc[:, 'DDRC_DurDeb.Brk_tiPlausChkDebDef_C'] = (
         fault_detection_df['DDRC_DurDeb.Brk_tiPlausChkDebDef_C'].div(1000).round().astype(int))
-    output_path = replace_variables_in_doc(replacements, fault_detection_df, csvPath, docTemplate, signals)
+
+    output_name = Path(req_data.csv_path).stem
+    req_data.doc_output_name = output_name
+
+    output_path = replace_variables_in_doc(replacements, fault_detection_df,signals,req_data)
     return output_path
-
-
-# main_brake_plausibility_check(
-#     'C:\\Users\\Administrator\\Downloads\\RE__ECU_MST_Auto-test_report_follow_up\\MST_L1\\output\\csv\\2Brk_04.csv',
-#     'main_brake_plausibility_check')
