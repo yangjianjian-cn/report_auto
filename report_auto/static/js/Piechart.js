@@ -1,3 +1,4 @@
+console.log(counters)
 var dom = document.getElementById('chart1');
 var charts1 = echarts.init(dom, null, {
     renderer: 'canvas',
@@ -22,8 +23,8 @@ var option1 = {
             type: 'pie',
             radius: ['40%', '70%'],
             data: [
-                {value: 1048, name: 'I/O Test'},
-                {value: 735, name: 'MST Test'},
+                {value: counters.IO_Test, name: 'I/O Test'},
+                {value: counters.MST_Test, name: 'MST Test'},
             ],
             emphasis: {
                 itemStyle: {
@@ -59,12 +60,12 @@ var option2 = {
             type: 'pie',
             radius: ['40%', '70%'],
             data: [
-                {value: 120, name: 'APP_PL_BR_1'},
-                {value: 200, name: 'Brk_04'},
-                {value: 154, name: 'Brk_05'},
-                {value: 135, name: 'NGS_06'},
-                {value: 234, name: 'Clth_05'},
-                {value: 234, name: 'Clth_06'},
+                {value: counters.APP_PL_BR_1, name: 'APP_PL_BR_1'},
+                {value: counters.Brk_04, name: 'Brk_04'},
+                {value: counters.Brk_05, name: 'Brk_05'},
+                {value: counters.NGS_06, name: 'NGS_06'},
+                {value: counters.Clth_05, name: 'Clth_05'},
+                {value: counters.Clth_06, name: 'Clth_06'},
 
             ],
             label: {
@@ -102,11 +103,11 @@ var option3 = {
             type: 'pie',
             radius: ['40%', '70%'],
             data: [
-                {value: 1048, name: 'analogue input'},
-                {value: 735, name: 'digital input'},
-                {value: 580, name: 'PWM input'},
-                {value: 484, name: 'digital output'},
-                {value: 300, name: 'PWM output'}
+                {value: counters.analogue_input, name: 'analogue input'},
+                {value: counters.digital_input, name: 'digital input'},
+                {value: counters.PWM_input, name: 'PWM input'},
+                {value: counters.digital_output, name: 'digital output'},
+                {value: counters.PWM_output, name: 'PWM output'}
             ],
             label: {
                 show: true,

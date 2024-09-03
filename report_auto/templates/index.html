@@ -55,21 +55,22 @@
                     </p>
 
                     {% if test_project_type_id == '2' %}
-                    <p id="select1-p" class="type-label" style="margin-right: 10px;"><span style="color: red; ">*</span><strong>test scenario:</strong>
-                    </p>
-                    <select id="select1" name="inputType" onchange="updateSelectCheck2()"
-                            style="margin-right: 10px;width: 100px;">
-                        <option value="">--Please select--</option>
-                        <option value="AnalogueInput">AnalogueInput</option>
-                        <option value="DigitalInput">DigitalInput</option>
-                        <option value="PWM_input">PWM_input</option>
-                        <option value="DigitalOutput">DigitalOutput</option>
-                        <option value="PWM_output">PWM_output</option>
-                    </select>
+                        <p id="select1-p" class="type-label" style="margin-right: 10px;"><span
+                                style="color: red; ">*</span><strong>test scenario:</strong>
+                        </p>
+                        <select id="select1" name="inputType" onchange="updateSelectCheck2()"
+                                style="margin-right: 10px;width: 100px;">
+                            <option value="">--Please select--</option>
+                            <option value="AnalogueInput">AnalogueInput</option>
+                            <option value="DigitalInput">DigitalInput</option>
+                            <option value="PWM_input">PWM_input</option>
+                            <option value="DigitalOutput">DigitalOutput</option>
+                            <option value="PWM_output">PWM_output</option>
+                        </select>
 
-                    <select id="select2" name="inputType" style="width: 100px;">
-                        <option value="">--Please select--</option>
-                    </select>
+                        <select id="select2" name="inputType" style="width: 100px;">
+                            <option value="">--Please select--</option>
+                        </select>
                     {% endif %}
                 </div>
             </td>
@@ -78,7 +79,7 @@
             <td colspan="10">
                 <input type="hidden" id="test_project_type_id" value="{{ test_project_type_id }}"/>
                 <input type="hidden" id="test_project_type_name" value="{{ test_project_type_name }}"/>
-                <input type="hidden" id="test_project_type_val" value="{{test_project_type_val}}"/>
+                <input type="hidden" id="test_project_type_val" value="{{ test_project_type_val }}"/>
             </td>
         </tr>
     </table>
@@ -121,6 +122,9 @@
 <script type="text/javascript" src="/static/js/fileuploader.js"></script>
 <script type="text/javascript" src="/static/js/echarts.min.js"></script>
 <script type="text/javascript">
+    // 全局变量，计数器
+    const counters = JSON.parse('{{ counters|tojson }}');
+    // 全局变量，报告生成成功
     var report_success = false;
     // 全局变量，用于保存上传成功的文件名
     var uploadedFileName = [];
@@ -239,6 +243,6 @@
         }
     });
 </script>
-<script type="text/javascript" src="/static/js/index.js?v=2"></script>
+<script type="text/javascript" src="/static/js/index.js?v=1"></script>
 <script type="text/javascript" src="/static/js/Piechart.js?v=2"></script>
 </html>

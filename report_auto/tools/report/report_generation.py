@@ -5,6 +5,7 @@ from pandas import DataFrame
 
 from constant.faultType import FAULT_TYPE_MAPPING
 from pojo.MSTReqPOJO import ReqPOJO
+from tools.utils.FileUtils import delete_file
 
 pd.set_option('future.no_silent_downcasting', True)
 
@@ -99,6 +100,7 @@ docTemplate: 模板名称
 
 
 def replace_variables_in_doc(replacements, fault_detection_df, signals: list, req_data: ReqPOJO) -> str:
+
     template_file_name, template_path = create_file_path(req_data.template_name, 'docx', req_data.template_path,'template')
     img_name, img_path = create_file_path(req_data.template_name, 'png', req_data.output_path, 'img')
     doc_name, output_path = create_file_path(req_data.doc_output_name, 'docx', req_data.output_path, 'docx')
@@ -120,4 +122,7 @@ def replace_variables_in_doc(replacements, fault_detection_df, signals: list, re
     doc.save(output_path)
     print("文档路径:", output_path)
 
+    # 删除临时文件，释放磁盘空间
+    delete_file(req_data.csv_path)
+    delete_file(img_path)
     return output_path

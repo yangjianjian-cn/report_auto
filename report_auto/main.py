@@ -5,8 +5,10 @@ import os
 from dotenv import load_dotenv
 from flask import Flask, request, render_template, jsonify, send_file, make_response
 
+from pojo import RedisCounter
 from pojo.MSTReqPOJO import ReqPOJO
 from tools.parser.dat_csv_doc import dat_csv_docx, docx_zip
+from tools.utils.RedisUtils import getRedisConnector
 
 app = Flask(__name__)
 
@@ -18,26 +20,53 @@ app.config['output_path'] = os.getenv('output_path')
 app.config['docx_path'] = os.getenv('docx_path')
 app.config['zip_path'] = os.getenv('zip_path')
 app.config['template_path'] = os.getenv('template_path')
+app.config['redis_connector'] = os.getenv('redis_connector')
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 
 
 @app.route('/', methods=['GET'])
 def index():
+    # 获取查询参数
     test_project_type = request.args.get('test_project_type', '1')
-    if '1' == test_project_type:
-        test_project_type_val = 'MST_Test'
-        test_project_type_name = 'MST Test'
-    elif '2' == test_project_type:
-        test_project_type_val = 'IO_Test'
-        test_project_type_name = 'I/O Test'
-    else:
-        test_project_type_val = 'MST_Test'
-        test_project_type_name = 'MST Test'
-    return render_template('./index.html',
-                           test_project_type_id=test_project_type,
-                           test_project_type_val=test_project_type_val,
-                           test_project_type_name=test_project_type_name)
+
+    # 定义测试项目类型的映射表
+    test_project_types = {
+        '1': {'val': 'MST_Test', 'name': 'MST Test'},
+        '2': {'val': 'IO_Test', 'name': 'I/O Test'}
+    }
+
+    # 使用默认值防止键不存在的情况
+    test_project_type_info = test_project_types.get(test_project_type, {'val': 'MST_Test', 'name': 'MST Test'})
+
+    # 连接Redis并获取计数器
+    redis_counter: RedisCounter = getRedisConnector(app.config['redis_connector'])
+
+    # 获取所有需要的计数器值
+    counters = {
+        'MST_Test': redis_counter.get_value('MST_Test'),
+        'IO_Test': redis_counter.get_value('IO_Test'),
+        'APP_PL_BR_1': redis_counter.get_value('1app_pl_br_1'),
+        'Brk_04': redis_counter.get_value('2brk_04'),
+        'Brk_05': redis_counter.get_value('3brk_05'),
+        'NGS_06': redis_counter.get_value('4ngs_06'),
+        'Clth_05': redis_counter.get_value('5clth_05'),
+        'Clth_06': redis_counter.get_value('6clth_06'),
+        'analogue_input': redis_counter.get_value('AnalogueInput'),
+        'digital_input': redis_counter.get_value('DigitalInput'),
+        'PWM_input': redis_counter.get_value('PWM_input'),
+        'digital_output': redis_counter.get_value('DigitalOutput'),
+        'PWM_output': redis_counter.get_value('PWM_output')
+    }
+
+    # 渲染模板
+    return render_template(
+        './index.html',
+        test_project_type_id=test_project_type,
+        test_project_type_val=test_project_type_info['val'],
+        test_project_type_name=test_project_type_info['name'],
+        counters=counters  # 不展开字典
+    )
 
 
 # 上传dat文件
@@ -172,7 +201,8 @@ def generate_report():
             test_team=test_team,
             test_scenario=test_scenario,
             test_area=test_area,
-            template_path=app.config['template_path']
+            template_path=app.config['template_path'],
+            redis_connector=app.config['redis_connector']
         )
         final_file_path = dat_csv_docx(req_data)
     except Exception as e:
