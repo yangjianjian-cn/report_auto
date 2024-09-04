@@ -36,15 +36,6 @@ def docx_zip(outputPath: str, zipPath: str, fileName: str) -> str:
     return zip_file_name, zip_file_path
 
 
-'''
-datPath: dat文件目录 ，测试团队/测试区域/测试功能
-outputPath: 输出目录, 测试团队/测试区域
-test_type: 测试场景,I/O Test, MST Test
-test_area: 测试区域
-datPath: str, outputPath: str, test_team: str, test_scenario: str, test_area: str
-'''
-
-
 def dat_csv_docx(req_data: ReqPOJO) -> str:
     csvPathList = []
     # 1.dat转换成csv

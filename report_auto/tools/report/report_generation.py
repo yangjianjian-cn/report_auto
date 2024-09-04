@@ -100,17 +100,17 @@ docTemplate: 模板名称
 
 
 def replace_variables_in_doc(replacements, fault_detection_df, signals: list, req_data: ReqPOJO) -> str:
-
-    template_file_name, template_path = create_file_path(req_data.template_name, 'docx', req_data.template_path,'template')
+    template_file_name, template_path = create_file_path(req_data.template_name, 'docx', req_data.template_path,
+                                                         'template')
     img_name, img_path = create_file_path(req_data.template_name, 'png', req_data.output_path, 'img')
     doc_name, output_path = create_file_path(req_data.doc_output_name, 'docx', req_data.output_path, 'docx')
 
     draw_img_in_boa_doc(fault_detection_df, img_path, req_data.template_name, signals)
-    print("图片路径:", img_path)
+    logging.info("图片路径:", img_path)
 
     # 加载模板文档
     doc = Document(template_path)
-    print("模板路径:", template_path)
+    logging.info("模板路径:", template_path)
 
     # 替换表格中的占位符
     replace_placeholders_in_boa_tables(doc, replacements)
@@ -120,7 +120,7 @@ def replace_variables_in_doc(replacements, fault_detection_df, signals: list, re
 
     # 保存输出文档
     doc.save(output_path)
-    print("文档路径:", output_path)
+    logging.info("文档路径:", output_path)
 
     # 删除临时文件，释放磁盘空间
     delete_file(req_data.csv_path)

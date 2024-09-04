@@ -6,7 +6,7 @@ $("#report_pro_text").on("dblclick", function () {
 $("#report_generation").on("click", function () {
     var filenames = uploadedFileName.join(',');
     if (filenames == '') {
-        layer.alert('请先上传文件', {icon: 5});
+        layer.alert('Please upload the file first.', {icon: 5});
         return false;
     }
 
@@ -26,7 +26,7 @@ $("#report_generation").on("click", function () {
     var test_project_type_id = $("#test_project_type_id").val()
     if ('2' == test_project_type_id) {
         if (selectedValue1 == '' || selectedValues2 == '') {
-            layer.alert('请选择测试场景', {icon: 3})
+            layer.alert('Please select a test scenario', {icon: 3})
             return false;
         }
     }
@@ -48,15 +48,15 @@ $("#report_generation").on("click", function () {
         contentType: 'application/json; charset=utf-8',
         success: function (response) {
             report_success = true
-            $("#report_pro_text").append("报告生成成功:<br/>" + response.generate_report_success)
+            $("#report_pro_text").append("Report generated successfully:<br/>" + response.generate_report_success)
             $('#report_generation').prop('disabled', false);
-            layer.alert('报告生成成功', {icon: 1})
+            layer.alert('Report generated successfully', {icon: 1})
             layer.close(index);
         },
         error: function (error) {
             report_success = false
-            $("#report_pro_text").append("报告生成失败:" + error)
-            layer.alert('报告生失败', {icon: 2})
+            $("#report_pro_text").append("Report generation failed:" + error)
+            layer.alert('Report generation failed', {icon: 2})
             layer.close(index);
         }
     })
@@ -65,7 +65,7 @@ $("#report_generation").on("click", function () {
 // ---------- 下载报告 ----------
 $("#report_download").on("click", function () {
     if (!report_success) {
-        layer.alert('请先生成报告', {icon: 3});
+        layer.alert('Please generate a report first', {icon: 3});
         return false;
     }
     // 测试项目
@@ -74,3 +74,33 @@ $("#report_download").on("click", function () {
     window.location.href = '/report_download?test_team=' + selectedValue0 + '&fileName=' + filenames
     uploadedFileName = []
 })
+$('#APP_PL_BR_1_SPAN').on('mouseenter', function () {
+    var that = this;
+    layer.tips('Brake Override Accelerator', that,{tips: 1});
+
+});
+$('#Brk_04_SPAN').on('mouseenter', function () {
+    var that = this;
+    layer.tips('Main Brake Plausibility Check (DIO)', that,{tips: 1});
+
+});
+$('#Brk_05_SPAN').on('mouseenter', function () {
+    var that = this;
+    layer.tips('Redundant Brake Plausibility Check (DIO)', that,{tips: 1});
+
+});
+$('#NGS_06_SPAN').on('mouseenter', function () {
+    var that = this;
+    layer.tips('Neutral Gear Sensor Plausibility Check (Digital Sensor)', that,{tips: 1});
+
+});
+$('#Clth_05_SPAN').on('mouseenter', function () {
+    var that = this;
+    layer.tips('Plausibility check of CLTH-stuck (Digital Sensor-Top Clutch)r', that,{tips: 1});
+
+});
+$('#Clth_06_SPAN').on('mouseenter', function () {
+    var that = this;
+    layer.tips('Plausibility check of CLTH-stuck (Digital Sensor-Bottom Clutch)', that,{tips: 1});
+});
+

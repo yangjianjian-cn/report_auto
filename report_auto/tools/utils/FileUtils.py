@@ -23,9 +23,3 @@ def delete_file(file_path) -> bool:
     else:
         logging.error(f"文件 {file_path} 不存在。")
         return False
-
-
-# 使用函数
-file_name = r'C:\Users\Administrator\Downloads\output\MST_Test\csv\1APP_PL_BR_1.csv'
-success, message = delete_file(file_name)
-print(message)

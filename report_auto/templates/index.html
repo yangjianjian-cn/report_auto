@@ -2,7 +2,7 @@
 <html lang="en" style="height: 100%">
 <head>
     <meta charset="UTF-8">
-    <title>测试报告</title>
+    <title>Test Report</title>
 
     <link rel="stylesheet" type="text/css" href="/static/css/webuploader.css">
     <link rel="stylesheet" type="text/css" href="/static/css/bootstrap.min.css">
@@ -29,7 +29,7 @@
 <div class="container-custom">
     <table class="custom-background">
         <tr>
-            <td colspan="10">
+            <td colspan="5">
                 <div class="image-container">
                     <!-- style="width: 31%"-->
                     <!-- <img src="{{ url_for('static', filename='images/bosch.jpeg') }}" class="image" alt="Logo">-->
@@ -41,6 +41,18 @@
                          alt="system_software" style="float: right;">
                 </div>
             </td>
+             {% if test_project_type_id == '1' %}
+                <td colspan="5">
+                    <p>Dat file: The file name is fixed, but case-insensitive. Common dat file names:</p>
+                    <span class="layui-badge layui-bg-green" id="APP_PL_BR_1_SPAN">APP_PL_BR_1.dat &nbsp;&nbsp;&nbsp;&nbsp;&nbsp; </span>
+                    <span class="layui-badge layui-bg-green" id="Brk_04_SPAN">Brk_04.dat &nbsp;&nbsp;&nbsp;&nbsp;&nbsp; </span>
+                    <span class="layui-badge layui-bg-green" id="Brk_05_SPAN">Brk_05.dat &nbsp;&nbsp;&nbsp;&nbsp;&nbsp; </span>
+                    <span class="layui-badge layui-bg-green" id="NGS_06_SPAN">NGS_06.dat  &nbsp;&nbsp;&nbsp;&nbsp;&nbsp; </span>
+                    <span class="layui-badge layui-bg-green" id="Clth_05_SPAN">Clth_05.dat &nbsp;&nbsp;&nbsp;&nbsp;&nbsp; </span>
+                    <span class="layui-badge layui-bg-green" id="Clth_06_SPAN">Clth_06.dat &nbsp;&nbsp;&nbsp;&nbsp;&nbsp; </span>
+                    <p>File selection box, you can select one file at a time, or you can select multiple files at a time</p>
+                </td>
+             {% endif %}
         </tr>
     </table>
 
@@ -90,16 +102,16 @@
             <div>
 
                 <div class="col-md-4">
-                    <div id="picker">Please select a dat file</div>
+                    <div id="picker">please select a dat file</div>
                 </div>
 
                 <div class="col-md-4">
-                    <button type="button" class="btn btn-primary btn-lg mb-3" id="report_generation">report generation
+                    <button type="button" class="btn btn-primary btn-lg mb-3" id="report_generation"><p style="font-size: 16px">report generation</p>
                     </button>
                 </div>
 
                 <div class="col-md-4">
-                    <button type="button" class="btn btn-success btn-lg mb-3" id="report_download">Download the report
+                    <button type="button" class="btn btn-success btn-lg mb-3" id="report_download"><p style="font-size: 16px">download the report</p>
                     </button>
                 </div>
             </div>
@@ -137,7 +149,7 @@
         const selectedValue1 = $('#select1').val();
         const selectedValues2 = $('#select2').val();
         if (selectedValue1 == '' || selectedValues2 == '') {
-            layer.alert('请选择测试场景', {icon: 3})
+            layer.alert('Please select a test scenario', {icon: 3})
             return false;
         }
         element.progress('report_auto_progress', '0%');
@@ -195,8 +207,8 @@
             selectedName2 = '';
         }
 
-        $('#report_pro_text').append('您选择了: 测试项目:' + selectedValue0 + ' 测试场景:' + selectedName1 + ' 测试区域:' + selectedName2 + '<br/>')
-        $('#report_pro_text').append('文件: ' +
+        $('#report_pro_text').append('You have selected: Test Items:' + selectedValue0 + ', Test Scenario:' + selectedName1 + ', Test Area:' + selectedName2 + '<br/>')
+        $('#report_pro_text').append('file: ' +
             '<span style="color: blue;">' +
             file.name + '(' + fileSizeStr + ')' +
             '</span>' +
@@ -214,18 +226,18 @@
     });
 
     uploader.on('uploadSuccess', function (file) {
-            $('#report_pro_text').append('文件: ' +
+            $('#report_pro_text').append('file: ' +
                 '<span style="color: blue;">' +
-                file.name + '上传成功' +
+                file.name + 'upload successful' +
                 '</span>' +
                 '<br>');
         }
     );
 
     uploader.on('uploadError', function (file, e) {
-        $('#report_pro_text').append('文件: ' +
+        $('#report_pro_text').append('file: ' +
             '<span style="color: blue;">' +
-            file.name + '上传出错: ' +
+            file.name + 'upload error: ' +
             e +
             '</span>' +
             '<br>');
@@ -243,6 +255,6 @@
         }
     });
 </script>
-<script type="text/javascript" src="/static/js/index.js?v=1"></script>
-<script type="text/javascript" src="/static/js/Piechart.js?v=2"></script>
+<script type="text/javascript" src="/static/js/index.js?v=2"></script>
+<script type="text/javascript" src="/static/js/Piechart.js?v=1"></script>
 </html>
