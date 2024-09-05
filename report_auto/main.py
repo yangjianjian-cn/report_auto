@@ -46,12 +46,12 @@ def index():
     counters = {
         'MST_Test': redis_counter.get_value('MST_Test'),
         'IO_Test': redis_counter.get_value('IO_Test'),
-        'APP_PL_BR_1': redis_counter.get_value('1app_pl_br_1'),
-        'Brk_04': redis_counter.get_value('2brk_04'),
-        'Brk_05': redis_counter.get_value('3brk_05'),
-        'NGS_06': redis_counter.get_value('4ngs_06'),
-        'Clth_05': redis_counter.get_value('5clth_05'),
-        'Clth_06': redis_counter.get_value('6clth_06'),
+        'APP_PL_BR_1': redis_counter.get_value('app_pl_br_1'),
+        'Brk_04': redis_counter.get_value('brk_04'),
+        'Brk_05': redis_counter.get_value('brk_05'),
+        'NGS_06': redis_counter.get_value('ngs_06'),
+        'Clth_05': redis_counter.get_value('clth_05'),
+        'Clth_06': redis_counter.get_value('clth_06'),
         'analogue_input': redis_counter.get_value('AnalogueInput'),
         'digital_input': redis_counter.get_value('DigitalInput'),
         'PWM_input': redis_counter.get_value('PWM_input'),
@@ -108,6 +108,7 @@ def report_download():
         logging.error({'generate_report_fail': f'The docx_path is empty.'})
 
     output_path = os.path.join(output_path, test_team)
+    zip_path = os.path.join(output_path, test_team)
     if 'MST_Test' == test_team:
         output_path = os.path.join(output_path, 'docx')
     elif 'IO_Test' == test_team:
@@ -121,7 +122,6 @@ def report_download():
     try:
         if 'MST_Test' == test_team:
             # docx文件打包成zip,下载zip文件
-            zip_path = os.path.join(output_path, test_team)
             zip_path = os.path.join(zip_path, 'zip')
             if not os.path.exists(zip_path):
                 os.makedirs(zip_path)
