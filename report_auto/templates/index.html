@@ -6,7 +6,7 @@
 
     <link rel="stylesheet" type="text/css" href="/static/css/webuploader.css">
     <link rel="stylesheet" type="text/css" href="/static/css/bootstrap.min.css">
-    <link rel="stylesheet" type="text/css" href="/static/css/style.css">
+    <link rel="stylesheet" type="text/css" href="/static/css/style.css?v=3">
     <link rel="stylesheet" type="text/css" href="/static/layer/theme/default/layer.css">
     <link rel="stylesheet" type="text/css" href="/static/layer/theme/default/layui.css">
 
@@ -29,7 +29,7 @@
 <div class="container-custom">
     <table class="custom-background">
         <tr>
-            <td colspan="5">
+            <td colspan="3">
                 <div class="image-container">
                     <!-- style="width: 31%"-->
                     <!-- <img src="{{ url_for('static', filename='images/bosch.jpeg') }}" class="image" alt="Logo">-->
@@ -41,18 +41,22 @@
                          alt="system_software" style="float: right;">
                 </div>
             </td>
-             {% if test_project_type_id == '1' %}
+            {% if test_project_type_id == '1' %}
                 <td colspan="5">
                     <p>Dat file: The file name is fixed, but case-insensitive. Common dat file names:</p>
                     <span class="layui-badge layui-bg-green" id="APP_PL_BR_1_SPAN">APP_PL_BR_1.dat &nbsp;&nbsp;&nbsp;&nbsp;&nbsp; </span>
-                    <span class="layui-badge layui-bg-green" id="Brk_04_SPAN">Brk_04.dat &nbsp;&nbsp;&nbsp;&nbsp;&nbsp; </span>
-                    <span class="layui-badge layui-bg-green" id="Brk_05_SPAN">Brk_05.dat &nbsp;&nbsp;&nbsp;&nbsp;&nbsp; </span>
-                    <span class="layui-badge layui-bg-green" id="NGS_06_SPAN">NGS_06.dat  &nbsp;&nbsp;&nbsp;&nbsp;&nbsp; </span>
+                    <span class="layui-badge layui-bg-green"
+                          id="Brk_04_SPAN">Brk_04.dat &nbsp;&nbsp;&nbsp;&nbsp;&nbsp; </span>
+                    <span class="layui-badge layui-bg-green"
+                          id="Brk_05_SPAN">Brk_05.dat &nbsp;&nbsp;&nbsp;&nbsp;&nbsp; </span>
+                    <span class="layui-badge layui-bg-green"
+                          id="NGS_06_SPAN">NGS_06.dat  &nbsp;&nbsp;&nbsp;&nbsp;&nbsp; </span>
                     <span class="layui-badge layui-bg-green" id="Clth_05_SPAN">Clth_05.dat &nbsp;&nbsp;&nbsp;&nbsp;&nbsp; </span>
                     <span class="layui-badge layui-bg-green" id="Clth_06_SPAN">Clth_06.dat &nbsp;&nbsp;&nbsp;&nbsp;&nbsp; </span>
                     <p>File selection box, you can select one file at a time, or you can select multiple files at a time</p>
                 </td>
-             {% endif %}
+            {% endif %}
+            <td colspan="2"> <div class="image-container"> <img src="{{ url_for('static', filename='images/bosch.jpeg') }}" class="image_logo" alt="Logo"/></div> </td>
         </tr>
     </table>
 
@@ -106,12 +110,14 @@
                 </div>
 
                 <div class="col-md-4">
-                    <button type="button" class="btn btn-primary btn-lg mb-3" id="report_generation"><p style="font-size: 16px">report generation</p>
+                    <button type="button" class="btn btn-primary btn-lg mb-3" id="report_generation"><p
+                            style="font-size: 16px">report generation</p>
                     </button>
                 </div>
 
                 <div class="col-md-4">
-                    <button type="button" class="btn btn-success btn-lg mb-3" id="report_download"><p style="font-size: 16px">download the report</p>
+                    <button type="button" class="btn btn-success btn-lg mb-3" id="report_download"><p
+                            style="font-size: 16px">download the report</p>
                     </button>
                 </div>
             </div>
