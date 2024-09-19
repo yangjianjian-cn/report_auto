@@ -4,8 +4,10 @@ from pathlib import Path
 
 from asammdf import MDF
 
+from pojo.IOTestCounter import load_from_io_json, IOTestCounter
+from pojo.MSTCounter import load_from_mst_json, MSTCounter
 from pojo.MSTReqPOJO import ReqPOJO
-from tools.common.csv_column_rename import reMstDF, retIODF
+from tools.common.csv_column_rename import reMstDF, retIODF, retHTM
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 
@@ -43,18 +45,31 @@ def dat_csv_conversion(dat_file: str, req_data: ReqPOJO) -> str:
 
         # MDF数据转换为DataFrame
         mdf = MDF(filepath)
-        df = mdf.to_dataframe()
-
-        # 获得DataFrame对象中的所有列名,并为每一列起别名
-        column_names = df.columns.tolist()
-        alias_column_names = {item: item.split('\\')[0] for item in column_names}
-        df.rename(columns=alias_column_names, inplace=True)
 
         if 'MST_Test' == req_data.test_team:
-            df = reMstDF(df,output_file_name)
+            df = mdf.to_dataframe()
+
+            # 获得DataFrame对象中的所有列名,并为每一列起别名
+            column_names = df.columns.tolist()
+            alias_column_names = {item: item.split('\\')[0] for item in column_names}
+            df.rename(columns=alias_column_names, inplace=True)
+
+            df = reMstDF(df, output_file_name)
+
         elif 'IO_Test' == req_data.test_team and 'AnalogueInput' == req_data.test_scenario:
+            df = mdf.to_dataframe()
+
+            # 获得DataFrame对象中的所有列名,并为每一列起别名
+            column_names = df.columns.tolist()
+            alias_column_names = {item: item.split('\\')[0] for item in column_names}
+            df.rename(columns=alias_column_names, inplace=True)
+
             columns_to_include = retIODF(req_data.test_area)
             df = df[columns_to_include]
+
+        elif "HTM" == req_data.test_team:
+            columns_to_include = retHTM()
+            df = mdf.to_dataframe(channels=columns_to_include)
 
         with open(csv_file, 'w', newline='') as f:
             df.to_csv(f, index=True)
@@ -67,3 +82,32 @@ def dat_csv_conversion(dat_file: str, req_data: ReqPOJO) -> str:
     except Exception as e:
         logging.error(e)
         return f"err:Error reading {filepath}: {str(e)}"
+
+
+"""
+MST和IO测试报告统计器
+"""
+
+
+def counter_report(template_path: str):
+    counter_path = os.path.join(template_path, 'counter')
+    if not os.path.exists(counter_path):
+        os.makedirs(counter_path)
+
+    # mst报告统计器
+    mst_file_path = os.path.join(counter_path, 'mst_report_counter.json')
+    mst_counter = load_from_mst_json(mst_file_path)
+    # 如果文件内容为空或无法解析，创建默认对象
+    if mst_counter is None:
+        mst_counter = MSTCounter()
+    mst_dict = mst_counter.__dict__
+
+    # io报告统计器
+    io_file_path = os.path.join(counter_path, 'io_report_counter.json')
+    io_counter = load_from_io_json(io_file_path)
+    # 如果文件内容为空或无法解析，创建默认对象
+    if io_counter is None:
+        io_counter = IOTestCounter()
+    io_dict = io_counter.__dict__
+    merged_dict = {**mst_dict, **io_dict}
+    return merged_dict

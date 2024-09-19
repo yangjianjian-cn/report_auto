@@ -1,6 +1,7 @@
 from docx import Document
 from docx.table import Table
 from docx.text.run import Run
+from pandas import DataFrame
 
 
 def replace_placeholder_paragraph(paragraph: Run, replacements):
@@ -41,3 +42,11 @@ def replace_placeholders_in_docx(doc: Document, replacements):
     """遍历文档中的所有表格，并替换其中的占位符"""
     for table in doc.tables:
         replace_placeholders_in_table(table, replacements)
+
+
+def ret_fault_detection(end_time, begin_time, replacements, err_msg, df: DataFrame):
+    end_time = end_time or (begin_time + 5)
+    condition5 = df['timestamps'] >= begin_time
+    condition6 = df['timestamps'] <= end_time
+    draw_detection_figure_df = df[condition5 & condition6]
+    return err_msg, replacements, draw_detection_figure_df

@@ -5,7 +5,7 @@ from pandas import DataFrame
 
 from constant.faultType import FAULT_TYPE_MAPPING
 from pojo.MSTReqPOJO import ReqPOJO
-from tools.utils.FileUtils import delete_file
+from tools.common.csv_column_rename import find_columns_with_dfc_err_type
 
 pd.set_option('future.no_silent_downcasting', True)
 
@@ -43,27 +43,25 @@ def replace_placeholders_in_boa_tables(doc, replacements):
 
 
 def get_signals(fault_detection_df: DataFrame, docTemplateName: str, signals: list):
-    # 1.异常信息缓存列，字符串替换成数值
+    # 异常类型
     fault_type: str = FAULT_TYPE_MAPPING.get(docTemplateName)
+    # 异常类型数值列
     fault_type_column: str = f"DFC_st.{fault_type}"
 
-    # 保存异常信息的列
-    columns_to_replace = [
-        'DFES_numDFC_[0]', 'DFES_numDFC_[1]', 'DFES_numDFC_[2]', 'DFES_numDFC_[3]',
-        'DFES_numDFC_[4]', 'DFES_numDFC_[5]', 'DFES_numDFC_[6]', 'DFES_numDFC_[7]',
-        'DFES_numDFC_[8]', 'DFES_numDFC_[9]'
-    ]
-    columns_with_faults = check_fault_type(fault_detection_df, columns_to_replace, fault_type)
-    dfes_numdfc_column = columns_with_faults[0]
-    logging.info(f"异常信息列:{dfes_numdfc_column}")
+    # 异常类型列
+    fault_type: str = FAULT_TYPE_MAPPING.get(docTemplateName)
+    if fault_type is not None:
+        columns_with_faults = find_columns_with_dfc_err_type(fault_detection_df, fault_type)
+        if len(columns_with_faults) > 0:
+            dfes_numdfc_column = columns_with_faults[0]
 
-    # 异常信息列值替换
-    # fault_detection_df[dfes_numdfc_column] = fault_detection_df[fault_type_column]
-    fault_detection_df.loc[:, dfes_numdfc_column] = fault_detection_df[fault_type_column]
+            # 异常类型对应数值
+            fault_detection_df.loc[:, dfes_numdfc_column] = fault_detection_df[fault_type_column]
 
-    # 绘制每个信号
-    signals = signals + columns_with_faults
-    logging.info(f"信号列:{signals}")
+            # 绘制每个信号
+            signals = signals + columns_with_faults
+            logging.info(f"信号列:{signals}")
+
     return signals, fault_detection_df
 
 
@@ -106,13 +104,14 @@ def replace_variables_in_doc(replacements, fault_detection_df, signals: list, re
     doc_name, output_path = create_file_path(req_data.doc_output_name, 'docx', req_data.output_path, 'docx')
 
     draw_img_in_boa_doc(fault_detection_df, img_path, req_data.template_name, signals)
-    logging.info("图片路径:", img_path)
+    logging.info(f"图片路径{img_path}")
 
     # 加载模板文档
     doc = Document(template_path)
-    logging.info("模板路径:", template_path)
+    logging.info(f"模板路径:{template_path}")
 
     # 替换表格中的占位符
+    logging.info(f"模板参数{replacements}")
     replace_placeholders_in_boa_tables(doc, replacements)
 
     # 插入图片
@@ -120,9 +119,9 @@ def replace_variables_in_doc(replacements, fault_detection_df, signals: list, re
 
     # 保存输出文档
     doc.save(output_path)
-    logging.info("文档路径:", output_path)
+    logging.info(f"文档路径:{output_path}")
 
     # 删除临时文件，释放磁盘空间
-    delete_file(req_data.csv_path)
-    delete_file(img_path)
+    # delete_file(req_data.csv_path)
+    # delete_file(img_path)
     return output_path

@@ -56,5 +56,5 @@ def mst_report(req_data: ReqPOJO) -> str:
         req_data.template_name = TestCaseType.plausibility_check_of_clth_stuck_bottom.name
         doc_output_path = plausibility_check_of_clth_stuck_bottom(req_data)
 
-    logging.info(f"已生成: {doc_output_path}")
+    logging.info(f"报告生成结束: {doc_output_path}")
     return doc_output_path

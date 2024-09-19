@@ -2,13 +2,14 @@ import logging
 import os
 import zipfile
 
-from constant.TestCaseType import fuzzy_match_test_case_type, TestCaseType
+from pojo.IOTestCounter import load_from_io_json, IOTestCounter, save_to_io_json
+from pojo.MSTCounter import load_from_mst_json, MSTCounter, save_to_mst_json
 from pojo.MSTReqPOJO import ReqPOJO
 from tools.common.dat_csv_common import dat_csv_conversion
 from tools.conversion.iotest.analogue_input_parser import analogue_input
 from tools.conversion.msttest.mst_report_generation import mst_report
 from tools.utils.CustomException import CustomException
-from tools.utils.RedisUtils import RedisCounter, getRedisConnector
+from tools.utils.FileUtils import get_filename_without_extension
 
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 
@@ -36,64 +37,113 @@ def docx_zip(outputPath: str, zipPath: str, fileName: str) -> str:
     return zip_file_name, zip_file_path
 
 
-def dat_csv_docx(req_data: ReqPOJO) -> str:
+def join_with_br(messages):
+    return ('<br>'.join(messages) + '<br>') if messages else ''
+
+
+def dat_csv_docx(req_data: ReqPOJO):
     csvPathList = []
+
+    # 获取指定路径下的所有文件名列表
+    all_files = os.listdir(req_data.dat_path)
+    for file in all_files:
+        # dat转换成csv,mf4转csv
+        if file.endswith(".dat") | file.endswith(".mf4"):
+            errMsg = dat_csv_conversion(file, req_data)
+            if errMsg.startswith("err:"):
+                logging.error(f'文件{file}解析异常:{errMsg}')
+            else:
+                csvPathList.append(errMsg)
+                logging.info(f"转换完成:{errMsg}")
+
     # 1.dat转换成csv
-    dat_files = [f for f in os.listdir(req_data.dat_path) if f.endswith('.dat')]
-    for dat_file in dat_files:
-        errMsg = dat_csv_conversion(dat_file, req_data)
-        if errMsg.startswith("err:"):
-            logging.error(f'文件{dat_file}解析异常:{errMsg}')
-        else:
-            csvPathList.append(errMsg)
-            logging.info(f"转换完成:{errMsg}")
+    # dat_files = [f for f in os.listdir(req_data.dat_path) if f.endswith('.dat')]
+    # for dat_file in dat_files:
+    #     errMsg = dat_csv_conversion(dat_file, req_data)
+    #     if errMsg.startswith("err:"):
+    #         logging.error(f'文件{dat_file}解析异常:{errMsg}')
+    #     else:
+    #         csvPathList.append(errMsg)
+    #         logging.info(f"转换完成:{errMsg}")
 
     # 2.生成报告
-    ret_output_path = []
-    if csvPathList and 'MST_Test' == req_data.test_team:
+    success_messages = []
+    error_messages = []
+    if 'MST_Test' == req_data.test_team:
         for csvPath in csvPathList:
             req_data.csv_path = csvPath
             try:
-                output_path = mst_report(req_data)
-                ret_output_path.append(output_path)
-                ret_output_path.append("<br/>")
-                updateRedisCounter(req_data)
+                msg = mst_report(req_data)
+                contains_succeed = any('succeed' in m for m in msg)
+                file_name = get_filename_without_extension(req_data.csv_path)
+
+                if contains_succeed:
+                    success_msg_list = [m.replace('succeed:', '') for m in msg]
+                    success_msg_str = ''.join(success_msg_list)
+                    success_messages.append(file_name + ' report generated successfully ' + success_msg_str)
+                    updateCounter(req_data)
+                else:
+                    error_msg_str = ''.join(msg)
+                    error_messages.append(file_name + ' report generated unsuccessfully ' + error_msg_str)
             except Exception as e:
                 raise CustomException(f"report generation exception:{e}")
-        return ret_output_path
+
+        html_success = join_with_br(success_messages)
+        html_error = join_with_br(error_messages)
+        return html_success, html_error
 
     # 3.IOTest 生成测试报告
-    if csvPathList and req_data.test_team == 'IO_Test' and req_data.test_scenario == 'AnalogueInput' and req_data.test_area == 'I_A_APP1':
+    if 'IO_Test' == req_data.test_team and req_data.test_scenario == 'AnalogueInput' and req_data.test_area == 'I_A_APP1':
         try:
             output_path = analogue_input(req_data)
-            ret_output_path.append(output_path)
-            ret_output_path.append("<br/>")
-            updateRedisCounter(req_data)
+            success_messages.append(output_path)
+            success_messages.append("<br/>")
+            updateCounter(req_data)
         except Exception as e:
             raise CustomException(f"report generation exception:{e}")
-    return ret_output_path
+        return success_messages, error_messages
+
+    return success_messages, error_messages
 
 
-'''连接Redis,更新Key对应数量'''
+"""
+统计报告数量
+"""
 
 
-def updateRedisCounter(req_data: ReqPOJO):
-    # 'IP:PORT:PASSWD:DB'
-    redis_connector: str = req_data.redis_connector
-    redis_counter: RedisCounter = getRedisConnector(redis_connector)
-    redis_counter.key_name = req_data.test_team
-    redis_counter.increment()  # 测试项目数量加1
+def updateCounter(req_data: ReqPOJO):
+    test_team: str = req_data.test_team
+    test_team_lower = test_team.lower()
 
-    if req_data.test_scenario:
-        redis_counter.key_name = req_data.test_scenario
-        redis_counter.increment()  # IOTest测试场景数量加1
+    template_path = req_data.template_path
+    counter_path = os.path.join(template_path, 'counter')
 
-    if 'MST_Test' == req_data.test_team:
-        # 根据文件名称，求统计量
-        csv_file_name_with_ext: str = os.path.basename(req_data.csv_path)
-        csv_file_name_without_ext, _ = os.path.splitext(csv_file_name_with_ext)
-        csv_file_name_without_ext: str = csv_file_name_without_ext.lower()
-        matched_cases: TestCaseType = fuzzy_match_test_case_type(csv_file_name_without_ext)
-        if matched_cases is not None:
-            redis_counter.key_name = matched_cases.value
-            redis_counter.increment()  # MSTTest测试场景数量加1
+    if 'MST_Test' == test_team:
+        counter_mst_file = os.path.join(counter_path, 'mst_report_counter.json')
+        mst_counter = load_from_mst_json(counter_mst_file)
+
+        # 如果文件内容为空或无法解析，创建默认对象
+        if mst_counter is None:
+            mst_counter = MSTCounter()
+        mst_counter.update_attribute(test_team_lower)
+
+        file_name: str = get_filename_without_extension(req_data.csv_path)
+        test_scenario = file_name.lower()
+        mst_counter.update_attribute(test_scenario)
+
+        save_to_mst_json(counter_mst_file, mst_counter)
+
+    elif 'IO_Test' == test_team:
+        counter_io_file = os.path.join(counter_path, 'mst_report_counter.json')
+        io_counter = load_from_io_json(counter_io_file)
+
+        # 如果文件内容为空或无法解析，创建默认对象
+        if io_counter is None:
+            io_counter = IOTestCounter()
+        io_counter.update_attribute(test_team_lower)
+
+        file_name: str = req_data.test_scenario
+        test_scenario = file_name.lower()
+        io_counter.update_attribute(test_scenario)
+
+        save_to_io_json(counter_io_file, io_counter)

@@ -47,16 +47,29 @@ $("#report_generation").on("click", function () {
         data: jsonData,
         contentType: 'application/json; charset=utf-8',
         success: function (response) {
-            report_success = true
-            $("#report_pro_text").append("Report generated successfully:<br/>" + response.generate_report_success)
             $('#report_generation').prop('disabled', false);
-            layer.alert('Report generated successfully', {icon: 1})
             layer.close(index);
+
+            ret_report_success = response.generate_report_success
+            if (ret_report_success != undefined && ret_report_success != '') {
+                report_success = true
+                console.log(ret_report_success)
+                $("#report_pro_text").append('<span style="color: black;">' + response.generate_report_success + '</span>')
+                layer.alert('Report generated successfully', {icon: 1})
+            }
+
+            ret_report_failed = response.generate_report_failed
+            if (ret_report_failed != undefined && ret_report_failed != '') {
+                report_success = false
+                console.log(ret_report_failed)
+                $("#report_pro_text").append('<span style="color: indianred;">' + response.generate_report_failed + '</span>')
+                layer.alert('Report generated unsuccessfully', {icon: 5})
+            }
         },
         error: function (error) {
             report_success = false
-            $("#report_pro_text").append("Report generation failed:" + error)
-            layer.alert('Report generation failed', {icon: 2})
+            $("#report_pro_text").append("Report generation error:" + error.msg())
+            layer.alert('generate_report_error', {icon: 2})
             layer.close(index);
         }
     })
@@ -76,31 +89,31 @@ $("#report_download").on("click", function () {
 })
 $('#APP_PL_BR_1_SPAN').on('mouseenter', function () {
     var that = this;
-    layer.tips('Brake Override Accelerator', that,{tips: 1});
+    layer.tips('Brake Override Accelerator', that, {tips: 1});
 
 });
 $('#Brk_04_SPAN').on('mouseenter', function () {
     var that = this;
-    layer.tips('Main Brake Plausibility Check (DIO)', that,{tips: 1});
+    layer.tips('Main Brake Plausibility Check (DIO)', that, {tips: 1});
 
 });
 $('#Brk_05_SPAN').on('mouseenter', function () {
     var that = this;
-    layer.tips('Redundant Brake Plausibility Check (DIO)', that,{tips: 1});
+    layer.tips('Redundant Brake Plausibility Check (DIO)', that, {tips: 1});
 
 });
 $('#NGS_06_SPAN').on('mouseenter', function () {
     var that = this;
-    layer.tips('Neutral Gear Sensor Plausibility Check (Digital Sensor)', that,{tips: 1});
+    layer.tips('Neutral Gear Sensor Plausibility Check (Digital Sensor)', that, {tips: 1});
 
 });
 $('#Clth_05_SPAN').on('mouseenter', function () {
     var that = this;
-    layer.tips('Plausibility check of CLTH-stuck (Digital Sensor-Top Clutch)r', that,{tips: 1});
+    layer.tips('Plausibility check of CLTH-stuck (Digital Sensor-Top Clutch)r', that, {tips: 1});
 
 });
 $('#Clth_06_SPAN').on('mouseenter', function () {
     var that = this;
-    layer.tips('Plausibility check of CLTH-stuck (Digital Sensor-Bottom Clutch)', that,{tips: 1});
+    layer.tips('Plausibility check of CLTH-stuck (Digital Sensor-Bottom Clutch)', that, {tips: 1});
 });
 

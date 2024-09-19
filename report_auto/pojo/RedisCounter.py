@@ -18,26 +18,11 @@ class RedisCounter:
         """递增计数器的值"""
         self.r.incrby(self.key_name, step)
 
-    def get_value(self, default_value=0):
+    def get_value(self, key_name):
         """获取计数器当前的值"""
+        value = self.r.get(key_name)
+        return value.decode('utf-8') if value else 0
 
-        value = self.r.get(self.key_name)
-        return value.decode('utf-8') if value else default_value
-
-    def get_value(self, key, default_value=0):
-        """获取计数器当前的值"""
-
-        value = self.r.get(key)
-        return value.decode('utf-8') if value else default_value
-
-# # 使用示例
-# if __name__ == "__main__":
-#     # 创建一个Redis计数器实例
-#     counter = RedisCounter()
-#
-#     # 测试递增功能
-#     for _ in range(5):
-#         counter.increment()
-#
-#     # 打印当前计数器的值
-#     print(f"Current counter value: {counter.get_value()}")
+    def del_key(self, key):
+        """删除Redis中存在的键值"""
+        self.r.delete(key)

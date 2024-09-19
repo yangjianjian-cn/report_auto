@@ -5,10 +5,11 @@ import os
 from dotenv import load_dotenv
 from flask import Flask, request, render_template, jsonify, send_file, make_response
 
-from pojo import RedisCounter
 from pojo.MSTReqPOJO import ReqPOJO
+from tools.common.dat_csv_common import counter_report
 from tools.parser.dat_csv_doc import dat_csv_docx, docx_zip
-from tools.utils.RedisUtils import getRedisConnector
+from tools.temperature.temperature_work_time import temperature_duration, temperature_chip
+from tools.utils.FileUtils import validate_filename
 
 app = Flask(__name__)
 
@@ -39,25 +40,8 @@ def index():
     # 使用默认值防止键不存在的情况
     test_project_type_info = test_project_types.get(test_project_type, {'val': 'MST_Test', 'name': 'MST Test'})
 
-    # 连接Redis并获取计数器
-    redis_counter: RedisCounter = getRedisConnector(app.config['redis_connector'])
-
-    # 获取所有需要的计数器值
-    counters = {
-        'MST_Test': redis_counter.get_value('MST_Test'),
-        'IO_Test': redis_counter.get_value('IO_Test'),
-        'APP_PL_BR_1': redis_counter.get_value('app_pl_br_1'),
-        'Brk_04': redis_counter.get_value('brk_04'),
-        'Brk_05': redis_counter.get_value('brk_05'),
-        'NGS_06': redis_counter.get_value('ngs_06'),
-        'Clth_05': redis_counter.get_value('clth_05'),
-        'Clth_06': redis_counter.get_value('clth_06'),
-        'analogue_input': redis_counter.get_value('AnalogueInput'),
-        'digital_input': redis_counter.get_value('DigitalInput'),
-        'PWM_input': redis_counter.get_value('PWM_input'),
-        'digital_output': redis_counter.get_value('DigitalOutput'),
-        'PWM_output': redis_counter.get_value('PWM_output')
-    }
+    # 报告统计器
+    merged_dict = counter_report(app.config['template_path'])
 
     # 渲染模板
     return render_template(
@@ -65,11 +49,11 @@ def index():
         test_project_type_id=test_project_type,
         test_project_type_val=test_project_type_info['val'],
         test_project_type_name=test_project_type_info['name'],
-        counters=counters  # 不展开字典
+        counters=merged_dict  # 不展开字典
     )
 
 
-# 上传dat文件
+# 上传文件
 @app.route('/upload', methods=['POST'])
 def upload():
     upload_file = request.files['file']
@@ -79,6 +63,11 @@ def upload():
     logging.info(f'测试团队:{test_team},测试场景:{test_scenario}, 测试区域{test_area}')
 
     filename = upload_file.filename
+
+    check_rslt = validate_filename(filename, test_team)
+    if check_rslt:
+        return jsonify({'upload_error': check_rslt})
+
     input_path = app.config['input_path']
 
     if test_team:
@@ -94,7 +83,7 @@ def upload():
 
     upload_file.save(save_path)
     print("文件已上传:", save_path)
-    return jsonify({'upload_part': True})
+    return jsonify({'upload_success': True})
 
 
 # 下载报告
@@ -204,11 +193,70 @@ def generate_report():
             template_path=app.config['template_path'],
             redis_connector=app.config['redis_connector']
         )
-        final_file_path = dat_csv_docx(req_data)
+        ret_sucess_msg, ret_err_msg = dat_csv_docx(req_data)
     except Exception as e:
-        return jsonify({'generate_report_fail': {e}})
+        return jsonify({'generate_report_error': {e}})
 
-    return jsonify({'generate_report_success': final_file_path})
+    return jsonify({'generate_report_success': ret_sucess_msg, 'generate_report_failed': ret_err_msg})
+
+
+'''
+温度数据上传
+'''
+
+
+@app.route('/temperature_uploader', methods=['GET'])
+def temperature_uploader():
+    return render_template('./temperature_uploader.html')
+
+
+'''
+芯片温度报表
+'''
+
+
+@app.route('/temperature', methods=['GET'])
+def temperature():
+    fileId = request.args.get('fileId')
+    output_path = app.config['output_path']
+    output_path = os.path.join(output_path, 'HTM', 'csv')
+
+    time_diffs, total_minutes = temperature_duration(output_path,fileId)
+    # DC1_Th
+
+    selected_columns_dc1 = ['DC1_Th1', 'DC1_Th2', 'DC1_Th3', 'DC1_Th4', 'DC1_Th5', 'DC1_Th6', 'DC1_Th7', 'DC1_Th8',
+                            'TECU_t', 'timestamps']
+    temperature_time_dc1 = temperature_chip(selected_columns_dc1, output_path,fileId)
+
+    #  TC1_Th
+    selected_columns_tc1 = ['TC1_Th1', 'TC1_Th2', 'TC1_Th3', 'TC1_Th4', 'TC1_Th5', 'TC1_Th6', 'TC1_Th7', 'TC1_Th8',
+                            'TC1_Th9', 'TC1_Th10', 'TC1_Th11', 'TC1_Th12', 'TC1_Th13', 'TC1_Th14', 'TC1_Th15',
+                            'TC1_Th16',
+                            'TECU_t', 'timestamps']
+    temperature_time_tc1 = temperature_chip(selected_columns_tc1, output_path,fileId)
+
+    #  TC2_Th
+    selected_columns_tc2 = ['TC2_Th1', 'TC2_Th2', 'TC2_Th3', 'TC2_Th4', 'TC2_Th5', 'TC2_Th6', 'TC2_Th7', 'TC2_Th8',
+                            'TC2_Th9', 'TC2_Th10', 'TC2_Th11', 'TC2_Th12', 'TC2_Th13',
+                            'TECU_t', 'timestamps']
+    temperature_time_tc2 = temperature_chip(selected_columns_tc2, output_path,fileId)
+
+    file_map_list: list = []
+    for dirpath, dirnames, filenames in os.walk(output_path):
+        for filename in filenames:
+            file_map: map = {}
+            file_map['id'] = filename
+            file_map['title'] = filename
+            file_map_list.append(file_map)
+
+    return render_template('./temperature_main.html',
+                           total_minutes=total_minutes,
+                           time_diffs=time_diffs,
+                           temperature_time_dc1=temperature_time_dc1,
+                           temperature_time_tc1=temperature_time_tc1,
+                           temperature_time_tc2=temperature_time_tc2,
+                           file_map_list=file_map_list
+                           )
 
 
 if __name__ == '__main__':
