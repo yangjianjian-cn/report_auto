@@ -49,3 +49,26 @@ def validate_filename(filename: str, test_team: str) -> str:
         if base_file_name not in valid_filenames:
             return (f'文件名 {base_file_name} 不符合规定，请使用以下格式之一：{", ".join(valid_filenames)}')
     return ''  # 或
+
+
+def add_subdirectory_to_path(file_path, subdirectory):
+    # 分离文件路径中的目录和文件名
+    base_dir, file_name = os.path.split(file_path)
+
+    # 分离目录中的子目录和目标子目录
+    new_dir = os.path.join(base_dir, subdirectory)
+
+    # 如果子目录不存在，则创建它
+    if not os.path.exists(new_dir):
+        os.makedirs(new_dir)
+
+    # 组合新的文件路径
+    new_file_path = os.path.join(new_dir, file_name)
+
+    return new_file_path
+
+
+# csv_file = r'C:\Users\Administrator\Downloads\output\HTM\csv\HTM03_idle.csv'
+# subdirectory = 'dc1'
+# new_csv_file = add_subdirectory_to_path(csv_file, subdirectory)
+# print(new_csv_file)  # 输出: C:\Users\Administrator\Downloads\output\HTM\csv\dc1\HTM03_idle.csv

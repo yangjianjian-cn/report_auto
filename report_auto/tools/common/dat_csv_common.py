@@ -8,6 +8,7 @@ from pojo.IOTestCounter import load_from_io_json, IOTestCounter
 from pojo.MSTCounter import load_from_mst_json, MSTCounter
 from pojo.MSTReqPOJO import ReqPOJO
 from tools.common.csv_column_rename import reMstDF, retIODF, retHTM
+from tools.utils.FileUtils import add_subdirectory_to_path
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 
@@ -47,9 +48,9 @@ def dat_csv_conversion(dat_file: str, req_data: ReqPOJO) -> str:
         mdf = MDF(filepath)
 
         if 'MST_Test' == req_data.test_team:
+            # MST测量数据
             df = mdf.to_dataframe()
 
-            # 获得DataFrame对象中的所有列名,并为每一列起别名
             column_names = df.columns.tolist()
             alias_column_names = {item: item.split('\\')[0] for item in column_names}
             df.rename(columns=alias_column_names, inplace=True)
@@ -57,9 +58,9 @@ def dat_csv_conversion(dat_file: str, req_data: ReqPOJO) -> str:
             df = reMstDF(df, output_file_name)
 
         elif 'IO_Test' == req_data.test_team and 'AnalogueInput' == req_data.test_scenario:
+            # IO Test测量数据
             df = mdf.to_dataframe()
 
-            # 获得DataFrame对象中的所有列名,并为每一列起别名
             column_names = df.columns.tolist()
             alias_column_names = {item: item.split('\\')[0] for item in column_names}
             df.rename(columns=alias_column_names, inplace=True)
@@ -68,8 +69,31 @@ def dat_csv_conversion(dat_file: str, req_data: ReqPOJO) -> str:
             df = df[columns_to_include]
 
         elif "HTM" == req_data.test_team:
-            columns_to_include = retHTM()
-            df = mdf.to_dataframe(channels=columns_to_include)
+            # 芯片温度报表数据
+            csv_file_tecu = add_subdirectory_to_path(csv_file,'tecu')
+            csv_file_dc1 = add_subdirectory_to_path(csv_file,'dc1')
+            csv_file_tc1 = add_subdirectory_to_path(csv_file,'tc1')
+            csv_file_tc2 = add_subdirectory_to_path(csv_file,'tc2')
+            selected_columns_dc1,selected_columns_tc1,selected_columns_tc2,selected_columns_tecu = retHTM()
+
+            df = mdf.to_dataframe(channels=selected_columns_tecu)
+            with open(csv_file_tecu, 'w', newline='') as f:
+                df.to_csv(f, index=True)
+
+            df = mdf.to_dataframe(channels=selected_columns_dc1)
+            with open(csv_file_dc1, 'w', newline='') as f:
+                df.to_csv(f, index=True)
+
+            df = mdf.to_dataframe(channels=selected_columns_tc1)
+            with open(csv_file_tc1, 'w', newline='') as f:
+                df.to_csv(f, index=True)
+
+            df = mdf.to_dataframe(channels=selected_columns_tc2)
+            with open(csv_file_tc2, 'w', newline='') as f:
+                df.to_csv(f, index=True)
+
+            csv_file = f"{csv_file_tecu}@{csv_file_dc1}@{csv_file_tc1}@{csv_file_tc2}"
+            return csv_file
 
         with open(csv_file, 'w', newline='') as f:
             df.to_csv(f, index=True)

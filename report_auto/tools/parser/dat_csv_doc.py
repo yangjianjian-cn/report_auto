@@ -44,7 +44,7 @@ def join_with_br(messages):
 def dat_csv_docx(req_data: ReqPOJO):
     csvPathList = []
 
-    # 获取指定路径下的所有文件名列表
+    # 1.测量数据转换成csv文件
     all_files = os.listdir(req_data.dat_path)
     for file in all_files:
         # dat转换成csv,mf4转csv
@@ -52,20 +52,13 @@ def dat_csv_docx(req_data: ReqPOJO):
             errMsg = dat_csv_conversion(file, req_data)
             if errMsg.startswith("err:"):
                 logging.error(f'文件{file}解析异常:{errMsg}')
+            elif file.endswith(".mf4"):
+                filePaths = errMsg.split('@')
+                for file_path in filePaths:
+                    csvPathList.append(file_path)
             else:
                 csvPathList.append(errMsg)
                 logging.info(f"转换完成:{errMsg}")
-
-    # 1.dat转换成csv
-    # dat_files = [f for f in os.listdir(req_data.dat_path) if f.endswith('.dat')]
-    # for dat_file in dat_files:
-    #     errMsg = dat_csv_conversion(dat_file, req_data)
-    #     if errMsg.startswith("err:"):
-    #         logging.error(f'文件{dat_file}解析异常:{errMsg}')
-    #     else:
-    #         csvPathList.append(errMsg)
-    #         logging.info(f"转换完成:{errMsg}")
-
     # 2.生成报告
     success_messages = []
     error_messages = []
