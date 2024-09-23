@@ -90,10 +90,12 @@
         <!--隐藏域-->
         <input type="hidden" id="total-minutes" value="{{ total_minutes }}">
         <input type="hidden" id="time-diffs" value='{{ time_diffs|tojson }}'>
-        <input type="hidden" id="temperature_time_dc1" value='{{ temperature_time_dc1|tojson }}'>
-        <input type="hidden" id="temperature_time_tc1" value='{{ temperature_time_tc1|tojson }}'>
-        <input type="hidden" id="temperature_time_tc2" value='{{ temperature_time_tc2|tojson }}'>
-
+        <input type="hidden" id="temperature_time_dc1_legend" value='{{ temperature_time_dc1_legend }}'>
+        <input type="hidden" id="temperature_time_tc1_legend" value='{{ temperature_time_tc1_legend }}'>
+        <input type="hidden" id="temperature_time_tc2_legend" value='{{ temperature_time_tc2_legend }}'>
+        <input type="hidden" id="temperature_time_dc1" value='{{ temperature_time_dc1 }}'>
+        <input type="hidden" id="temperature_time_tc1" value='{{ temperature_time_tc1 }}'>
+        <input type="hidden" id="temperature_time_tc2" value='{{ temperature_time_tc2 }}'>
     </div>
 </div>
 </body>
@@ -111,14 +113,15 @@
             , click: function (data, othis) {
                 var elem = $(this.elem)
                     , listId = elem.data('id'); //表格列表的预埋数据
-                window.location.href = '/temperature?fileId='+data.id;
+                window.location.href = '/temperature?fileId=' + data.id;
             }
         });
     });
 </script>
 <script type="text/javascript" src="/static/js/echarts.min.js"></script>
 <script type="text/javascript" src="/static/js/temperature_duration.js?v=1"></script>
-<script type="text/javascript" src="/static/js/chip01_temperature.js?v=1"></script>
-<script type="text/javascript" src="/static/js/chip02_temperature.js?v=1"></script>
-<script type="text/javascript" src="/static/js/chip03_temperature.js?v=1"></script>
+<script type="text/javascript" src="/static/js/biz/chip01_temperature.js?v=1"></script>
+<script type="text/javascript" src="/static/js/biz/chip02_temperature.js?v=1"></script>
+<script type="text/javascript" src="/static/js/biz/chip03_temperature.js?v=1"></script>
+<!--<script type="text/javascript" src="/static/js/biz/chip04_temperature.js?v=1"></script>-->
 </html>

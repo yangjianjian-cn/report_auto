@@ -20,7 +20,7 @@ def temperature_duration(output_path: str, file_id: str):
         # 获取目录下的所有文件
         files = [f for f in os.listdir(output_path) if os.path.isfile(os.path.join(output_path, f))]
         # 获取第一个文件的名称
-        csv_path = os.path.join(output_path,files[0])
+        csv_path = os.path.join(output_path, files[0])
 
     df: DataFrame = pd.read_csv(csv_path, encoding='utf8')
     df.sort_values(['TECU_t'])
@@ -84,6 +84,18 @@ def temperature_chip(selected_columns: list, output_path: str, file_id: str) -> 
         col: sampled_df[col].tolist() for col in sampled_df.columns
     }
 
-    return temperature_time
+    data_structure = create_data_structure(temperature_time, selected_columns)
+    return data_structure
 
-# print(temperature_chip())
+
+def create_data_structure(temperature_time_dc1,sensors: list):
+    result = []
+    tecu_temperatures = temperature_time_dc1['TECU_t']
+
+    for sensor in sensors:
+        series_data = []
+        for i, temp in enumerate(temperature_time_dc1[sensor]):
+            series_data.append({"name": sensor, "value": [temp, tecu_temperatures[i]]})
+        result.append({"name": sensor, "type": "line", "data": series_data})
+
+    return result

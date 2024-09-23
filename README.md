@@ -56,7 +56,7 @@ report_auto项目下载地址： https://github.com/yangjj2020/report_auto/tree/
 
 
 ⑧ 运行
-项目根目录执行命令：nohup gunicorn --bind 0.0.0.0:5000 main:main > gunicorn_output.log 2>&1 &
+项目根目录执行命令：nohup gunicorn --bind 0.0.0.0:5000 main:main --timeout 1200 > gunicorn_output.log 2>&1 &
 
 ⑨ 浏览器访问：http://117.50.172.154:5000/
 安装依赖包 和 运行 ，这两步可能会遇到问题，到时再一起解决
