@@ -9,7 +9,7 @@ from pojo.MSTReqPOJO import ReqPOJO
 from tools.common.dat_csv_common import counter_report
 from tools.parser.dat_csv_doc import dat_csv_docx, docx_zip
 from tools.temperature.temperature_work_time import temperature_duration, temperature_chip
-from tools.utils.FileUtils import validate_filename
+from tools.utils.FileUtils import validate_filename, get_filename_without_extension
 
 app = Flask(__name__)
 
@@ -217,42 +217,44 @@ def temperature():
     output_path = app.config['output_path']
 
     # 关联函数 tools.common.dat_csv_common.dat_csv_conversion
-    tecu_output_path = os.path.join(output_path, 'HTM', 'csv','tecu')
+    tecu_output_path = os.path.join(output_path, 'HTM', 'csv', 'tecu')
     if not os.path.exists(tecu_output_path):
-        return render_template('./error.html',failure_msg='Please confirm whether the file exists.')
+        return render_template('./error.html', failure_msg='Please confirm whether the file exists.')
 
     time_diffs, total_minutes = temperature_duration(tecu_output_path, fileId)
 
     # DC1_Th 去掉'timestamps'列
-    selected_columns_dc1:list = ['DC1_Th1', 'DC1_Th2', 'DC1_Th3', 'DC1_Th4', 'DC1_Th5', 'DC1_Th6', 'DC1_Th7', 'DC1_Th8','TECU_t']
-    dc1_output_path = os.path.join(output_path, 'HTM', 'csv','dc1')
+    selected_columns_dc1: list = ['DC1_Th1', 'DC1_Th2', 'DC1_Th3', 'DC1_Th4', 'DC1_Th5', 'DC1_Th6', 'DC1_Th7',
+                                  'DC1_Th8', 'TECU_t']
+    dc1_output_path = os.path.join(output_path, 'HTM', 'csv', 'dc1')
     temperature_time_dc1 = temperature_chip(selected_columns_dc1, dc1_output_path, fileId)
 
     # TC1_Th
-    selected_columns_tc1:list = ['TC1_Th1', 'TC1_Th2', 'TC1_Th3', 'TC1_Th4', 'TC1_Th5', 'TC1_Th6', 'TC1_Th7', 'TC1_Th8',
-                            'TC1_Th9', 'TC1_Th10', 'TC1_Th11', 'TC1_Th12', 'TC1_Th13', 'TC1_Th14', 'TC1_Th15',
-                            'TC1_Th16','TECU_t']
-    tc1_output_path = os.path.join(output_path, 'HTM', 'csv','tc1')
+    selected_columns_tc1: list = ['TC1_Th1', 'TC1_Th2', 'TC1_Th3', 'TC1_Th4', 'TC1_Th5', 'TC1_Th6', 'TC1_Th7',
+                                  'TC1_Th8',
+                                  'TC1_Th9', 'TC1_Th10', 'TC1_Th11', 'TC1_Th12', 'TC1_Th13', 'TC1_Th14', 'TC1_Th15',
+                                  'TC1_Th16', 'TECU_t']
+    tc1_output_path = os.path.join(output_path, 'HTM', 'csv', 'tc1')
     temperature_time_tc1 = temperature_chip(selected_columns_tc1, tc1_output_path, fileId)
 
-
     # TC2_Th
-    selected_columns_tc2:list = ['TC2_Th1', 'TC2_Th2', 'TC2_Th3', 'TC2_Th4', 'TC2_Th5', 'TC2_Th6', 'TC2_Th7', 'TC2_Th8',
-                            'TC2_Th9', 'TC2_Th10', 'TC2_Th11', 'TC2_Th12', 'TC2_Th13',
-                            'TECU_t']
-    tc2_output_path = os.path.join(output_path, 'HTM', 'csv','tc2')
+    selected_columns_tc2: list = ['TC2_Th1', 'TC2_Th2', 'TC2_Th3', 'TC2_Th4', 'TC2_Th5', 'TC2_Th6', 'TC2_Th7',
+                                  'TC2_Th8',
+                                  'TC2_Th9', 'TC2_Th10', 'TC2_Th11', 'TC2_Th12', 'TC2_Th13',
+                                  'TECU_t']
+    tc2_output_path = os.path.join(output_path, 'HTM', 'csv', 'tc2')
     temperature_time_tc2 = temperature_chip(selected_columns_tc2, tc2_output_path, fileId)
-
 
     # 渲染到temperature_main.html模板中的数据
     file_map_list: list = []
-    file_str_list:list = []
+    file_str_list: list = []
     for dirpath, dirnames, filenames in os.walk(output_path):
         for filename in filenames:
             if filename not in file_str_list:
+                p_filename = get_filename_without_extension(filename)
                 file_map: map = {}
-                file_map['id'] = filename
-                file_map['title'] = filename
+                file_map['id'] = p_filename
+                file_map['title'] = p_filename
                 file_map_list.append(file_map)
                 file_str_list.append(filename)
 

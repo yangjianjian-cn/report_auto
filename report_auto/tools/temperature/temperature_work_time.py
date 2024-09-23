@@ -14,7 +14,7 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(level
 
 def temperature_duration(output_path: str, file_id: str):
     if file_id:
-        csv_path = os.path.join(output_path, file_id)
+        csv_path = os.path.join(output_path, f"{file_id}.csv")
     else:
         # 使用 os.walk 遍历目录及其子目录下的所有文件
         # 获取目录下的所有文件
@@ -62,7 +62,7 @@ def temperature_duration(output_path: str, file_id: str):
 
 def temperature_chip(selected_columns: list, output_path: str, file_id: str) -> Dict[str, List]:
     if file_id:
-        csv_path = os.path.join(output_path, file_id)
+        csv_path = os.path.join(output_path, f"{file_id}.csv")
     else:
         # 使用 os.walk 遍历目录及其子目录下的所有文件
         # 获取目录下的所有文件
@@ -88,7 +88,7 @@ def temperature_chip(selected_columns: list, output_path: str, file_id: str) -> 
     return data_structure
 
 
-def create_data_structure(temperature_time_dc1,sensors: list):
+def create_data_structure(temperature_time_dc1, sensors: list):
     result = []
     tecu_temperatures = temperature_time_dc1['TECU_t']
 

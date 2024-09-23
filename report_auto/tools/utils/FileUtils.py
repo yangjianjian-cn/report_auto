@@ -66,9 +66,3 @@ def add_subdirectory_to_path(file_path, subdirectory):
     new_file_path = os.path.join(new_dir, file_name)
 
     return new_file_path
-
-
-# csv_file = r'C:\Users\Administrator\Downloads\output\HTM\csv\HTM03_idle.csv'
-# subdirectory = 'dc1'
-# new_csv_file = add_subdirectory_to_path(csv_file, subdirectory)
-# print(new_csv_file)  # 输出: C:\Users\Administrator\Downloads\output\HTM\csv\dc1\HTM03_idle.csv
