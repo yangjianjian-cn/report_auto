@@ -13,6 +13,8 @@
     <link rel="stylesheet" type="text/css" href="/static/layer/theme/default/layui.css">
     <link rel="stylesheet" type="text/css" href="/static/layer/theme/default/global.css">
     <link rel="stylesheet" type="text/css" href="/static/layer/theme/default/layer.css">
+    <link rel="stylesheet" type="text/css" href="/static/css/style.css">
+
     <script type="text/javascript" src="/static/js/jquery.min.js"></script>
     <script type="text/javascript" src="/static/layer/layui.js"></script>
 
@@ -78,6 +80,10 @@
         <div class="chart_container">
             <div id="temperature_duration" class="chart"></div>
         </div>
+
+        <div class="title-block">
+            <h2 class="title">芯片对应温度</h2>
+        </div>
         <div class="chart_container">
             <div class="chart" id="chip_temperature01"></div>
             <div class="chart" id="chip_temperature02"></div>
@@ -87,15 +93,34 @@
             <div class="chart" id="chip_temperature04"></div>
         </div>
 
+        <div class="title-block">
+            <h2 class="title">芯片温度曲线</h2>
+        </div>
+        <div class="chart_container">
+            <div class="chart" id="chip_temperature05"></div>
+            <div class="chart" id="chip_temperature06"></div>
+        </div>
+        <div class="chart_container">
+            <div class="chart" id="chip_temperature07"></div>
+            <div class="chart" id="chip_temperature08"></div>
+        </div>
+
         <!--隐藏域-->
         <input type="hidden" id="total-minutes" value="{{ total_minutes }}">
         <input type="hidden" id="time-diffs" value='{{ time_diffs|tojson }}'>
+
         <input type="hidden" id="temperature_time_dc1_legend" value='{{ temperature_time_dc1_legend }}'>
         <input type="hidden" id="temperature_time_tc1_legend" value='{{ temperature_time_tc1_legend }}'>
         <input type="hidden" id="temperature_time_tc2_legend" value='{{ temperature_time_tc2_legend }}'>
+
         <input type="hidden" id="temperature_time_dc1" value='{{ temperature_time_dc1 }}'>
         <input type="hidden" id="temperature_time_tc1" value='{{ temperature_time_tc1 }}'>
         <input type="hidden" id="temperature_time_tc2" value='{{ temperature_time_tc2 }}'>
+
+        <input type="hidden" id="temperature_time_dc1_5" value='{{ temperature_time_dc1_5|tojson }}'>
+        <input type="hidden" id="temperature_time_tc1_6" value='{{ temperature_time_tc1_6|tojson }}'>
+        <input type="hidden" id="temperature_time_tc2_7" value='{{ temperature_time_tc2_7|tojson }}'>
+
     </div>
 </div>
 </body>
@@ -120,8 +145,14 @@
 </script>
 <script type="text/javascript" src="/static/js/echarts.min.js"></script>
 <script type="text/javascript" src="/static/js/temperature_duration.js?v=1"></script>
-<script type="text/javascript" src="/static/js/biz/chip01_temperature.js?v=1"></script>
-<script type="text/javascript" src="/static/js/biz/chip02_temperature.js?v=1"></script>
-<script type="text/javascript" src="/static/js/biz/chip03_temperature.js?v=1"></script>
+
+<script type="text/javascript" src="/static/js/biz/chip01_temperature.js?v=2"></script>
+<script type="text/javascript" src="/static/js/biz/chip02_temperature.js?v=2"></script>
+<script type="text/javascript" src="/static/js/biz/chip03_temperature.js?v=2"></script>
 <!--<script type="text/javascript" src="/static/js/biz/chip04_temperature.js?v=1"></script>-->
+
+<script type="text/javascript" src="/static/js/biz/chip05_temperature.js?v=2"></script>
+<script type="text/javascript" src="/static/js/biz/chip06_temperature.js?v=2"></script>
+<script type="text/javascript" src="/static/js/biz/chip07_temperature.js?v=2"></script>
+
 </html>

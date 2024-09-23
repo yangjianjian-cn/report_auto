@@ -69,6 +69,7 @@ select {
     width: 100%; /* 保持图片的原始比例 */
     max-width: 100%; /* 设定最大宽度 */
 }
+
 .progress-bar-container {
     width: 100%;
     height: 20px;
@@ -92,4 +93,19 @@ select {
 .chart {
     width: 30%;
     height: 300px;
+}
+
+.title-block {
+    padding: 5px; /* 减少填充 */
+    border: 1px solid #ccc;
+    background-color: #f7f7f7;
+    margin-top: 30px;
+    text-align: left; /* 居中对齐文本 */
+}
+
+.title {
+    font-size: 1.2em; /* 减小字体大小 */
+    margin: 0;
+    font-weight: bold;
+    line-height: 1.2; /* 减小行高 */
 }

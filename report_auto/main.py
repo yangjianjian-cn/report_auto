@@ -8,7 +8,7 @@ from flask import Flask, request, render_template, jsonify, send_file, make_resp
 from pojo.MSTReqPOJO import ReqPOJO
 from tools.common.dat_csv_common import counter_report
 from tools.parser.dat_csv_doc import dat_csv_docx, docx_zip
-from tools.temperature.temperature_work_time import temperature_duration, temperature_chip
+from tools.temperature.temperature_work_time import temperature_duration, temperature_chip, create_data_structure
 from tools.utils.FileUtils import validate_filename, get_filename_without_extension
 
 app = Flask(__name__)
@@ -225,25 +225,28 @@ def temperature():
 
     # DC1_Th 去掉'timestamps'列
     selected_columns_dc1: list = ['DC1_Th1', 'DC1_Th2', 'DC1_Th3', 'DC1_Th4', 'DC1_Th5', 'DC1_Th6', 'DC1_Th7',
-                                  'DC1_Th8', 'TECU_t']
+                                  'DC1_Th8', 'TECU_t', 'timestamps']
     dc1_output_path = os.path.join(output_path, 'HTM', 'csv', 'dc1')
     temperature_time_dc1 = temperature_chip(selected_columns_dc1, dc1_output_path, fileId)
+    data_structure_dc1 = create_data_structure(temperature_time_dc1, selected_columns_dc1)
 
     # TC1_Th
     selected_columns_tc1: list = ['TC1_Th1', 'TC1_Th2', 'TC1_Th3', 'TC1_Th4', 'TC1_Th5', 'TC1_Th6', 'TC1_Th7',
                                   'TC1_Th8',
                                   'TC1_Th9', 'TC1_Th10', 'TC1_Th11', 'TC1_Th12', 'TC1_Th13', 'TC1_Th14', 'TC1_Th15',
-                                  'TC1_Th16', 'TECU_t']
+                                  'TC1_Th16', 'TECU_t', 'timestamps']
     tc1_output_path = os.path.join(output_path, 'HTM', 'csv', 'tc1')
     temperature_time_tc1 = temperature_chip(selected_columns_tc1, tc1_output_path, fileId)
+    data_structure_tc1 = create_data_structure(temperature_time_tc1, selected_columns_tc1)
 
     # TC2_Th
     selected_columns_tc2: list = ['TC2_Th1', 'TC2_Th2', 'TC2_Th3', 'TC2_Th4', 'TC2_Th5', 'TC2_Th6', 'TC2_Th7',
                                   'TC2_Th8',
                                   'TC2_Th9', 'TC2_Th10', 'TC2_Th11', 'TC2_Th12', 'TC2_Th13',
-                                  'TECU_t']
+                                  'TECU_t', 'timestamps']
     tc2_output_path = os.path.join(output_path, 'HTM', 'csv', 'tc2')
     temperature_time_tc2 = temperature_chip(selected_columns_tc2, tc2_output_path, fileId)
+    data_structure_tc2 = create_data_structure(temperature_time_tc2, selected_columns_tc2)
 
     # 渲染到temperature_main.html模板中的数据
     file_map_list: list = []
@@ -261,12 +264,19 @@ def temperature():
     return render_template('./temperature_main.html',
                            total_minutes=total_minutes,
                            time_diffs=time_diffs,
+
                            temperature_time_dc1_legend=selected_columns_dc1,
                            temperature_time_tc1_legend=selected_columns_tc1,
                            temperature_time_tc2_legend=selected_columns_tc2,
-                           temperature_time_dc1=temperature_time_dc1,
-                           temperature_time_tc1=temperature_time_tc1,
-                           temperature_time_tc2=temperature_time_tc2,
+
+                           temperature_time_dc1=data_structure_dc1,
+                           temperature_time_tc1=data_structure_tc1,
+                           temperature_time_tc2=data_structure_tc2,
+
+                           temperature_time_dc1_5=temperature_time_dc1,
+                           temperature_time_tc1_6=temperature_time_tc1,
+                           temperature_time_tc2_7=temperature_time_tc2,
+
                            file_map_list=file_map_list
                            )
 

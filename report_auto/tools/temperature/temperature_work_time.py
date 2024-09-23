@@ -60,7 +60,7 @@ def temperature_duration(output_path: str, file_id: str):
     return cur_time_diffs, cur_total_minutes
 
 
-def temperature_chip(selected_columns: list, output_path: str, file_id: str) -> Dict[str, List]:
+def temperature_chip(selected_columns: list, output_path: str, file_id: str):
     if file_id:
         csv_path = os.path.join(output_path, f"{file_id}.csv")
     else:
@@ -83,9 +83,7 @@ def temperature_chip(selected_columns: list, output_path: str, file_id: str) -> 
     temperature_time: Dict[str, List] = {
         col: sampled_df[col].tolist() for col in sampled_df.columns
     }
-
-    data_structure = create_data_structure(temperature_time, selected_columns)
-    return data_structure
+    return temperature_time
 
 
 def create_data_structure(temperature_time_dc1, sensors: list):
