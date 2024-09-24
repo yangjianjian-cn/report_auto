@@ -40,13 +40,13 @@ option = {
     tooltip: {},
     title: [
         {
-            text: '温度时长',
+            text: 'TECU_T 温度时长',
             subtext: '总计(分钟) ' + totalMinutes,
             left: '25%',
             textAlign: 'center'
         },
         {
-            text: '温度时长',
+            text: 'TECU_T 温度时长',
             subtext:
                 '总计(分钟)' + totalMinutes,
             left: '75%',
