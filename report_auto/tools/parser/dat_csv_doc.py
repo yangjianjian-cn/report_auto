@@ -42,23 +42,21 @@ def join_with_br(messages):
 
 
 def dat_csv_docx(req_data: ReqPOJO):
-    csvPathList = []
+    csvPathList = []  # 存储 转换成功的CSV文件路径
 
     # 1.测量数据转换成csv文件
     all_files = os.listdir(req_data.dat_path)
     for file in all_files:
-        # dat转换成csv,mf4转csv
-        if file.endswith(".dat") | file.endswith(".mf4"):
-            errMsg = dat_csv_conversion(file, req_data)
-            if errMsg.startswith("err:"):
-                logging.error(f'文件{file}解析异常:{errMsg}')
-            elif file.endswith(".mf4"):
-                filePaths = errMsg.split('@')
-                for file_path in filePaths:
-                    csvPathList.append(file_path)
+        # dat、mf4 转 csv
+        if file.endswith(".dat"):
+            receive_msg = dat_csv_conversion(file, req_data)
+            if receive_msg.startswith("err:"):
+                # 转换异常
+                logging.error(f'文件{file}解析异常:{receive_msg}')
             else:
-                csvPathList.append(errMsg)
-                logging.info(f"转换完成:{errMsg}")
+                # 成功转换csv
+                csvPathList.append(receive_msg)
+                logging.info(f"转换完成:{receive_msg}")
     # 2.生成报告
     success_messages = []
     error_messages = []
@@ -95,6 +93,10 @@ def dat_csv_docx(req_data: ReqPOJO):
         except Exception as e:
             raise CustomException(f"report generation exception:{e}")
         return success_messages, error_messages
+
+    if 'HTM' == req_data.test_team:
+        # HTM不再这里处理
+        pass
 
     return success_messages, error_messages
 
