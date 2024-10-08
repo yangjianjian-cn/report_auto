@@ -1,15 +1,16 @@
 from app import main
 from app.router import report_bp, temperature_bp
 
-main.register_blueprint(report_bp, url_prefix='/report')
-main.register_blueprint(temperature_bp, url_prefix='/temperature')
-
 
 # 启动事件
 @main.before_request
 def startup_event():
     print("Starting up...")
     # 初始化代码，例如连接数据库等
+
+
+main.register_blueprint(report_bp, url_prefix='/report')
+main.register_blueprint(temperature_bp, url_prefix='/temperature')
 
 
 # 关闭事件
