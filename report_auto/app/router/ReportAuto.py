@@ -186,3 +186,15 @@ def generate_report():
         return jsonify({'generate_report_error': {e}})
 
     return jsonify({'generate_report_success': ret_sucess_msg, 'generate_report_failed': ret_err_msg})
+
+
+@report_bp.on_event("startup")
+async def startup_event():
+    print("Starting up...")
+    # 初始化代码，例如连接数据库等
+
+
+@report_bp.on_event("shutdown")
+async def shutdown_event():
+    print("Shutting down...")
+    # 清理代码，例如关闭数据库连接等
