@@ -63,7 +63,12 @@ def modify_records(records):
 def temperature_chip(selected_columns: list, file_id: str):
     file_ids_int = [int(file_id) for file_id in file_id.split(',')]
     file_ids_str_for_query = ', '.join(map(str, file_ids_int))
+
     result_dicts = query_table_sampling(selected_columns, file_ids_str_for_query)
+    if result_dicts is None or len(result_dicts) < 1:
+        # 返回一个空的 temperature_time 字典
+        return {col: [] for col in selected_columns}
+
     result_dicts = modify_records(result_dicts)
     # 使用字典推导式来创建结果字典
     temperature_time: Dict[str, List] = {
