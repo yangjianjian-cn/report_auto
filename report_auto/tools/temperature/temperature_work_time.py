@@ -1,7 +1,10 @@
 __coding__ = "utf-8"
 
 import logging
+from collections import defaultdict
 from typing import Dict, List
+
+import pandas as pd
 
 from tools.utils.DBOperator import query_table, query_table_sampling
 
@@ -9,27 +12,38 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(level
 
 
 def temperature_duration(file_id: str):
-    cur_time_diffs: map = {}
-    cur_total_minutes: float = 0
-    file_ids_int = [int(file_id) for file_id in file_id.split(',')]
+    file_ids_int = [int(fid) for fid in file_id.split(',')]
     file_ids_str_for_query = ', '.join(map(str, file_ids_int))
 
-    table_name = ' chip_temperature '
-    columns = ' ROUND((MAX(timestamps) - MIN(timestamps)) / 60, 2) AS time_difference_in_minutes '
+    table_name = 'chip_temperature'
+    columns = 'file_id, timestamps, TECU_t '
+    where_clause = f' WHERE file_id IN ({file_ids_str_for_query})'
 
-    temperature_intervals = range(-40, 140, 5)  # 包含-40到140
-    # 遍历温度区间
-    for i in range(len(temperature_intervals) - 1):
-        start_temp = temperature_intervals[i]
-        end_temp = temperature_intervals[i + 1]
-        where_clause = f' where file_id IN ({file_ids_str_for_query})  AND TECU_t BETWEEN {start_temp} AND {end_temp}'
-        result_dicts = query_table(table_name, columns, where=where_clause)
-        if len(result_dicts) > 0:
-            time_difference_in_minutes = result_dicts[0].get('time_difference_in_minutes')
-            cur_time_diffs[f"{start_temp}-{end_temp}"] = time_difference_in_minutes
-    if cur_time_diffs:
-        cur_total_minutes = sum(cur_time_diffs.values())
-    return cur_time_diffs, cur_total_minutes
+    # 一次性查询所有数据
+    all_records = query_table(table_name, columns, where=where_clause)
+
+    # 使用pandas DataFrame来处理数据
+    df = pd.DataFrame(all_records)
+
+    # 初始化一个字典来存储每个温度区间的总分钟数
+    cur_time_diffs = defaultdict(float)
+
+    # 定义温度区间
+    temperature_intervals = list(range(-40, 140, 5))
+
+    # 计算每个温度区间的时间差
+    for start_temp, end_temp in zip(temperature_intervals, temperature_intervals[1:]):
+        mask = (df['TECU_t'] >= start_temp) & (df['TECU_t'] < end_temp)
+        filtered_df = df[mask]
+
+        if not filtered_df.empty:
+            time_diff = (filtered_df['timestamps'].max() - filtered_df['timestamps'].min()) / 60
+            cur_time_diffs[f'{start_temp}-{end_temp}'] = round(time_diff, 2)
+
+    # 计算总的分钟数
+    cur_total_minutes = sum(cur_time_diffs.values())
+
+    return dict(cur_time_diffs), cur_total_minutes
 
 
 def modify_records(records):
