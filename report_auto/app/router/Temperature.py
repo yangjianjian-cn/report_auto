@@ -124,41 +124,42 @@ def measure_file_intodb():
 @temperature_bp.route('/view', methods=['GET'])
 def temperature():
     fileId = request.args.get('fileId')
+    measurement_file_list = []
     if fileId is None:
         table_name = 'measurement_file'
         columns = ' file_name,id '
         where = ' where status = "0" '
-        result_dicts = query_table(table_name, columns, where)
-        if len(result_dicts) > 0:
-            fileId = str(result_dicts[0].get('id'))
+        measurement_file_list = query_table(table_name, columns, where)
+        if len(measurement_file_list) > 0:
+            fileId = str(measurement_file_list[0].get('id'))
         else:
             return render_template('error.html', failure_msg='Please upload the file first.')
 
-    time_diffs, total_minutes = temperature_duration(fileId)
+    time_diffs, total_minutes = temperature_duration(fileId, max_workers=3)
 
     # DC1_Th
     selected_columns_dc1_str = 'DC1_Th1,DC1_Th2,DC1_Th3,DC1_Th4,DC1_Th5,DC1_Th6,DC1_Th7,DC1_Th8,TECU_t,timestamps'
     selected_columns_dc1: list = selected_columns_dc1_str.split(',')
 
     temperature_time_dc1 = temperature_chip(selected_columns_dc1_str, fileId)
-    data_structure_dc1 = create_data_structure(temperature_time_dc1, selected_columns_dc1)
+    data_structure_dc1 = create_data_structure(temperature_time_dc1, selected_columns_dc1, num_processes=3)
 
     # TC1_Th
     selected_columns_tc1_str = "TC1_Th1,TC1_Th2,TC1_Th3,TC1_Th4,TC1_Th5,TC1_Th6,TC1_Th7,TC1_Th8,TC1_Th9,TC1_Th10,TC1_Th11,TC1_Th12,TC1_Th13,TC1_Th14,TC1_Th15,TC1_Th16,TECU_t,timestamps"
     selected_columns_tc1: list = selected_columns_tc1_str.split(',')
 
     temperature_time_tc1 = temperature_chip(selected_columns_tc1_str, fileId)
-    data_structure_tc1 = create_data_structure(temperature_time_tc1, selected_columns_tc1)
+    data_structure_tc1 = create_data_structure(temperature_time_tc1, selected_columns_tc1, num_processes=3)
 
     # TC2_Th
     selected_columns_tc2_str: str = "TC2_Th1,TC2_Th2,TC2_Th3,TC2_Th4,TC2_Th5,TC2_Th6,TC2_Th7,TC2_Th8,TC2_Th9,TC2_Th10,TC2_Th11,TC2_Th12,TC2_Th13,TECU_t,timestamps"
     selected_columns_tc2: list = selected_columns_tc2_str.split(',')
 
     temperature_time_tc2 = temperature_chip(selected_columns_tc2_str, fileId)
-    data_structure_tc2 = create_data_structure(temperature_time_tc2, selected_columns_tc2)
+    data_structure_tc2 = create_data_structure(temperature_time_tc2, selected_columns_tc2, num_processes=3)
 
     # file drop-down checkbox
-    measurement_file_list = query_table(table_name, columns, where)
+    # measurement_file_list = query_table(table_name, columns, where)
     multi_select_html = generate_select_options(measurement_file_list)
 
     # 渲染页面
