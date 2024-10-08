@@ -205,15 +205,3 @@ def delete_file():
             return jsonify({'success': False, 'message': '文件删除失败'})
     except Exception as e:
         return jsonify({'success': False, 'message': str(e)}), 500
-
-
-@temperature_bp.on_event("startup")
-async def startup_event():
-    print("Starting up...")
-    # 初始化代码，例如连接数据库等
-
-
-@temperature_bp.on_event("shutdown")
-async def shutdown_event():
-    print("Shutting down...")
-    # 清理代码，例如关闭数据库连接等
