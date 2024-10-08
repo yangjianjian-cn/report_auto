@@ -21,7 +21,6 @@ def temperature_duration(file_id: str):
 
     # 一次性查询所有数据
     all_records = query_table(table_name, columns, where=where_clause)
-    logging.info("all_records:", len(all_records))
 
     # 使用pandas DataFrame来处理数据
     df = pd.DataFrame(all_records)
