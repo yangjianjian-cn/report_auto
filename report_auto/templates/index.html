@@ -14,8 +14,6 @@
     <script type="text/javascript" src="/static/layer/layer.js"></script>
     <script type="text/javascript" src="/static/layer/layui.js"></script>
     <script type="text/javascript" src="/static/js/webuploader.min.js"></script>
-
-
     <style>
         #picker {
             display: inline-block;
@@ -106,16 +104,15 @@
 
 
     <div class="content-area">
-        <div class="panel panel-primary">
-            <div>
-
+        <div>
+            <div class="row">
                 <div class="col-md-4">
                     <div id="picker">please select a dat file</div>
                 </div>
 
                 <div class="col-md-4">
-                    <button type="button" class="btn btn-primary btn-lg mb-3" id="report_generation"><p
-                            style="font-size: 16px">report generation</p>
+                    <button type="button" class="btn btn-primary btn-lg mb-3" id="report_generation">
+                        <p style="font-size: 16px">report generation</p>
                     </button>
                 </div>
 
@@ -172,7 +169,7 @@
             // swf文件路径
             swf: '../static/swf/Uploader.swf',
             // 文件接收服务端。
-            server: '{{ url_for("upload") }}',
+            server: '/report/upload',
             // 选择文件的按钮。可选。
             // 内部根据当前运行是创建，可能是input元素，也可能是flash.
             pick: {
@@ -243,7 +240,7 @@
                     '<br>');
             }
 
-            if ( typeof response.upload_error !== "undefined" ) {
+            if (typeof response.upload_error !== "undefined") {
                 $('#report_pro_text').append('file: ' +
                     '<span style="color: indianred;">' +
                     file.name + ' upload failure : ' + response.upload_error +
@@ -272,7 +269,6 @@
         } else if (type === 'uploadSuccess') {
         } else if (type === 'uploadFailed') {
             console.log(response)
-
         }
     });
 </script>

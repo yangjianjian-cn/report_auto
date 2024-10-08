@@ -41,7 +41,7 @@ $("#report_generation").on("click", function () {
 
     // 生成报告
     $.ajax({
-        url: '/generate_report',
+        url: '/report/generate_report',
         type: 'POST',
         dataType: 'json',
         data: jsonData,
@@ -84,7 +84,7 @@ $("#report_download").on("click", function () {
     // 测试项目
     const selectedValue0 = $('#test_project_type_val').val();
     var filenames = uploadedFileName.join(',');
-    window.location.href = '/report_download?test_team=' + selectedValue0 + '&fileName=' + filenames
+    window.location.href = '/report/report_download?test_team=' + selectedValue0 + '&fileName=' + filenames
     uploadedFileName = []
 })
 $('#APP_PL_BR_1_SPAN').on('mouseenter', function () {

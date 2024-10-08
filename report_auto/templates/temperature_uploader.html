@@ -42,7 +42,7 @@
                 <ul>
                     <li class="layui-menu-item-checked2">
                         <div class="layui-menu-body-title">
-                            <a href="/temperature_uploader">
+                            <a href="/temperature/list">
                                 <span>数据上传</span>
                                 <span class="layui-font-12 layui-font-gray">Temperature Uploader</span>
                             </a>
@@ -50,7 +50,7 @@
                     </li>
                     <li>
                         <div class="layui-menu-body-title">
-                            <a href="/temperature">
+                            <a href="/temperature/view">
                                 <span>芯片温度 </span>
                                 <span class="layui-font-12 layui-font-gray">HTM</span>
                             </a>
@@ -84,6 +84,18 @@
                     </tr>
                     </thead>
                     <tbody id="demoList">
+                    {% for file in measurement_file_list %}
+                        <tr>
+                            <td>{{ file.file_name }}</td>
+                            <td>--</td>
+                            <td>--</td>
+                            <td>
+                                <button class="layui-btn layui-btn-xs layui-btn-danger demo-delete_db"
+                                        onclick="delete_file_in_db({{ file.id }})">删除
+                                </button>
+                            </td>
+                        </tr>
+                    {% endfor %}
                     </tbody>
                 </table>
             </div>
@@ -99,101 +111,158 @@
             , element = layui.element
             , layer = layui.layer;
 
-        // 创建一个上传组件
+        // 初始化上传实例
         var uploadListIns = upload.render({
-            elem: '#testList'
-            , elemList: $('#demoList') //列表元素对象
-            , url: '/upload' // 实际使用时改成您自己的上传接口即可。
-            , accept: 'file'
-            , multiple: true
-            , number: 3
-            , auto: false
-            , bindAction: '#testListAction'
-            , data: {
+            elem: '#testList',
+            elemList: $('#demoList'), // 列表元素对象
+            url: '/temperature/upload', // 实际使用时改成您自己的上传接口即可。
+            accept: 'file',
+            exts: 'mf4|dat',
+            multiple: true,
+            number: 3,
+            auto: false,
+            bindAction: '#testListAction',
+            data: {
                 test_team: "HTM",
                 test_scenario: "",
                 test_area: ""
-            }
-            , choose: function (obj) {
+            },
+            choose: function (obj) {
                 var that = this;
-                var files = this.files = obj.pushFile(); //将每次选择的文件追加到文件队列
-                // 读取本地文件
+                this.files = obj.pushFile(); // 将每次选择的文件追加到文件队列
+
+                // 预览文件并创建表格行
                 obj.preview(function (index, file, result) {
-                    var tr = $(['<tr id="upload-' + index + '">'
-                        , '<td>' + file.name + '</td>'
-                        , '<td>' + (file.size / 1024).toFixed(1) + 'kb</td>'
-                        , '<td><div class="layui-progress" lay-filter="progress-demo-' + index + '"><div class="layui-progress-bar" lay-percent=""></div></div></td>'
-                        , '<td>'
-                        , '<button class="layui-btn layui-btn-xs demo-reload layui-hide">重传</button>'
-                        , '<button class="layui-btn layui-btn-xs layui-btn-danger demo-delete">删除</button>'
-                        , '</td>'
-                        , '</tr>'].join(''));
-
-                    //单个重传
-                    tr.find('.demo-reload').on('click', function () {
-                        obj.upload(index, file);
-                    });
-
-                    //删除
-                    tr.find('.demo-delete').on('click', function () {
-                        delete files[index]; //删除对应的文件
-                        tr.remove();
-                        uploadListIns.config.elem.next()[0].value = ''; //清空 input file 值，以免删除后出现同名文件不可选
-                    });
-
-                    that.elemList.append(tr);
-                    element.render('progress'); //渲染新加的进度条组件
+                    addTableRow(file, index, that);
                 });
-            }
-            , done: function (res, index, upload) { //成功的回调
+            },
+            before: function (obj) { //obj参数包含的信息，跟 choose回调完全一致
+                layer.load(0, {shade: false}); //上传loading
+            },
+
+            done: function (res, index, upload) {
                 var that = this;
-                //if(res.code == 0){ //上传成功
-                var tr = that.elemList.find('tr#upload-' + index)
-                    , tds = tr.children();
-                tds.eq(3).html(''); //清空操作
-                delete this.files[index]; //删除文件队列已经上传成功的文件
-                return;
-                //}
-                this.error(index, upload);
-            }
-            , allDone: function (obj) { //多文件上传完毕后的状态回调
-                var xhr = new XMLHttpRequest();
-                var url = '/generate_report';
-                var param = {"test_team": "HTM", "test_scenario": "", "test_area": ""};
-                var data = JSON.stringify(param); // 将对象转换成 JSON 字符串
+                var tr = that.elemList.find(`tr#upload-${index}`);
+                tr.find('td:last-child').empty(); // 清空操作列
+                delete this.files[index]; // 删除已上传的文件
 
-                xhr.open('POST', url, true); // 设置请求类型和URL，true表示异步请求
-                xhr.setRequestHeader('Content-Type', 'application/json'); // 设置请求头
-
-                xhr.onreadystatechange = function () {
-                    if (xhr.readyState === 4 && xhr.status === 200) {
-                        var jsonObject = JSON.parse(xhr.responseText);
-                        var failed_msg = jsonObject.generate_report_failed
-                        var success_msg = jsonObject.generate_report_success
-                        if (failed_msg.length == 0) {
-                            layer.msg("转换成功", icon = 6)
-                        }
+                if (res.upload_success) {
+                    ret_data = {
+                        "test_team": "HTM",
+                        "test_scenario": "",
+                        "test_area": "",
+                        "measure_file_path": res.save_path
                     }
-                };
+                    data_into_db(ret_data, index);
+                }
+            },
+            allDone: function () {
 
-                // 发送请求
-                xhr.send(data);
-
-                // 错误处理可以在 onreadystatechange 之外单独处理
-                xhr.onerror = function (res) {
-                    layer.msg(res, icon = 5)
-                };
-            }
-            , error: function (index, upload) { //错误回调
+            },
+            error: function (index, upload) {
                 var that = this;
-                var tr = that.elemList.find('tr#upload-' + index)
-                    , tds = tr.children();
-                tds.eq(3).find('.demo-reload').removeClass('layui-hide'); //显示重传
-            }
-            , progress: function (n, elem, e, index) {
-                element.progress('progress-demo-' + index, n + '%'); //执行进度条。n 即为返回的进度百分比
+                var tr = that.elemList.find(`tr#upload-${index}`);
+                tr.find('td:last-child .demo-reload').removeClass('layui-hide'); // 显示重传按钮
+                layer.closeAll('loading'); //关闭loading
+                delete this.files[index]; // 删除已上传的文件
+            },
+            progress: function (n, elem, e, index) {
+                element.progress(`progress-demo-${index}`, `${n}%`); // 更新进度条
             }
         });
+
+        // 添加表格行
+        function addTableRow(file, index, that) {
+            var tr = $(`<tr id="upload-${index}">
+            <td>${file.name}</td>
+            <td>${(file.size / 1024).toFixed(1)}kb</td>
+            <td>
+                <div class="layui-progress" lay-filter="progress-demo-${index}">
+                    <div class="layui-progress-bar"></div>
+                </div>
+            </td>
+            <td>
+                <button class="layui-btn layui-btn-xs demo-reload layui-hide">重传</button>
+                <button class="layui-btn layui-btn-xs layui-btn-danger demo-delete">删除</button>
+            </td>
+        </tr>`);
+
+            // 绑定重传事件
+            tr.find('.demo-reload').on('click', function () {
+                uploadListIns.upload(index, file);
+            });
+
+            // 绑定删除事件
+            tr.find('.demo-delete').on('click', function () {
+                delete that.files[index];
+                tr.remove();
+                that.elemList.next()[0].value = ''; // 清空 input file 值
+            });
+
+            that.elemList.append(tr);
+            element.render('progress'); // 渲染进度条组件
+        }
+
+        // 测量文件数据入库
+        function data_into_db(ret_data, index) {
+            fetch('/temperature/intodb', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(ret_data)
+            })
+                .then(response => response.json())
+                .then(data => {
+                    console.log(data)
+                    if (data.generate_report_failed.length === 0) {
+                        layer.alert("上传成功", {icon: 6});
+                        layer.closeAll('loading'); //关闭loading
+                    } else {
+                        layer.alert(data.generate_report_failed, {icon: 5});
+                        layer.closeAll('loading'); //关闭loading
+                    }
+                })
+                .catch(error => {
+                    layer.alert(`请求失败: ${error}`, {icon: 5});
+                    layer.closeAll('loading'); //关闭loading
+                });
+        }
     });
+
+    function delete_file_in_db(fileId) {
+        // 确认删除
+        if (confirm("确定要删除该文件吗？")) {
+            // 显示加载提示
+            var loadingIndex = layer.load(0, {shade: false});
+
+            // 发送 AJAX 请求删除文件
+            fetch('/temperature/delete_file', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({id: fileId})
+            })
+                .then(response => response.json())
+                .then(data => {
+                    // 关闭加载提示
+                    layer.close(loadingIndex);
+
+                    if (data.success) {
+                        alert('文件删除成功！');
+                        // 刷新页面或移除已删除的行
+                        location.reload();
+                    } else {
+                        alert('文件删除失败：' + data.message);
+                    }
+                })
+                .catch(error => {
+                    // 关闭加载提示
+                    layer.close(loadingIndex);
+                    layer.alert('发生错误，请重试:', error);
+                });
+        }
+    }
 </script>
 </html>
