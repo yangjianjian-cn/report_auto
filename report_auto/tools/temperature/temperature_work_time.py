@@ -21,6 +21,7 @@ def temperature_duration(file_id: str):
 
     # 一次性查询所有数据
     all_records = query_table(table_name, columns, where=where_clause)
+    logging.info("all_records:", len(all_records))
 
     # 使用pandas DataFrame来处理数据
     df = pd.DataFrame(all_records)
@@ -47,10 +48,16 @@ def temperature_duration(file_id: str):
 
 
 def modify_records(records):
-    modified_records = []
-    for record in records:
-        modified_record = {key: (value if -100 <= value <= 200 else 0) for key, value in record.items()}
-        modified_records.append(modified_record)
+    # 将记录转换为DataFrame
+    df = pd.DataFrame(records)
+
+    # 应用条件，将不在范围内的值设置为0
+    for column in df.columns:
+        df[column] = df[column].apply(lambda x: x if -100 <= x <= 200 else 0)
+
+    # 转换回记录列表
+    modified_records = df.to_dict('records')
+
     return modified_records
 
 
