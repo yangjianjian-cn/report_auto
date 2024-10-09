@@ -85,16 +85,6 @@ select {
     transition: width 0.5s; /* 平滑过渡效果 */
 }
 
-.chart_container {
-    display: flex;
-    justify-content: space-between;
-}
-
-.chart {
-    width: 30%;
-    height: 300px;
-}
-
 .title-block {
     padding: 5px; /* 减少填充 */
     border: 1px solid #ccc;
@@ -116,6 +106,11 @@ select {
 }
 
 .chart {
+    width: 100%;
+    height: 300px;
+}
+
+.chart_top {
     width: 100%;
     height: 300px;
 }

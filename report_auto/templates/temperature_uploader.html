@@ -84,18 +84,28 @@
                     </tr>
                     </thead>
                     <tbody id="demoList">
-                    {% for file in measurement_file_list %}
+                    {% if measurement_file_list is not none and measurement_file_list|length > 0 %}
+                        {% for file in measurement_file_list %}
+                            <tr>
+                                <td>{{ file.file_name }}</td>
+                                <td>--</td>
+                                <td>--</td>
+                                <td>
+                                    <button class="layui-btn layui-btn-xs layui-btn-danger demo-delete_db"
+                                            onclick="delete_file_in_db({{ file.id }})">删除
+                                    </button>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    {% elif measurement_file_list is none %}
                         <tr>
-                            <td>{{ file.file_name }}</td>
-                            <td>--</td>
-                            <td>--</td>
-                            <td>
-                                <button class="layui-btn layui-btn-xs layui-btn-danger demo-delete_db"
-                                        onclick="delete_file_in_db({{ file.id }})">删除
-                                </button>
-                            </td>
+                            <td colspan="4"><span style="color: red;">database query exception</span></td>
                         </tr>
-                    {% endfor %}
+                    {% else %}
+                        <tr>
+                            <td colspan="4">There is no documentation yet.</td>
+                        </tr>
+                    {% endif %}
                     </tbody>
                 </table>
             </div>

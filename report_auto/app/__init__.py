@@ -5,6 +5,7 @@ import os
 from dotenv import load_dotenv
 from flask import Flask
 
+from config.ChipNamesConfig import ChipNamesConfig
 from tools.utils.ConnectionUtils import ConnectionPool
 
 
@@ -32,5 +33,7 @@ mysql_config = {
     'password': '1qazxsw2',
     'database': 'measurement'
 }
-connectionPool = ConnectionPool(config=mysql_config, max_connections=5)
+connectionPool = ConnectionPool(config=mysql_config, max_connections=30)
 connectionPool.init_pool()
+
+chipNamesConfig = ChipNamesConfig()

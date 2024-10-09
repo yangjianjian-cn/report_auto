@@ -1,11 +1,13 @@
 __coding__ = "utf-8"
 
 import logging
-import pandas as pd
-
+import multiprocessing
 from typing import Dict, List
 
-from tools.utils.DBOperator import query_table, query_table_sampling
+import pandas as pd
+
+from app import chipNamesConfig
+from tools.utils.DBOperator import query_table, query_table_sampling, query_table_by_sql
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 
@@ -19,23 +21,27 @@ def process_file(file_ids: list):
     columns = 'file_id, timestamps, TECU_t'
     file_ids_str_for_query = ', '.join(map(str, file_ids))
     where_clause = f' WHERE file_id IN ({file_ids_str_for_query})'
-    records = query_table(table_name, columns, where=where_clause)
-    df = pd.DataFrame(records)
 
-    # 初始化一个字典来存储每个温度区间的总分钟数
-    cur_time_diffs = defaultdict(float)
+    try:
+        records = query_table(table_name, columns, where=where_clause)
+        df = pd.DataFrame(records)
 
-    # 定义温度区间
-    temperature_intervals = list(range(-40, 140, 5))
+        # 初始化一个字典来存储每个温度区间的总分钟数
+        cur_time_diffs = defaultdict(float)
 
-    # 计算每个温度区间的时间差
-    for start_temp, end_temp in zip(temperature_intervals, temperature_intervals[1:]):
-        mask = (df['TECU_t'] >= start_temp) & (df['TECU_t'] < end_temp)
-        filtered_df = df[mask]
+        # 定义温度区间
+        temperature_intervals = list(range(-40, 140, 5))
 
-        if not filtered_df.empty:
-            time_diff = (filtered_df['timestamps'].max() - filtered_df['timestamps'].min()) / 60
-            cur_time_diffs[f'{start_temp}-{end_temp}'] = round(time_diff, 2)
+        # 计算每个温度区间的时间差
+        for start_temp, end_temp in zip(temperature_intervals, temperature_intervals[1:]):
+            mask = (df['TECU_t'] >= start_temp) & (df['TECU_t'] < end_temp)
+            filtered_df = df[mask]
+
+            if not filtered_df.empty:
+                time_diff = (filtered_df['timestamps'].max() - filtered_df['timestamps'].min()) / 60
+                cur_time_diffs[f'{start_temp}-{end_temp}'] = round(time_diff, 2)
+    except Exception as e:
+        logging.error(f"An error occurred: {e}")
 
     # 计算总的分钟数
     cur_total_minutes = sum(cur_time_diffs.values())
@@ -90,10 +96,16 @@ def temperature_chip(selected_columns: list, file_id: str):
     temperature_time: Dict[str, List] = {
         col: [row[col] for row in result_dicts] for col in result_dicts[0].keys()
     }
-    return temperature_time
 
+    # 预先构建映射表
+    key_mapping = {key: chipNamesConfig.get('chip_names', key) for key in temperature_time.keys()}
 
-import multiprocessing
+    # 使用映射表替换 temperature_time 中的键
+    new_temperature_time: Dict[str, List] = {
+        key_mapping[key]: value for key, value in temperature_time.items()
+    }
+
+    return new_temperature_time
 
 
 def process_sensor(sensor, temperature_time_dc1, tecu_temperatures):
@@ -108,13 +120,85 @@ def process_sensor(sensor, temperature_time_dc1, tecu_temperatures):
     return {"name": sensor, "type": "line", "data": series_data}
 
 
-def create_data_structure(temperature_time_dc1, sensors: list, num_processes=None):
+def create_data_structure(temperature_time_dc1, sensors_list: list, num_processes=None):
     tecu_temperatures = temperature_time_dc1.get('TECU_t', [])
     with multiprocessing.Pool(processes=num_processes) as pool:
         results = pool.starmap(process_sensor,
-                               [(sensor, temperature_time_dc1, tecu_temperatures) for sensor in sensors])
+                               [(sensor, temperature_time_dc1, tecu_temperatures) for sensor in sensors_list])
 
     # 过滤掉 None 结果
     results = [res for res in results if res is not None]
 
     return results
+
+
+def str_to_list(sensors_str: str) -> List[str]:
+    # 将字符串分割成列表
+    selected_columns_dc1_list: List[str] = sensors_str.split(',')
+
+    # 创建一个新的列表，存储替换后的列名
+    sensors_list: List[str] = []
+
+    for column in selected_columns_dc1_list:
+        try:
+            new_column = chipNamesConfig.get('chip_names', column.strip())
+            sensors_list.append(new_column)
+        except KeyError as e:
+            logging.error(f"Key not found: {column}")
+            sensors_list.append(column)  # 如果找不到键，保留原值
+
+    return sensors_list
+
+
+# table_name: str, columns: str, where: str
+def relative_difference():
+    table_name = " chip_dict "
+    columns = " measured_variable, chip_name,max_allowed_value "
+    whereClause = " where status = '1' "
+    result_dicts = query_table(table_name, columns, whereClause)
+
+    max_sql = """
+            SELECT
+            ROUND(MAX(DC1_Th1)) AS DC1_Th1,
+            ROUND(MAX(DC1_Th2)) AS DC1_Th2,
+            ROUND(MAX(DC1_Th3)) AS DC1_Th3,
+            ROUND(MAX(DC1_Th4)) AS DC1_Th4,
+            ROUND(MAX(DC1_Th5)) AS DC1_Th5,
+            ROUND(MAX(DC1_Th6)) AS DC1_Th6,
+            ROUND(MAX(DC1_Th7)) AS DC1_Th7,
+            ROUND(MAX(DC1_Th8)) AS DC1_Th8,
+            ROUND(MAX(TC1_Th1)) AS TC1_Th1,
+            ROUND(MAX(TC1_Th2)) AS TC1_Th2,
+            ROUND(MAX(TC1_Th3)) AS TC1_Th3,
+            ROUND(MAX(TC1_Th4)) AS TC1_Th4,
+            ROUND(MAX(TC1_Th5)) AS TC1_Th5,
+            ROUND(MAX(TC1_Th6)) AS TC1_Th6,
+            ROUND(MAX(TC1_Th7)) AS TC1_Th7,
+            ROUND(MAX(TC1_Th8)) AS TC1_Th8,
+            ROUND(MAX(TC1_Th9)) AS TC1_Th9,
+            ROUND(MAX(TC1_Th10)) AS TC1_Th10,
+            ROUND(MAX(TC1_Th11)) AS TC1_Th11,
+            ROUND(MAX(TC1_Th12)) AS TC1_Th12,
+            ROUND(MAX(TC1_Th13)) AS TC1_Th13,
+            ROUND(MAX(TC1_Th14)) AS TC1_Th14,
+            ROUND(MAX(TC1_Th15)) AS TC1_Th15,
+            ROUND(MAX(TC1_Th16)) AS TC1_Th16,
+            ROUND(MAX(TC2_Th1)) AS TC2_Th1,
+            ROUND(MAX(TC2_Th2)) AS TC2_Th2,
+            ROUND(MAX(TC2_Th3)) AS TC2_Th3,
+            ROUND(MAX(TC2_Th4)) AS TC2_Th4,
+            ROUND(MAX(TC2_Th5)) AS TC2_Th5,
+            ROUND(MAX(TC2_Th6)) AS TC2_Th6,
+            ROUND(MAX(TC2_Th7)) AS TC2_Th7,
+            ROUND(MAX(TC2_Th8)) AS TC2_Th8,
+            ROUND(MAX(TC2_Th9)) AS TC2_Th9,
+            ROUND(MAX(TC2_Th10)) AS TC2_Th10,
+            ROUND(MAX(TC2_Th11)) AS TC2_Th11,
+            ROUND(MAX(TC2_Th12)) AS TC2_Th12,
+            ROUND(MAX(TC2_Th13)) AS TC2_Th13
+        FROM chip_temperature;
+    """
+    max_rlt = query_table_by_sql(max_sql)
+    max_rlt_df = pd.DataFrame(max_rlt)
+    # 转置 DataFrame
+    df_transposed = max_rlt_df.T

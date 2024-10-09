@@ -232,6 +232,7 @@ def query_table(table_name: str, columns: str, where: str):
             return result_dicts
     except Exception as e:
         logging.error(f"An error occurred: {e}")
+        logging.error("Traceback:", exc_info=True)
     finally:
         connectionPool.release_connection(connection)
 
@@ -281,3 +282,28 @@ def build_delete_query(table_name: str, param: Mapping[str, int]) -> str:
 
     sql_delete = f"DELETE FROM {table_name} WHERE {' AND '.join(conditions)}"
     return sql_delete
+
+
+"""
+通过SQL语句查询表
+"""
+
+
+def query_table_by_sql(query_sql: str):
+    connection = connectionPool.get_connection()
+    try:
+        # 使用连接执行SQL语句并获取结果
+        with connection.cursor() as cursor:
+            cursor.execute(query_sql)
+
+            # 获取查询结果
+            results = cursor.fetchall()
+            if not results or results == [(None,)]:
+                return []
+
+            return results
+    except Exception as e:
+        logging.error(f"An error occurred: {e}")
+        logging.error("Traceback:", exc_info=True)
+    finally:
+        connectionPool.release_connection(connection)

@@ -29,6 +29,15 @@ chipOption03 = {
         orient: 'vertical',
         left: 450,
         top: 30,
+        bottom: 5,
+        show: true,
+        width: 100,
+        formatter: function (name) {
+            return echarts.format.truncateText(name, 40, '14px Microsoft Yahei', '…');
+        },
+        tooltip: {
+            show: true
+        },
         data: temperature_time_tc2_legend
     },
     grid: {

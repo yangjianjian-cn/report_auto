@@ -10,9 +10,11 @@
     <script type="text/javascript" src="/static/js/bootstrap-multiselect.js"></script>
 
     <link rel="stylesheet" type="text/css" href="/static/css/bootstrap-multiselect.css"/>
+    <link rel="stylesheet" type="text/css" href="/static/css/style.css">
+
 
 </head>
-<body>
+<body height="100%">
 
 <select id="example-multiple-optgroups" multiple="multiple" class="bg-warning" tabindex="-1">
     <optgroup label="Group 1">
@@ -24,6 +26,12 @@
         <option value="1-6">Option 1.6</option>
     </optgroup>
 </select>
+<div class="chart_container">
+    <div class="chart" id="chip_temperature09"></div>
+</div>
+
 </body>
 <script type="text/javascript" src="/static/js/biz/file_list_multi_select.js?v=2"></script>
+<script type="text/javascript" src="/static/js/echarts.min.js"></script>
+<script type="text/javascript" src="/static/js/biz/chip09_temperature.js?v=2"></script>
 </html>

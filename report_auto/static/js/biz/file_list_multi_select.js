@@ -1,8 +1,8 @@
 let selected_files = new Set();
 let j_init_selected_files = $('init_selected_files').val()
-if ( typeof j_init_selected_files != "undefined" ){
+if (typeof j_init_selected_files != "undefined") {
     let filesArray = j_init_selected_files.split(',');
-    filesArray.forEach(function(fileId) {
+    filesArray.forEach(function (fileId) {
         fileId = fileId || ''; // 如果 fileId 为 null 或 undefined，则赋值为空字符串
         fileId = fileId.trim(); // 去掉前后空白字符
 
@@ -31,9 +31,12 @@ $('#example-multiple-optgroups').multiselect({
         }
     },
     onDropdownHidden: function (event) {
-        let selectedFilesString = Array.from(selected_files).join(',');
-        let encodedSelectedFiles = encodeURIComponent(selectedFilesString);
-        window.location.href = '/temperature/view?fileId=' + encodedSelectedFiles;
+        if (selected_files.size > 0) {
+            layer.load(0, {shade: false});
+            let selectedFilesString = Array.from(selected_files).join(',');
+            let encodedSelectedFiles = encodeURIComponent(selectedFilesString);
+            window.location.href = '/temperature/view?fileId=' + encodedSelectedFiles;
+        }
     }
 });
 
