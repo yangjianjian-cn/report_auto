@@ -1,37 +1,73 @@
-var dom9 = document.getElementById('chip_temperature09');
-var chipChart09 = echarts.init(dom9, null, {
+let dom9 = document.getElementById('chip_temperature09');
+let chipChart09 = echarts.init(dom9, null, {
     renderer: 'canvas',
     useDirtyRect: false
 });
 
-var chipOption09 = {
-    grid: {
-        top: '10%',
-        height: '80%'
+let chipOption09 = {
+    title: {
+        text: '温度阈值和相对温差',
+        subtext: '相对温差= (芯片温度阈值 减 芯片最大测量温度) 除以 芯片温度阈值'
     },
+    tooltip: {
+        trigger: 'axis',
+        axisPointer: {
+            type: 'cross',
+            crossStyle: {
+                color: '#999'
+            }
+        }
+    },
+    grid: {
+        top: 90,
+        bottom: 70
+    },
+    dataZoom: [
+        {
+            type: 'inside'
+        },
+        {
+            type: 'slider'
+        }
+    ],
     xAxis: {
         type: 'category',
-        data: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
+        name: 'Chip Name',
+        axisPointer: {
+            type: 'shadow'
+        },
+        data: chipNames
     },
     yAxis: {
+        name: 'Temperature',
         type: 'value'
     },
     series: [
         // 折线图
         {
-            name: 'Line Chart',
+            name: 'max allowed temperature',
             type: 'line',
-            data: [120, 200, 250, 380, 470, 510, 130]
+            data: maxAllowedValues,
+            tooltip: {
+                valueFormatter: function (value) {
+                    return value + ' °C';
+                }
+            }
         },
         // 柱形图
         {
-            name: 'Bar Chart',
+            name: 'relative difference',
             type: 'bar',
-            data: [100, 150, 200, 250, 300, 150, 90],
+            data: differenceTemperatures,
             label: {
                 show: true,
                 position: 'top',
                 formatter: '{c}'
+            },
+            tooltip: {
+                valueFormatter: function (value) {
+                    return value + ' %';
+                }
             }
         }
     ],

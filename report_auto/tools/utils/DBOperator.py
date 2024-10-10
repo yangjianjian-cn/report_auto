@@ -3,6 +3,7 @@ __coding__ = "utf-8"
 import logging
 from typing import Mapping
 
+import pandas as pd
 from pandas import DataFrame
 
 from app import connectionPool
@@ -289,7 +290,7 @@ def build_delete_query(table_name: str, param: Mapping[str, int]) -> str:
 """
 
 
-def query_table_by_sql(query_sql: str):
+def query_table_by_sql(query_sql: str) -> DataFrame:
     connection = connectionPool.get_connection()
     try:
         # 使用连接执行SQL语句并获取结果
@@ -301,7 +302,12 @@ def query_table_by_sql(query_sql: str):
             if not results or results == [(None,)]:
                 return []
 
-            return results
+            # 获取列名
+            column_names = [desc[0] for desc in cursor.description]
+
+            # 将结果转换为DataFrame
+            results_df = pd.DataFrame(results, columns=column_names)
+            return results_df
     except Exception as e:
         logging.error(f"An error occurred: {e}")
         logging.error("Traceback:", exc_info=True)

@@ -9,7 +9,7 @@ from flask import request, render_template, jsonify
 from app import main
 from app.router import temperature_bp
 from tools.temperature.temperature_work_time import temperature_duration, temperature_chip, create_data_structure, \
-    str_to_list
+    str_to_list, relative_difference
 from tools.utils.DBOperator import create_table, batch_insert_data, insert_data, query_table, delete_from_tables
 from tools.utils.DateUtils import getCurDateTime
 from tools.utils.FileUtils import get_filename_without_extension
@@ -124,14 +124,12 @@ def measure_file_intodb():
 
 @temperature_bp.route('/view', methods=['GET'])
 def temperature():
-
     table_name = 'measurement_file'
     columns = ' file_name,id '
     where = ' where status = "0" '
     measurement_file_list = query_table(table_name, columns, where)
     if measurement_file_list is None or len(measurement_file_list) == 0:
         return render_template('error.html', failure_msg='Please upload the file first.')
-
 
     selected_ids = []
 
@@ -143,8 +141,6 @@ def temperature():
         selected_ids.append(fileId)
 
     time_diffs, total_minutes = temperature_duration(fileId, max_workers=3)
-
-    # chip_dict
 
     # DC1_Th
     selected_columns_dc1_str = 'DC1_Th1,DC1_Th2,DC1_Th3,DC1_Th4,DC1_Th5,DC1_Th6,DC1_Th7,DC1_Th8,TECU_t,timestamps'
@@ -170,6 +166,12 @@ def temperature():
     # file drop-down checkbox
     multi_select_html = generate_select_options(measurement_file_list)
 
+    # 温度阈值 和 相对温差
+    chip_dict_list = relative_difference()
+    chip_names = [chip['chip_name'] for chip in chip_dict_list]
+    max_allowed_values = [chip['max_allowed_value'] for chip in chip_dict_list]
+    difference_temperatures = [chip['difference_temperature'] for chip in chip_dict_list]
+
     # 渲染页面
     return render_template('temperature_main.html',
                            total_minutes=total_minutes,
@@ -188,7 +190,10 @@ def temperature():
                            temperature_time_tc2_7=temperature_time_tc2,
 
                            multi_select_html=multi_select_html,
-                           init_selected_files=fileId
+                           init_selected_files=fileId,
+
+                           chip_names=chip_names, max_allowed_values=max_allowed_values,
+                           difference_temperatures=difference_temperatures
                            )
 
 
@@ -213,3 +218,14 @@ def delete_file():
             return jsonify({'success': False, 'message': '文件删除失败'})
     except Exception as e:
         return jsonify({'success': False, 'message': str(e)}), 500
+
+
+@temperature_bp.route('/test', methods=['GET'])
+def test():
+    chip_dict_list = relative_difference()
+    # 提取所有chip_name
+    chip_names = [chip['chip_name'] for chip in chip_dict_list]
+    max_allowed_values = [chip['max_allowed_value'] for chip in chip_dict_list]
+    difference_temperatures = [chip['difference_temperature'] for chip in chip_dict_list]
+    return render_template('test.html', chip_names=chip_names, max_allowed_values=max_allowed_values,
+                           difference_temperatures=difference_temperatures)

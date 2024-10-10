@@ -69,6 +69,10 @@
             <div id="temperature_duration" class="chart_top"></div>
         </div>
 
+        <div class="chart_container">
+            <div class="chart" id="chip_temperature09"></div>
+        </div>
+
         <div class="title-block">
             <h2 class="title">芯片温度曲线</h2>
         </div>
@@ -125,5 +129,10 @@
 <script type="text/javascript" src="/static/js/biz/chip05_temperature.js?v=1"></script>
 <script type="text/javascript" src="/static/js/biz/chip06_temperature.js?v=1"></script>
 <script type="text/javascript" src="/static/js/biz/chip07_temperature.js?v=1"></script>
-
+<script>
+    const chipNames = {{ chip_names | tojson }};
+    const maxAllowedValues = {{ max_allowed_values | tojson }};
+    const differenceTemperatures = {{ difference_temperatures | tojson }};
+</script>
+<script type="text/javascript" src="/static/js/biz/chip09_temperature.js?v=1"></script>
 </html>

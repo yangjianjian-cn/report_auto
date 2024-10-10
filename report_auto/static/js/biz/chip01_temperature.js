@@ -33,7 +33,7 @@ chipOption01 = {
         show: true,
         width:100,
         formatter: function (name) {
-            return echarts.format.truncateText(name, 40, '14px Microsoft Yahei', '…');
+            return echarts.format.truncateText(name, 80, '14px Microsoft Yahei', '…');
         },
         tooltip: {
             show: true

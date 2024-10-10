@@ -5,9 +5,11 @@ import multiprocessing
 from typing import Dict, List
 
 import pandas as pd
+from pandas import DataFrame
 
 from app import chipNamesConfig
 from tools.utils.DBOperator import query_table, query_table_sampling, query_table_by_sql
+from tools.utils.MathUtils import relative_difference_chip
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 
@@ -151,12 +153,35 @@ def str_to_list(sensors_str: str) -> List[str]:
 
 
 # table_name: str, columns: str, where: str
-def relative_difference():
+def relative_difference() -> list[dict]:
+    # 芯片字典(包含芯片名称、芯片温度阈值)
+    chip_dict_list = chip_dict()
+
+    # 查看每个芯片的最大测量温度
+    max_rlt_df = max_query()
+    df_transposed = max_rlt_df.T
+    result_map = df_transposed[0].to_dict()
+
+    # 遍历 chip_dict_list，并从 data_map 中查找每个 measured_variable 对应的值
+    # 然后将这些值添加到 chip_dict_list 中的新列 max_temperature 中
+    for chip in chip_dict_list:
+        measured_variable = chip['measured_variable']
+        if measured_variable in result_map:
+            chip['max_temperature'] = result_map[measured_variable]
+            chip['difference_temperature'] = relative_difference_chip(chip['max_allowed_value'],
+                                                                      chip['max_temperature'])
+    return chip_dict_list
+
+
+def chip_dict():
     table_name = " chip_dict "
     columns = " measured_variable, chip_name,max_allowed_value "
     whereClause = " where status = '1' "
     result_dicts = query_table(table_name, columns, whereClause)
+    return result_dicts
 
+
+def max_query() -> DataFrame:
     max_sql = """
             SELECT
             ROUND(MAX(DC1_Th1)) AS DC1_Th1,
@@ -198,7 +223,12 @@ def relative_difference():
             ROUND(MAX(TC2_Th13)) AS TC2_Th13
         FROM chip_temperature;
     """
-    max_rlt = query_table_by_sql(max_sql)
-    max_rlt_df = pd.DataFrame(max_rlt)
-    # 转置 DataFrame
-    df_transposed = max_rlt_df.T
+    max_query_rslt_df = query_table_by_sql(max_sql)
+    # 删除第一行
+
+    # 重置索引
+    results_df = max_query_rslt_df.reset_index()
+
+    # 为列起别名
+    results_df = results_df.rename(columns={'index': 'Measurement_Point', 0: 'Measurement'})
+    return results_df
