@@ -51,8 +51,8 @@ def process_file(file_ids: list):
     return cur_time_diffs, cur_total_minutes
 
 
-def temperature_duration(file_id: str, max_workers=None):
-    file_ids_int = [int(fid) for fid in file_id.split(',')]
+def temperature_duration(file_ids_int: list, max_workers=None):
+    # file_ids_int = [int(fid) for fid in file_id.split(',')]
 
     # 使用 ThreadPoolExecutor 并行处理每个文件
     with ThreadPoolExecutor(max_workers=max_workers) as executor:
@@ -84,8 +84,8 @@ def modify_records(records):
     return modified_records
 
 
-def temperature_chip(selected_columns: list, file_id: str):
-    file_ids_int = [int(file_id) for file_id in file_id.split(',')]
+def temperature_chip(selected_columns: list, file_ids_int: list):
+    # file_ids_int = [int(file_id) for file_id in file_id.split(',')]
     file_ids_str_for_query = ', '.join(map(str, file_ids_int))
 
     result_dicts = query_table_sampling(selected_columns, file_ids_str_for_query)

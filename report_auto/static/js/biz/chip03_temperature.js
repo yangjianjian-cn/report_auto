@@ -18,7 +18,7 @@ var chipOption03;
 
 chipOption03 = {
     title: {
-        text: 'TC2_Th'
+        subtext: 'TC2_Th'
     },
     tooltip: {
         trigger: 'axis',
@@ -33,7 +33,7 @@ chipOption03 = {
         show: true,
         width: 100,
         formatter: function (name) {
-            return echarts.format.truncateText(name, 80, '14px Microsoft Yahei', '…');
+            return echarts.format.truncateText(name, 100, '14px Microsoft Yahei', '…');
         },
         tooltip: {
             show: true
@@ -72,7 +72,7 @@ chipOption03 = {
         type: 'value',
         scale: true,
         splitNumber: 5,
-        name: '温度',
+        name: 'Temperature',
         axisLabel: {
             formatter: '{value}°C'
         }

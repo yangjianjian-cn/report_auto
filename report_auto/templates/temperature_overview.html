@@ -23,12 +23,14 @@
 <div class="layui-header header header-docs">
     <div class="layui-main">
         <ul class="layui-nav">
+            <!--
             <li class="layui-nav-item ">
                 <a href="">其它页</a>
             </li>
             <li class="layui-nav-item layui-this">
                 <a href="javascript:;">报表区</a>
             </li>
+            -->
 
             <span class="layui-nav-bar"></span></ul>
     </div>
@@ -38,22 +40,30 @@
     <div class="layui-panel site-menu" style="width: 18%; display: inline-block">
         <ul class="layui-menu layui-menu-lg site-docs-menu">
             <li class="layui-menu-item-group" lay-options="{type: 'group', isAllowSpread: true}">
-                <div class="layui-menu-body-title">菜单区</div>
+                <div class="layui-menu-body-title">芯片温度</div>
                 <hr>
                 <ul>
                     <li>
                         <div class="layui-menu-body-title">
                             <a href="/temperature/list">
-                                <span>数据上传</span>
+                                <span>测量数据</span>
                                 <span class="layui-font-12 layui-font-gray">Temperature Uploader</span>
                             </a>
                         </div>
                     </li>
                     <li class="layui-menu-item-checked2">
                         <div class="layui-menu-body-title">
-                            <a href="/temperature/view">
-                                <span>芯片温度 </span>
-                                <span class="layui-font-12 layui-font-gray">HTM</span>
+                            <a href="/temperature/overview">
+                                <span>数据概述</span>
+                                <span class="layui-font-12 layui-font-gray">Data Overview</span>
+                            </a>
+                        </div>
+                    </li>
+                    <li>
+                        <div class="layui-menu-body-title">
+                            <a href="/temperature/details">
+                                <span>数据详情</span>
+                                <span class="layui-font-12 layui-font-gray">Data Details</span>
                             </a>
                         </div>
                     </li>
@@ -72,63 +82,16 @@
         <div class="chart_container">
             <div class="chart" id="chip_temperature09"></div>
         </div>
-
-        <div class="title-block">
-            <h2 class="title">芯片温度曲线</h2>
-        </div>
-        <div class="chart_container">
-            <div class="chart" id="chip_temperature01"></div>
-            <div class="chart" id="chip_temperature02"></div>
-        </div>
-        <div class="chart_container">
-            <div class="chart" id="chip_temperature03"></div>
-            <div class="chart" id="chip_temperature04"></div>
-        </div>
-
-        <div class="title-block">
-            <h2 class="title">温度时间曲线</h2>
-        </div>
-        <div class="chart_container">
-            <div class="chart" id="chip_temperature05"></div>
-            <div class="chart" id="chip_temperature06"></div>
-        </div>
-        <div class="chart_container">
-            <div class="chart" id="chip_temperature07"></div>
-            <div class="chart" id="chip_temperature08"></div>
-        </div>
-
         <!--隐藏域-->
         <input type="hidden" id="total-minutes" value="{{ total_minutes }}">
         <input type="hidden" id="time-diffs" value='{{ time_diffs|tojson }}'>
-
-        <input type="hidden" id="temperature_time_dc1_legend" value='{{ temperature_time_dc1_legend }}'>
-        <input type="hidden" id="temperature_time_tc1_legend" value='{{ temperature_time_tc1_legend }}'>
-        <input type="hidden" id="temperature_time_tc2_legend" value='{{ temperature_time_tc2_legend }}'>
-
-        <input type="hidden" id="temperature_time_dc1" value='{{ temperature_time_dc1 }}'>
-        <input type="hidden" id="temperature_time_tc1" value='{{ temperature_time_tc1 }}'>
-        <input type="hidden" id="temperature_time_tc2" value='{{ temperature_time_tc2 }}'>
-
-        <input type="hidden" id="temperature_time_dc1_5" value='{{ temperature_time_dc1_5|tojson }}'>
-        <input type="hidden" id="temperature_time_tc1_6" value='{{ temperature_time_tc1_6|tojson }}'>
-        <input type="hidden" id="temperature_time_tc2_7" value='{{ temperature_time_tc2_7|tojson }}'>
-
         <input type="hidden" id="init_selected_files" value='{{ init_selected_files|safe }}'>
     </div>
 </div>
 </body>
-<script type="text/javascript" src="/static/js/biz/file_list_multi_select.js?v=2"></script>
-
+<script type="text/javascript" src="/static/js/biz/file_list_multi_select_overview.js?v=2"></script>
 <script type="text/javascript" src="/static/js/echarts.min.js"></script>
 <script type="text/javascript" src="/static/js/biz/temperature_duration.js?v=1"></script>
-
-<script type="text/javascript" src="/static/js/biz/chip01_temperature.js?v=1"></script>
-<script type="text/javascript" src="/static/js/biz/chip02_temperature.js?v=1"></script>
-<script type="text/javascript" src="/static/js/biz/chip03_temperature.js?v=1"></script>
-
-<script type="text/javascript" src="/static/js/biz/chip05_temperature.js?v=1"></script>
-<script type="text/javascript" src="/static/js/biz/chip06_temperature.js?v=1"></script>
-<script type="text/javascript" src="/static/js/biz/chip07_temperature.js?v=1"></script>
 <script>
     const chipNames = {{ chip_names | tojson }};
     const maxAllowedValues = {{ max_allowed_values | tojson }};

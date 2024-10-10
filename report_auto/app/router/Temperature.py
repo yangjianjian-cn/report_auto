@@ -118,64 +118,57 @@ def measure_file_intodb():
 
 
 '''
-芯片温度报表页
+数据详情
 '''
 
 
-@temperature_bp.route('/view', methods=['GET'])
-def temperature():
-    table_name = 'measurement_file'
-    columns = ' file_name,id '
-    where = ' where status = "0" '
-    measurement_file_list = query_table(table_name, columns, where)
+@temperature_bp.route('/details', methods=['GET'])
+def temperature_details():
+    # 获取已上传文件的元数据
+    measurement_file_list = None
+    selected_ids = []
+    try:
+        measurement_file_list = get_measurement_file_list()
+    except Exception as e:
+        return render_template('error.html', failure_msg=f'{e}')
+
     if measurement_file_list is None or len(measurement_file_list) == 0:
         return render_template('error.html', failure_msg='Please upload the file first.')
 
-    selected_ids = []
-
+    # 请求报文中获取请求参数fileId
     fileId = request.args.get('fileId')
     if fileId:
         selected_ids = [int(id) for id in fileId.split(',')]
     else:
-        fileId = str(measurement_file_list[0].get('id'))
-        selected_ids.append(fileId)
+        selected_ids.append(measurement_file_list[0].get('id'))
 
-    time_diffs, total_minutes = temperature_duration(fileId, max_workers=3)
-
-    # DC1_Th
+    # 折线图
+    # #DC1_Th
     selected_columns_dc1_str = 'DC1_Th1,DC1_Th2,DC1_Th3,DC1_Th4,DC1_Th5,DC1_Th6,DC1_Th7,DC1_Th8,TECU_t,timestamps'
     selected_columns_dc1: list = str_to_list(selected_columns_dc1_str)
 
-    temperature_time_dc1 = temperature_chip(selected_columns_dc1_str, fileId)
+    temperature_time_dc1 = temperature_chip(selected_columns_dc1_str, selected_ids)
     data_structure_dc1 = create_data_structure(temperature_time_dc1, selected_columns_dc1, num_processes=3)
 
-    # TC1_Th
+    # #TC1_Th
     selected_columns_tc1_str = "TC1_Th1,TC1_Th2,TC1_Th3,TC1_Th4,TC1_Th5,TC1_Th6,TC1_Th7,TC1_Th8,TC1_Th9,TC1_Th10,TC1_Th11,TC1_Th12,TC1_Th13,TC1_Th14,TC1_Th15,TC1_Th16,TECU_t,timestamps"
     selected_columns_tc1: list = str_to_list(selected_columns_tc1_str)
 
-    temperature_time_tc1 = temperature_chip(selected_columns_tc1_str, fileId)
+    temperature_time_tc1 = temperature_chip(selected_columns_tc1_str, selected_ids)
     data_structure_tc1 = create_data_structure(temperature_time_tc1, selected_columns_tc1, num_processes=3)
 
-    # TC2_Th
+    # #TC2_Th
     selected_columns_tc2_str: str = "TC2_Th1,TC2_Th2,TC2_Th3,TC2_Th4,TC2_Th5,TC2_Th6,TC2_Th7,TC2_Th8,TC2_Th9,TC2_Th10,TC2_Th11,TC2_Th12,TC2_Th13,TECU_t,timestamps"
     selected_columns_tc2: list = str_to_list(selected_columns_tc2_str)
 
-    temperature_time_tc2 = temperature_chip(selected_columns_tc2_str, fileId)
+    temperature_time_tc2 = temperature_chip(selected_columns_tc2_str, selected_ids)
     data_structure_tc2 = create_data_structure(temperature_time_tc2, selected_columns_tc2, num_processes=3)
 
-    # file drop-down checkbox
+    # 下拉复选框
     multi_select_html = generate_select_options(measurement_file_list)
 
-    # 温度阈值 和 相对温差
-    chip_dict_list = relative_difference()
-    chip_names = [chip['chip_name'] for chip in chip_dict_list]
-    max_allowed_values = [chip['max_allowed_value'] for chip in chip_dict_list]
-    difference_temperatures = [chip['difference_temperature'] for chip in chip_dict_list]
-
     # 渲染页面
-    return render_template('temperature_main.html',
-                           total_minutes=total_minutes,
-                           time_diffs=time_diffs,
+    return render_template('temperature_details.html',
 
                            temperature_time_dc1_legend=selected_columns_dc1,
                            temperature_time_tc1_legend=selected_columns_tc1,
@@ -188,6 +181,52 @@ def temperature():
                            temperature_time_dc1_5=temperature_time_dc1,
                            temperature_time_tc1_6=temperature_time_tc1,
                            temperature_time_tc2_7=temperature_time_tc2,
+
+                           multi_select_html=multi_select_html,
+                           init_selected_files=selected_ids
+                           )
+
+
+'''
+数据概述
+'''
+
+
+@temperature_bp.route('/overview', methods=['GET'])
+def temperature_overview():
+    # 获取所有上传文件的元数据
+    selected_ids = []
+    try:
+        measurement_file_list = get_measurement_file_list()
+    except Exception as e:
+        return render_template('error.html', failure_msg=f'{e}')
+
+    if measurement_file_list is None or len(measurement_file_list) == 0:
+        return render_template('error.html', failure_msg='Please upload the file first.')
+
+    # 请求报文中获取参数fileId
+    fileId = request.args.get('fileId')
+    if fileId:
+        selected_ids = [int(id) for id in fileId.split(',')]
+    else:
+        selected_ids.append(measurement_file_list[0].get('id'))
+
+    # 温度时长柱形图和饼状图
+    time_diffs, total_minutes = temperature_duration(selected_ids, max_workers=3)
+
+    # 下拉多选框
+    multi_select_html = generate_select_options(measurement_file_list)
+
+    # 温度阈值 和 相对温差
+    chip_dict_list = relative_difference()
+    chip_names = [chip['chip_name'] for chip in chip_dict_list]
+    max_allowed_values = [chip['max_allowed_value'] for chip in chip_dict_list]
+    difference_temperatures = [chip['difference_temperature'] for chip in chip_dict_list]
+
+    # 渲染页面
+    return render_template('temperature_overview.html',
+                           total_minutes=total_minutes,
+                           time_diffs=time_diffs,
 
                            multi_select_html=multi_select_html,
                            init_selected_files=fileId,
@@ -229,3 +268,17 @@ def test():
     difference_temperatures = [chip['difference_temperature'] for chip in chip_dict_list]
     return render_template('test.html', chip_names=chip_names, max_allowed_values=max_allowed_values,
                            difference_temperatures=difference_temperatures)
+
+
+'''
+获取已上传全部文件元数据
+'''
+
+
+def get_measurement_file_list():
+    table_name = 'measurement_file'
+    columns = ' file_name,id '
+    where = ' where status = "0" '
+
+    measurement_file_list = query_table(table_name, columns, where)
+    return measurement_file_list

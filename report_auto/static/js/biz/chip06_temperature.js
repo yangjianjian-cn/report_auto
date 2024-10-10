@@ -41,7 +41,7 @@ var chipOption06 = {
         show: true,
         width: 100,
         formatter: function (name) {
-            return echarts.format.truncateText(name, 40, '14px Microsoft Yahei', '…');
+            return echarts.format.truncateText(name, 100, '14px Microsoft Yahei', '…');
         },
         tooltip: {
             show: true
@@ -68,14 +68,14 @@ var chipOption06 = {
         type: 'category',
         boundaryGap: false,
         data: temperatureTime6.timestamps,
-        name: '时间',
+        name: 'Time',
         axisLabel: {
             formatter: '{value} s'
         }
     },
     yAxis: {
         type: 'value',
-        name: '温度',
+        name: 'Temperature',
         axisLabel: {
             formatter: '{value}°C'
         }

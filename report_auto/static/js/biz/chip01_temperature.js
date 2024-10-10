@@ -18,7 +18,8 @@ var chipOption01;
 
 chipOption01 = {
     title: {
-        text: 'DC1_Th'
+        text: 'Correlation between chips and TECU_T',
+        subtext:'DC1_Th'
     },
     tooltip: {
         trigger: 'axis',
@@ -33,7 +34,7 @@ chipOption01 = {
         show: true,
         width:100,
         formatter: function (name) {
-            return echarts.format.truncateText(name, 80, '14px Microsoft Yahei', '…');
+            return echarts.format.truncateText(name, 100, '14px Microsoft Yahei', '…');
         },
         tooltip: {
             show: true
@@ -72,7 +73,7 @@ chipOption01 = {
         type: 'value',
         scale: true,
         splitNumber: 5,
-        name: '温度',
+        name: 'Temperature',
         axisLabel: {
             formatter: '{value}°C'
         }
