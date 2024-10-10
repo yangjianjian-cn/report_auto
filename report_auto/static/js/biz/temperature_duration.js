@@ -107,17 +107,6 @@ option = {
             })
         },
         {
-            type: 'bar',
-            stack: 'chart',
-            silent: true,
-            itemStyle: {
-                color: '#eee'
-            },
-            data: Object.keys(builderJson.charts).map(function (key) {
-                return builderJson.all - builderJson.charts[key];
-            })
-        },
-        {
             type: 'pie',
             radius: [0, '40%'],
             center: ['75%', '40%'],

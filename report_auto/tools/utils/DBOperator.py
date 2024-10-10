@@ -231,9 +231,6 @@ def query_table(table_name: str, columns: str, where: str):
             result_dicts = [dict(zip(column_names, row)) for row in results]
 
             return result_dicts
-    except Exception as e:
-        logging.error(f"An error occurred: {e}")
-        logging.error("Traceback:", exc_info=True)
     finally:
         connectionPool.release_connection(connection)
 
