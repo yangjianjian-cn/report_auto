@@ -64,6 +64,9 @@ let chipOption09 = {
                 position: 'top',
                 formatter: '{c}'
             },
+            emphasis: {
+                focus: 'series'
+            }
         },
         // 最大温度 - 柱形图
         {
