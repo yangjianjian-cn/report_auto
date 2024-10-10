@@ -40,7 +40,7 @@
     <div class="layui-panel site-menu" style="width: 18%; display: inline-block">
         <ul class="layui-menu layui-menu-lg site-docs-menu">
             <li class="layui-menu-item-group" lay-options="{type: 'group', isAllowSpread: true}">
-                <div class="layui-menu-body-title">芯片温度</div>
+                <div class="layui-menu-body-title">Chip Temperature</div>
                 <hr>
                 <ul>
                     <li>
@@ -73,6 +73,7 @@
     </div>
     <div class="site-content" style="width: 80%; display: inline-block">
         {{ multi_select_html|safe }}
+        <span style="color: #01aaed">(Query the data of the most recent file by default)</span>
 
         <!--饼图和折线图-->
         <div class="chart_container">
@@ -96,6 +97,7 @@
     const chipNames = {{ chip_names | tojson }};
     const maxAllowedValues = {{ max_allowed_values | tojson }};
     const differenceTemperatures = {{ difference_temperatures | tojson }};
+    const max_temperature = {{ max_temperature | tojson }};
 </script>
 <script type="text/javascript" src="/static/js/biz/chip09_temperature.js?v=1"></script>
 </html>

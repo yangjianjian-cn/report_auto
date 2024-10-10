@@ -27,11 +27,18 @@ var chipChart07 = echarts.init(dom7, null, {
 
 var chipOption07 = {
     title: {
-        text: 'TC2_Th'
+        subtext: 'TC2_Th'
     },
     tooltip: {
-        trigger: 'axis',
-        show: true
+        show: true,
+        axisPointer: {
+            show: true,
+            type: 'cross',
+            lineStyle: {
+                type: 'dashed',
+                width: 1
+            }
+        }
     },
     legend: {
         type: 'scroll',

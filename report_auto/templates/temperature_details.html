@@ -23,14 +23,14 @@
 <div class="layui-header header header-docs">
     <div class="layui-main">
         <ul class="layui-nav">
-             <!--
-            <li class="layui-nav-item ">
-                <a href="">其它页</a>
-            </li>
-            <li class="layui-nav-item layui-this">
-                <a href="javascript:;">报表区</a>
-            </li>
-             -->
+            <!--
+           <li class="layui-nav-item ">
+               <a href="">其它页</a>
+           </li>
+           <li class="layui-nav-item layui-this">
+               <a href="javascript:;">报表区</a>
+           </li>
+            -->
             <span class="layui-nav-bar"></span></ul>
     </div>
 </div>
@@ -39,7 +39,7 @@
     <div class="layui-panel site-menu" style="width: 18%; display: inline-block">
         <ul class="layui-menu layui-menu-lg site-docs-menu">
             <li class="layui-menu-item-group" lay-options="{type: 'group', isAllowSpread: true}">
-                <div class="layui-menu-body-title">芯片温度</div>
+                <div class="layui-menu-body-title">Chip Temperature</div>
                 <hr>
                 <ul>
                     <li>
@@ -72,7 +72,7 @@
     </div>
     <div class="site-content" style="width: 80%; display: inline-block">
         {{ multi_select_html|safe }}
-
+        <span style="color: #7abaff">Query the data of the most recent file by default</span>
         <!--
         <div class="title-block">
             <h2 class="title">芯片温度曲线</h2>
@@ -88,9 +88,11 @@
             <div class="chart" id="chip_temperature04"></div>
         </div>
 
+        <!--
         <div class="title-block">
-            <h2 class="title">温度时间曲线</h2>
+            <h2 class="title">temperature time curve</h2>
         </div>
+        -->
         <div class="chart_container">
             <div class="chart" id="chip_temperature05"></div>
             <div class="chart" id="chip_temperature06"></div>
@@ -120,6 +122,78 @@
 <script type="text/javascript" src="/static/js/biz/file_list_multi_select_details.js?v=2"></script>
 
 <script type="text/javascript" src="/static/js/echarts.min.js"></script>
+<script>
+    c_tooltip = {
+        showDelay: 0,
+        formatter: function (params) {
+            if (params.value.length > 1) {
+                return (
+                    params.seriesName +
+                    ' :<br/>' +
+                    params.value[0] +
+                    '°C ' +
+                    params.value[1] +
+                    '°C '
+                );
+            } else {
+                return (
+                    params.seriesName +
+                    ' :<br/>' +
+                    params.name +
+                    ' : ' +
+                    params.value +
+                    '°C '
+                );
+            }
+        },
+        axisPointer: {
+            show: true,
+            type: 'cross',
+            lineStyle: {
+                type: 'dashed',
+                width: 1
+            }
+        }
+    }
+    c_toolbox = {
+        feature: {
+            dataZoom: {}
+            ,
+            brush: {
+                type: ['rect', 'polygon', 'clear']
+            }
+            ,
+            restore: {}
+        }
+    }
+    c_grid = {
+        left: '10%',
+        right: '32%',
+        bottom: '3%',
+        top: 80,
+        containLabel: true
+    }
+    c_xAxis = {
+        type: 'value',
+        scale: true,
+        name: 'TECU_T',
+        axisLabel: {
+            formatter: '{value}°C'
+        },
+        splitLine: {
+            show: false
+        }
+    }
+    c_yAxis = {
+        type: 'value',
+        scale: true,
+        splitNumber: 5,
+        name: 'Temperature',
+        axisLabel: {
+            formatter: '{value}°C'
+        }
+    }
+</script>
 <script type="text/javascript" src="/static/js/biz/chip01_temperature.js?v=1"></script>
 <script type="text/javascript" src="/static/js/biz/chip02_temperature.js?v=1"></script>
 <script type="text/javascript" src="/static/js/biz/chip03_temperature.js?v=1"></script>

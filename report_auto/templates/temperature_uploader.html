@@ -38,7 +38,7 @@
     <div class="layui-panel site-menu" style="width: 18%; display: inline-block">
         <ul class="layui-menu layui-menu-lg site-docs-menu">
             <li class="layui-menu-item-group" lay-options="{type: 'group', isAllowSpread: true}">
-                <div class="layui-menu-body-title">芯片温度</div>
+                <div class="layui-menu-body-title">Chip Temperature</div>
                 <hr>
                 <ul>
                     <li class="layui-menu-item-checked2">
@@ -71,11 +71,11 @@
     </div>
     <div class="site-content" style="width: 80%; display: inline-block">
         <fieldset class="layui-elem-field layui-field-title" style="margin-top: 30px;">
-            <legend>芯片数据上传</legend>
+            <legend>Chip temperature acquisition</legend>
         </fieldset>
-
         <div class="layui-upload">
-            <button type="button" class="layui-btn layui-btn-normal" id="testList">选择多文件</button>
+            <button type="button" class="layui-btn layui-btn-normal" id="testList">Select file</button>
+            <span style="color: #01aaed">(You can select one file at a time or multiple files at a time)</span>
             <div class="layui-upload-list">
                 <table class="layui-table">
                     <colgroup>
@@ -86,10 +86,10 @@
                     </colgroup>
                     <thead>
                     <tr>
-                        <th>文件名</th>
-                        <th>大小</th>
-                        <th>上传进度</th>
-                        <th>操作</th>
+                        <th>File Name</th>
+                        <th>size</th>
+                        <th>Upload Progress</th>
+                        <th>operation</th>
                     </tr>
                     </thead>
                     <tbody id="demoList">
@@ -101,7 +101,7 @@
                                 <td>--</td>
                                 <td>
                                     <button class="layui-btn layui-btn-xs layui-btn-danger demo-delete_db"
-                                            onclick="delete_file_in_db({{ file.id }})">删除
+                                            onclick="delete_file_in_db({{ file.id }})">delete
                                     </button>
                                 </td>
                             </tr>
@@ -118,7 +118,7 @@
                     </tbody>
                 </table>
             </div>
-            <button type="button" class="layui-btn" id="testListAction">开始上传</button>
+            <button type="button" class="layui-btn" id="testListAction">Start uploading</button>
         </div>
     </div>
 </div>

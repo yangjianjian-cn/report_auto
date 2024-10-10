@@ -26,7 +26,7 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(level
 def temperature_list():
     table_name = 'measurement_file'
     columns = 'id,file_name'
-    whereClause = ' where status = "0" '
+    whereClause = ' where status = "0" order by id desc'
 
     measurement_file_list = query_table(table_name, columns, where=whereClause)
 
@@ -218,9 +218,10 @@ def temperature_overview():
     multi_select_html = generate_select_options(measurement_file_list)
 
     # 温度阈值 和 相对温差
-    chip_dict_list = relative_difference()
+    chip_dict_list = relative_difference(selected_ids)
     chip_names = [chip['chip_name'] for chip in chip_dict_list]
     max_allowed_values = [chip['max_allowed_value'] for chip in chip_dict_list]
+    max_temperature = [chip['max_temperature'] for chip in chip_dict_list]
     difference_temperatures = [chip['difference_temperature'] for chip in chip_dict_list]
 
     # 渲染页面
@@ -232,8 +233,9 @@ def temperature_overview():
                            init_selected_files=fileId,
 
                            chip_names=chip_names, max_allowed_values=max_allowed_values,
-                           difference_temperatures=difference_temperatures
-                           )
+                           difference_temperatures=difference_temperatures,
+                           max_temperature=max_temperature
+                        )
 
 
 @temperature_bp.route('/delete_file', methods=['POST'])
@@ -278,7 +280,7 @@ def test():
 def get_measurement_file_list():
     table_name = 'measurement_file'
     columns = ' file_name,id '
-    where = ' where status = "0" '
+    where = ' where status = "0" order by id desc'
 
     measurement_file_list = query_table(table_name, columns, where)
     return measurement_file_list

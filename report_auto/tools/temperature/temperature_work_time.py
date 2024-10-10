@@ -73,11 +73,10 @@ def temperature_duration(file_ids_int: list, max_workers=None):
 def modify_records(records):
     # 将记录转换为DataFrame
     df = pd.DataFrame(records)
-
-    # 应用条件，将不在范围内的值设置为0
+    # 处理数据：将除 timestamps 列外的值小于 100 或大于 200 的值置为 0
     for column in df.columns:
-        df[column] = df[column].apply(lambda x: x if -100 <= x <= 200 else 0)
-
+        if column != 'timestamps':
+            df.loc[(df[column] < -100) | (df[column] > 200), column] = 0
     # 转换回记录列表
     modified_records = df.to_dict('records')
 
@@ -106,7 +105,6 @@ def temperature_chip(selected_columns: list, file_ids_int: list):
     new_temperature_time: Dict[str, List] = {
         key_mapping[key]: value for key, value in temperature_time.items()
     }
-
     return new_temperature_time
 
 
@@ -117,9 +115,13 @@ def process_sensor(sensor, temperature_time_dc1, tecu_temperatures):
     sensor_temperatures = temperature_time_dc1[sensor]
     min_length = min(len(tecu_temperatures), len(sensor_temperatures))
 
-    series_data = [{"name": sensor, "value": [sensor_temperatures[i], tecu_temperatures[i]]} for i in range(min_length)]
-
-    return {"name": sensor, "type": "line", "data": series_data}
+    series_data = [[sensor_temperatures[i], tecu_temperatures[i]] for i in range(min_length)]
+    emphasis = {'focus': 'series'}
+    markArea = {'silent': 'true', 'itemStyle': {'color': 'transparent', 'borderWidth': 1, 'borderType': 'dashed'},
+                'data': [[{'name': '', 'xAxis': 'min', 'yAxis': 'min'}, {'xAxis': 'max', 'yAxis': 'max'}]]}
+    # markPoint = {'data': [{'type': 'max', 'name': 'Max'},{'type': 'min', 'name': 'Min'}]}
+    return {"name": sensor, "type": "scatter", "emphasis": emphasis, "data": series_data,
+            "markArea": markArea}
 
 
 def create_data_structure(temperature_time_dc1, sensors_list: list, num_processes=None):
@@ -153,12 +155,16 @@ def str_to_list(sensors_str: str) -> List[str]:
 
 
 # table_name: str, columns: str, where: str
-def relative_difference() -> list[dict]:
+def relative_difference(selected_ids: list[int]) -> list[dict]:
     # 芯片字典(包含芯片名称、芯片温度阈值)
     chip_dict_list = chip_dict()
 
     # 查看每个芯片的最大测量温度
-    max_rlt_df = max_query()
+    max_rlt_df = max_query(selected_ids)
+    for column in max_rlt_df.columns:
+        # 值小于-100或大于200的值置0
+        max_rlt_df.loc[(max_rlt_df[column] < -100) | (max_rlt_df[column] > 200), column] = 0
+
     df_transposed = max_rlt_df.T
     result_map = df_transposed[0].to_dict()
 
@@ -181,8 +187,8 @@ def chip_dict():
     return result_dicts
 
 
-def max_query() -> DataFrame:
-    max_sql = """
+def max_query(selected_ids: list) -> DataFrame:
+    max_query_sql = """
             SELECT
             ROUND(MAX(DC1_Th1)) AS DC1_Th1,
             ROUND(MAX(DC1_Th2)) AS DC1_Th2,
@@ -221,10 +227,16 @@ def max_query() -> DataFrame:
             ROUND(MAX(TC2_Th11)) AS TC2_Th11,
             ROUND(MAX(TC2_Th12)) AS TC2_Th12,
             ROUND(MAX(TC2_Th13)) AS TC2_Th13
-        FROM chip_temperature;
+        FROM chip_temperature
     """
+    if len(selected_ids) > 0:
+        # 将列表转换为逗号分隔的字符串
+        selected_ids_str = ','.join(map(str, selected_ids))
+        where_clause = f' WHERE file_id IN ({selected_ids_str})'
+        max_sql = max_query_sql + where_clause
+
+    logging.info(f"max_query_sql:{max_sql}")
     max_query_rslt_df = query_table_by_sql(max_sql)
-    # 删除第一行
 
     # 重置索引
     results_df = max_query_rslt_df.reset_index()

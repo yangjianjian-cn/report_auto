@@ -28,11 +28,19 @@ var chipOption05;
 
 chipOption05 = {
     title: {
-        text: 'DC1_Th'
+        text: 'Temperature Time Curve',
+        subtext: 'DC1_Th'
     },
     tooltip: {
-        trigger: 'axis',
-        show: true
+        show: true,
+        axisPointer: {
+            show: true,
+            type: 'cross',
+            lineStyle: {
+                type: 'dashed',
+                width: 1
+            }
+        }
     },
     legend: {
         type: 'scroll',

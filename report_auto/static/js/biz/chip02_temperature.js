@@ -20,10 +20,9 @@ chipOption02 = {
     title: {
         subtext: 'TC1_Th'
     },
-    tooltip: {
-        trigger: 'axis',
-        show: true
-    },
+    tooltip: c_tooltip,
+    toolbox: c_toolbox,
+    brush: {},
     legend: {
         type: 'scroll',
         orient: 'vertical',
@@ -40,48 +39,12 @@ chipOption02 = {
         },
         data: temperature_time_tc1_legend
     },
-    grid: {
-        left: '10%',
-        right: '32%',
-        bottom: '3%',
-        top: 80,
-        containLabel: true
-    },
-    toolbox: {
-        show: true,
-        feature: {
-            dataZoom: {
-                yAxisIndex: "none"
-            },
-            magicType: {
-                type: ["line", "bar"]
-            },
-            restore: {},
-            saveAsImage: {}
-        }
-    },
-    xAxis: {
-        type: 'category',
-        boundaryGap: false,
-        name: 'TECU_T',
-        axisLabel: {
-            formatter: '{value}°C'
-        }
-    },
-    yAxis: {
-        type: 'value',
-        scale: true,
-        splitNumber: 5,
-        name: 'Temperature',
-        axisLabel: {
-            formatter: '{value}°C'
-        }
-    },
+    grid: c_grid,
+    xAxis: c_xAxis,
+    yAxis: c_yAxis,
     series: temperatureTime2
 };
 
 if (chipOption02 && typeof chipOption02 === 'object') {
     chipChart02.setOption(chipOption02);
 }
-
-// window.addEventListener('resize', chipChart.resize);

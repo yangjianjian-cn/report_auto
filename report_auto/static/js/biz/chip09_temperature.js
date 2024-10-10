@@ -6,8 +6,8 @@ let chipChart09 = echarts.init(dom9, null, {
 
 let chipOption09 = {
     title: {
-        text: '温度阈值和相对温差',
-        subtext: '相对温差= (芯片温度阈值 减 芯片最大测量温度) 除以 芯片温度阈值'
+        text: 'Temperature threshold and relative temperature difference',
+        subtext: 'Relative temperature difference = (chip temperature threshold, minus the maximum measurement temperature of the chip) divided by the chip temperature threshold'
     },
     tooltip: {
         trigger: 'axis',
@@ -16,6 +16,12 @@ let chipOption09 = {
             crossStyle: {
                 color: '#999'
             }
+        }
+    },
+    toolbox: {
+        show: true,
+        feature: {
+            restore: {}
         }
     },
     grid: {
@@ -43,7 +49,7 @@ let chipOption09 = {
         type: 'value'
     },
     series: [
-        // 折线图
+        // 温度阈值 - 折线图
         {
             name: 'max allowed temperature',
             type: 'line',
@@ -54,11 +60,12 @@ let chipOption09 = {
                 }
             }
         },
-        // 柱形图
+        // 最大温度 - 柱形图
         {
-            name: 'relative difference',
+            name: 'max_temperature',
             type: 'bar',
-            data: differenceTemperatures,
+            showBackground: true,
+            data: max_temperature,
             label: {
                 show: true,
                 position: 'top',
@@ -66,24 +73,8 @@ let chipOption09 = {
             },
             tooltip: {
                 valueFormatter: function (value) {
-                    return value + ' %';
+                    return value + ' °C';
                 }
-            }
-        }
-    ],
-    // 添加阴影区域
-    graphic: [
-        {
-            type: 'rect',
-            left: 'center',
-            top: '10%', // 调整阴影区域的起始位置
-            z: -1,
-            shape: {
-                width: '90%',
-                height: '10%' // 调整阴影区域的高度
-            },
-            style: {
-                fill: 'rgba(0, 0, 0, 0.1)' // 设置阴影颜色和透明度
             }
         }
     ]
