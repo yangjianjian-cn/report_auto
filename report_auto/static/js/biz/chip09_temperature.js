@@ -58,13 +58,18 @@ let chipOption09 = {
                 valueFormatter: function (value) {
                     return value + ' °C';
                 }
-            }
+            },
+            label: {
+                show: true,
+                position: 'top',
+                formatter: '{c}'
+            },
         },
         // 最大温度 - 柱形图
         {
             name: 'max_temperature',
             type: 'bar',
-            showBackground: true,
+            showBackground: false,
             data: max_temperature,
             label: {
                 show: true,
@@ -75,7 +80,33 @@ let chipOption09 = {
                 valueFormatter: function (value) {
                     return value + ' °C';
                 }
-            }
+            },
+            emphasis: {
+                focus: 'series'
+            },
+            stack: 'st'
+        },
+        // 温度阈值 - 最大温度
+        {
+            name: 'difference temperature',
+            type: 'bar',
+            showBackground: false,
+            data: difference_temperature,
+            label: {
+                show: false,
+                position: 'top',
+                formatter: '{c}'
+            },
+            tooltip: {
+                show: false, // 不显示这个系列的提示
+                valueFormatter: function (value) {
+                    return value + ' °C';
+                }
+            },
+            emphasis: {
+                focus: 'series'
+            },
+            stack: 'st'
         }
     ]
 };

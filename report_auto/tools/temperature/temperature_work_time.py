@@ -9,7 +9,7 @@ from pandas import DataFrame
 
 from app import chipNamesConfig
 from tools.utils.DBOperator import query_table, query_table_sampling, query_table_by_sql
-from tools.utils.MathUtils import relative_difference_chip
+from tools.utils.MathUtils import relative_difference_chip, difference_chip
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 
@@ -174,8 +174,9 @@ def relative_difference(selected_ids: list[int]) -> list[dict]:
         measured_variable = chip['measured_variable']
         if measured_variable in result_map:
             chip['max_temperature'] = result_map[measured_variable]
-            chip['difference_temperature'] = relative_difference_chip(chip['max_allowed_value'],
+            chip['relative_difference_temperature'] = relative_difference_chip(chip['max_allowed_value'],
                                                                       chip['max_temperature'])
+            chip['difference_temperature'] = difference_chip(chip['max_allowed_value'],chip['max_temperature'])
     return chip_dict_list
 
 

@@ -62,6 +62,9 @@ def getBit0(decimal_number: int) -> str:
     return binary_string[-1]
 
 
+'''相对差值'''
+
+
 def relative_difference_chip(num1: float, num2: float) -> int:
     if num2 is None:
         num2 = 0
@@ -69,3 +72,15 @@ def relative_difference_chip(num1: float, num2: float) -> int:
     r_num = (num1 - num2) / num1
     r_num_percentage = round(r_num * 100, 2)
     return int(r_num_percentage)
+
+
+'''
+差值
+'''
+
+
+def difference_chip(num1: float, num2: float) -> int:
+    if num2 is None:
+        num2 = 0
+    r_num = (num1 - num2)
+    return int(r_num)
