@@ -33,7 +33,7 @@ mysql_config = {
     'password': '1qazxsw2',
     'database': 'measurement'
 }
-connectionPool = ConnectionPool(config=mysql_config, max_connections=3)
+connectionPool = ConnectionPool(config=mysql_config, max_connections=30)
 connectionPool.init_pool()
 
 chipNamesConfig = ChipNamesConfig()
