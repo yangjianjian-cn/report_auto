@@ -28,8 +28,10 @@ def temperature_list():
     columns = 'id,file_name'
     whereClause = ' where status = "0" order by id desc'
 
-    measurement_file_list = query_table(table_name, columns, where=whereClause)
-
+    try:
+        measurement_file_list = query_table(table_name, columns, where=whereClause)
+    except Exception as e:
+        return render_template('error.html', failure_msg=f'{e}')
     return render_template('temperature_uploader.html', measurement_file_list=measurement_file_list)
 
 
@@ -221,9 +223,8 @@ def temperature_overview():
     chip_dict_list = relative_difference(selected_ids)
     chip_names = [chip['chip_name'] for chip in chip_dict_list]
     max_allowed_values = [chip['max_allowed_value'] for chip in chip_dict_list]
-    difference_temperature = [chip['difference_temperature'] for chip in chip_dict_list]
     max_temperature = [chip['max_temperature'] for chip in chip_dict_list]
-    # difference_temperatures = [chip['difference_temperature'] for chip in chip_dict_list]
+    relative_difference_temperature = [-chip['relative_difference_temperature'] for chip in chip_dict_list]
 
     # 渲染页面
     return render_template('temperature_overview.html',
@@ -233,10 +234,11 @@ def temperature_overview():
                            multi_select_html=multi_select_html,
                            init_selected_files=fileId,
 
-                           chip_names=chip_names, max_allowed_values=max_allowed_values,
-                           difference_temperature=difference_temperature,
-                           max_temperature=max_temperature
-                        )
+                           chip_names=chip_names,
+                           max_allowed_values=max_allowed_values,
+                           max_temperature=max_temperature,
+                           relative_difference_temperature=relative_difference_temperature,
+                           )
 
 
 @temperature_bp.route('/delete_file', methods=['POST'])

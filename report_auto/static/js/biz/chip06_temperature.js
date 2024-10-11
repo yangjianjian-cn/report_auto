@@ -29,15 +29,8 @@ var chipOption06 = {
         subtext: 'TC1_Th'
     },
     tooltip: {
-        show: true,
-        axisPointer: {
-            show: true,
-            type: 'cross',
-            lineStyle: {
-                type: 'dashed',
-                width: 1
-            }
-        }
+        trigger: 'axis',
+        show: true
     },
     legend: {
         type: 'scroll',

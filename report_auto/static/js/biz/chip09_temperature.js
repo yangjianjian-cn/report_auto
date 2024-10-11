@@ -10,18 +10,13 @@ let chipOption09 = {
         subtext: 'Relative temperature difference = (chip temperature threshold, minus the maximum measurement temperature of the chip) divided by the chip temperature threshold'
     },
     tooltip: {
-        trigger: 'axis',
-        axisPointer: {
-            type: 'cross',
-            crossStyle: {
-                color: '#999'
-            }
-        }
+        trigger: 'axis'
     },
     toolbox: {
         show: true,
         feature: {
-            restore: {}
+            restore: {},
+            saveAsImage: {}
         }
     },
     grid: {
@@ -70,9 +65,9 @@ let chipOption09 = {
         },
         // 最大温度 - 柱形图
         {
-            name: 'max_temperature',
+            name: 'max measurement temperature',
             type: 'bar',
-            showBackground: false,
+            showBackground: true,
             data: max_temperature,
             label: {
                 show: true,
@@ -89,21 +84,21 @@ let chipOption09 = {
             },
             stack: 'st'
         },
-        // 温度阈值 - 最大温度
+        // 相对温差 = (温度阈值 - 最大温度) / 温度阈值
         {
-            name: 'difference temperature',
+            name: 'relative difference temperature',
             type: 'bar',
-            showBackground: false,
-            data: difference_temperature,
+            showBackground: true,
+            data: relative_difference_temperature,
             label: {
                 show: false,
-                position: 'top',
+                position: 'bottom',
                 formatter: '{c}'
             },
             tooltip: {
-                show: false, // 不显示这个系列的提示
+                show: true,
                 valueFormatter: function (value) {
-                    return value + ' °C';
+                    return -value + ' %';
                 }
             },
             emphasis: {
