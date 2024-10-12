@@ -6,6 +6,9 @@ __author__ = "xxx team"
 import logging
 import os
 
+from docx import Document
+from docxcompose.composer import Composer
+
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 
 
@@ -67,7 +70,17 @@ def add_subdirectory_to_path(file_path, subdirectory):
     new_file_path = os.path.join(new_dir, file_name)
 
     return new_file_path
-#
-#
-# basename = get_filename_without_extension('C:\\Users\\Administrator\\Downloads\\output\\MST_Test\\csv\\APP_PL_BR_1.csv')
-# print(basename)
+
+
+def merge_docs(output_path, input_paths):
+    # 初始化第一个文档
+    master = Document(input_paths[0])
+    composer = Composer(master)
+
+    # 合并后续文档
+    for input_path in input_paths[1:]:
+        doc = Document(input_path)
+        composer.append(doc)
+
+    # 保存合并后的文档
+    composer.save(output_path)

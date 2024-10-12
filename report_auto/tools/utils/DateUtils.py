@@ -1,6 +1,6 @@
 __coding__ = "utf-8"
 
-from datetime import datetime
+import datetime
 
 import pytz
 
@@ -21,9 +21,20 @@ def get_current_date_yyyyMMdd():
     return formatted_date
 
 
+def get_current_datetime_yyyyMMddHHmmssSSS():
+    # 获取当前日期和时间
+    current_datetime = datetime.datetime.now()
+
+    # 格式化日期时间为 YYYYMMDDHHmmssSSS 的形式
+    # 注意：使用 '%f' 表示微秒，这里取前三位表示毫秒
+    formatted_datetime = current_datetime.strftime('%Y%m%d%H%M%S%f')[:-3]
+
+    return formatted_datetime
+
+
 def getCurDateTime():
     # 获取当前的 UTC 时间
-    utc_now = datetime.utcnow()
+    utc_now = datetime.datetime.utcnow()
 
     # 创建一个 UTC 时区对象，并将当前时间标记为 UTC 时间
     utc_zone = pytz.utc
@@ -34,9 +45,6 @@ def getCurDateTime():
 
     # 将当前时间转换为北京时间
     beijing_now = utc_now.astimezone(beijing_tz)
+
+    # 返回北京时间
     return beijing_now
-
-
-# 调用函数
-# formatted_beijing_now = getCurDateTime().strftime('%Y-%m-%d %H:%M:%S')
-# print("当前在北京时区的日期和时间：", formatted_beijing_now)

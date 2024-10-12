@@ -1,6 +1,5 @@
 import logging
 import os
-import zipfile
 
 from pojo.IOTestCounter import load_from_io_json, IOTestCounter, save_to_io_json
 from pojo.MSTCounter import load_from_mst_json, MSTCounter, save_to_mst_json
@@ -9,32 +8,32 @@ from tools.common.dat_csv_common import dat_csv_conversion
 from tools.conversion.iotest.analogue_input_parser import analogue_input
 from tools.conversion.msttest.mst_report_generation import mst_report
 from tools.utils.CustomException import CustomException
-from tools.utils.FileUtils import get_filename_without_extension
+from tools.utils.DateUtils import get_current_datetime_yyyyMMddHHmmssSSS
+from tools.utils.FileUtils import get_filename_without_extension, merge_docs
 
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 
 
-def docx_zip(outputPath: str, zipPath: str, fileName: str) -> str:
+def docx_merge(output_path: str, merge_path: str, file_name: str):
     # 构建完整的 ZIP 文件路径
-    zip_file_name = 'output_files.zip'
-    zip_file_path = os.path.join(zipPath, zip_file_name)
+    merge_file_name = 'mst_auto_report_' + get_current_datetime_yyyyMMddHHmmssSSS() + '.docx'
+    merge_docx_path = os.path.join(merge_path, merge_file_name)
 
-    # 创建 ZIP 文件
-    with zipfile.ZipFile(zip_file_path, 'w', zipfile.ZIP_DEFLATED) as zipf:
-        # 遍历目录及其子目录
-        for root, dirs, files in os.walk(outputPath):
-            for file in files:
-                basename = os.path.basename(file)  # 获取文件的基本名称
-                filename_without_extension, _ = os.path.splitext(basename)
-                logging.info(f"base_name:{filename_without_extension}")
+    docx_file_paths = []
+    # 遍历目录及其子目录
+    for root, dirs, files in os.walk(output_path):
+        for file in files:
+            basename = os.path.basename(file)  # 获取文件的基本名称
+            filename_without_extension, _ = os.path.splitext(basename)
 
-                if filename_without_extension in fileName:
-                    # 构建完整的文件路径
-                    file_path = os.path.join(root, file)
-                    # 在 ZIP 文件中存储文件
-                    zipf.write(file_path, os.path.relpath(file_path, outputPath))
-    logging.info(f"zip_file_path:{zip_file_path}")
-    return zip_file_name, zip_file_path
+            if filename_without_extension in file_name:
+                # 构建完整的文件路径
+                file_path = os.path.join(root, file)
+                docx_file_paths.append(file_path)
+
+    merge_docs(merge_docx_path, docx_file_paths)
+
+    return merge_file_name, merge_docx_path
 
 
 def join_with_br(messages):

@@ -10,7 +10,7 @@ from app import main
 from app.router import report_bp
 from pojo.MSTReqPOJO import ReqPOJO
 from tools.common.dat_csv_common import counter_report
-from tools.parser.dat_csv_doc import dat_csv_docx, docx_zip
+from tools.parser.dat_csv_doc import dat_csv_docx, docx_merge
 from tools.utils.FileUtils import validate_filename
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
@@ -81,12 +81,13 @@ def report_download():
     fileName = request.args.get('fileName')
     test_team = request.args.get('test_team')
     output_path = main.config['output_path']
+    merge_path = main.config['template_path']
     # 检查 docx_path 是否为空
     if not output_path:
         logging.error({'generate_report_fail': f'The docx_path is empty.'})
 
     output_path = os.path.join(output_path, test_team)
-    zip_path = os.path.join(output_path, test_team)
+    merge_path = os.path.join(merge_path, 'merge')
     if 'MST_Test' == test_team:
         output_path = os.path.join(output_path, 'docx')
     elif 'IO_Test' == test_team:
@@ -96,30 +97,31 @@ def report_download():
     if not os.path.exists(output_path):
         logging.error({'generate_report_fail': f"Error: The directory '{output_path}' does not exist."})
 
-    logging.info(f"Input path is valid: {output_path}")
+    merge_file_name = ''
+    merge_file_path = ''
     try:
         if 'MST_Test' == test_team:
             # docx文件打包成zip,下载zip文件
-            zip_path = os.path.join(zip_path, 'zip')
-            if not os.path.exists(zip_path):
-                os.makedirs(zip_path)
-            logging.info(f"Output path is valid and created if needed: {zip_path}")
+            merge_path = os.path.join(merge_path, test_team)
+            if not os.path.exists(merge_path):
+                os.makedirs(merge_path)
+            logging.info(f"Output path is valid and created if needed: {merge_path}")
 
-            file_name, file_path = docx_zip(output_path, zip_path, fileName)
+            merge_file_name, merge_file_path = docx_merge(output_path, merge_path, fileName)
         elif 'IO_Test' == test_team:
             # 直接下载xlsm文件
-            file_name = 'IOTest_Man_Tmplt.xlsm'
-            file_path = os.path.join(output_path, file_name)
+            merge_file_name = 'IOTest_Man_Tmplt.xlsm'
+            merge_file_path = os.path.join(output_path, merge_file_name)
 
     except Exception as e:
         logging.error({'generate_report_fail': {e}})
 
     # 获取文件 MIME 类型
-    mime_type, _ = mimetypes.guess_type(file_name)
+    mime_type, _ = mimetypes.guess_type(merge_file_name)
     mime_type = mime_type or 'application/zip'
-    content_disposition = 'attachment; filename*=UTF-8\'\'{}'.format(file_name)
+    content_disposition = 'attachment; filename*=UTF-8\'\'{}'.format(merge_file_name)
 
-    response = make_response(send_file(file_path, mimetype=mime_type))
+    response = make_response(send_file(merge_file_path, mimetype=mime_type))
     response.headers['Content-Disposition'] = content_disposition
 
     return response
