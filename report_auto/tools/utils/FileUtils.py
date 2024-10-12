@@ -47,7 +47,8 @@ def validate_filename(filename: str, test_team: str) -> str:
     if len(valid_filenames) > 0:
         base_file_name = get_filename_without_extension(filename).lower()
         if base_file_name not in valid_filenames:
-            return (f'文件名 {base_file_name} 不符合规定，请使用以下格式之一：{", ".join(valid_filenames)}')
+            return (
+                f'The file name {base_file_name} does not conform to the regulations, please use one of the following formats：{", ".join(valid_filenames)}')
     return ''  # 或
 
 
