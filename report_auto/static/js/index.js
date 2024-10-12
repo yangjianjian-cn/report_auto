@@ -77,10 +77,6 @@ $("#report_generation").on("click", function () {
 
 // ---------- 下载报告 ----------
 $("#report_download").on("click", function () {
-    if (!report_success) {
-        layer.alert('Please generate a report first', {icon: 3});
-        return false;
-    }
     // 测试项目
     const selectedValue0 = $('#test_project_type_val').val();
     var filenames = uploadedFileName.join(',');
