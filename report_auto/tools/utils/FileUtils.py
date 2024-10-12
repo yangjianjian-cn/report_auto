@@ -67,3 +67,7 @@ def add_subdirectory_to_path(file_path, subdirectory):
     new_file_path = os.path.join(new_dir, file_name)
 
     return new_file_path
+#
+#
+# basename = get_filename_without_extension('C:\\Users\\Administrator\\Downloads\\output\\MST_Test\\csv\\APP_PL_BR_1.csv')
+# print(basename)

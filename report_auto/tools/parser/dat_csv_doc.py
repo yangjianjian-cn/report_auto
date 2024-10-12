@@ -43,12 +43,13 @@ def join_with_br(messages):
 
 def dat_csv_docx(req_data: ReqPOJO):
     csvPathList = []  # 存储 转换成功的CSV文件路径
+    u_files: str = req_data.u_files
 
     # 1.测量数据转换成csv文件
     all_files = os.listdir(req_data.dat_path)
     for file in all_files:
         # dat、mf4 转 csv
-        if file.endswith(".dat"):
+        if file.endswith(".dat") and file in u_files:
             receive_msg = dat_csv_conversion(file, req_data)
             if receive_msg.startswith("err:"):
                 # 转换异常
@@ -62,22 +63,24 @@ def dat_csv_docx(req_data: ReqPOJO):
     error_messages = []
     if 'MST_Test' == req_data.test_team:
         for csvPath in csvPathList:
-            req_data.csv_path = csvPath
-            try:
-                msg = mst_report(req_data)
-                contains_succeed = any('succeed' in m for m in msg)
-                file_name = get_filename_without_extension(req_data.csv_path)
+            fname_no_extension = get_filename_without_extension(csvPath)
+            if fname_no_extension in u_files:
+                req_data.csv_path = csvPath
+                try:
+                    msg = mst_report(req_data)
+                    contains_succeed = any('succeed' in m for m in msg)
+                    file_name = get_filename_without_extension(req_data.csv_path)
 
-                if contains_succeed:
-                    success_msg_list = [m.replace('succeed:', '') for m in msg]
-                    success_msg_str = ''.join(success_msg_list)
-                    success_messages.append(file_name + ' report generated successfully ' + success_msg_str)
-                    updateCounter(req_data)
-                else:
-                    error_msg_str = ''.join(msg)
-                    error_messages.append(file_name + ' report generated unsuccessfully ' + error_msg_str)
-            except Exception as e:
-                raise CustomException(f"report generation exception:{e}")
+                    if contains_succeed:
+                        success_msg_list = [m.replace('succeed:', '') for m in msg]
+                        success_msg_str = ''.join(success_msg_list)
+                        success_messages.append(file_name + ' report generated successfully ' + success_msg_str)
+                        updateCounter(req_data)
+                    else:
+                        error_msg_str = ''.join(msg)
+                        error_messages.append(file_name + ' report generated unsuccessfully ' + error_msg_str)
+                except Exception as e:
+                    raise CustomException(f"report generation exception:{e}")
 
         html_success = join_with_br(success_messages)
         html_error = join_with_br(error_messages)

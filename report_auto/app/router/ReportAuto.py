@@ -133,6 +133,7 @@ def generate_report():
     test_team = data['test_team']
     test_scenario = data['test_scenario']
     test_area = data['test_area']
+    u_files = data['u_files']
 
     # dat文件目录
     dat_path = main.config['input_path']
@@ -179,7 +180,8 @@ def generate_report():
             test_team=test_team,
             test_scenario=test_scenario,
             test_area=test_area,
-            template_path=main.config['template_path']
+            template_path=main.config['template_path'],
+            u_files=u_files
         )
         ret_sucess_msg, ret_err_msg = dat_csv_docx(req_data)
     except Exception as e:

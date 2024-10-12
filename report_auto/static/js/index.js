@@ -34,7 +34,8 @@ $("#report_generation").on("click", function () {
     const jsonData = JSON.stringify({
         "test_team": selectedValue0,
         "test_scenario": selectedValue1,
-        "test_area": selectedValues2
+        "test_area": selectedValues2,
+        "u_files": uploadedFileName.join(',')
     });
 
     var index = layer.load(0, {shade: false}); //0代表加载的风格，支持0-2
