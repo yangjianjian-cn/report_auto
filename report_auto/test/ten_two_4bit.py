@@ -32,8 +32,16 @@ def getBit2(decimal_number: np.float64) -> str:
     return str(second_bit)
 
 
+def getBit0(decimal_number: int) -> str:
+    # 将十进制数转换为二进制字符串，并去掉前缀 "0b"
+    binary_string = bin(decimal_number)[2:]
+
+    # 返回二进制字符串的最低位（即最后一位）
+    return binary_string[-1]
+
+
 # getBit4(251)
 # print(getBit2(168) + ',' + getBit4(168))
-print(getBit2(252) + ',' + getBit4(252))
-print("=========================================================")
-print(getBit2(168) + ',' + getBit4(168))
+# print(getBit0(65))
+# print(getBit0(80))
+# print(getBit0(81))

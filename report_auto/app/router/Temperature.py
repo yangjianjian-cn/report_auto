@@ -48,6 +48,9 @@ def temperature_uploader():
 
     input_path = main.config['input_path']
     input_path = os.path.join(input_path, test_team)
+    if not os.path.exists(input_path):
+        os.makedirs(input_path, exist_ok=True)
+
     save_path = f'{input_path}/{filename}'
 
     try:
@@ -79,14 +82,27 @@ def measure_file_intodb():
     logging.info(f"文件元信息索引:{last_id}")
 
     mdf = MDF(measure_file_path)
+
     selected_columns = ['DC1_Th1', 'DC1_Th2', 'DC1_Th3', 'DC1_Th4', 'DC1_Th5', 'DC1_Th6', 'DC1_Th7',
                         'DC1_Th8', 'TC1_Th1', 'TC1_Th2', 'TC1_Th3', 'TC1_Th4', 'TC1_Th5', 'TC1_Th6',
                         'TC1_Th7', 'TC1_Th8', 'TC1_Th9', 'TC1_Th10', 'TC1_Th11', 'TC1_Th12', 'TC1_Th13',
                         'TC1_Th14', 'TC1_Th15', 'TC1_Th16', 'TC2_Th1', 'TC2_Th2', 'TC2_Th3', 'TC2_Th4',
                         'TC2_Th5', 'TC2_Th6', 'TC2_Th7', 'TC2_Th8', 'TC2_Th9', 'TC2_Th10', 'TC2_Th11',
-                        'TC2_Th12', 'TC2_Th13', 'TECU_t']
+                        'TC2_Th12', 'TC2_Th13']
+    # 检查并添加 TECU_tRaw 或 TECU_t 列
+    if 'TECU_tRaw' in mdf:
+        selected_columns.append('TECU_tRaw')
+        alias_column = 'TECU_tRaw'
+    elif 'TECU_t' in mdf:
+        selected_columns.append('TECU_t')
+        alias_column = 'TECU_t'
+    else:
+        alias_column = None
+
     df = mdf.to_dataframe(channels=selected_columns)
-    logging.info(f"文件:{len(df)}")
+    # 如果存在 TECU_tRaw 或 TECU_t 列，为其起别名
+    if alias_column is not None:
+        df.rename(columns={alias_column: 'TECU_t'}, inplace=True)
 
     # 去除连续的重复行
     # 首先对 DataFrame 进行排序，确保按时间顺序排列
@@ -215,7 +231,13 @@ def temperature_overview():
 
     # 温度时长柱形图和饼状图
     time_diffs, total_minutes = temperature_duration(selected_ids, max_workers=3)
-
+    # 使用排序函数
+    sorted_data = dict(sorted(time_diffs.items(), key=lambda item: float(item[0].split(' ~ ')[0])))
+    # 创建转换后的数据结构，并添加索引
+    time_diffs = [
+        {**{key: value}, 'idx': idx}
+        for idx, (key, value) in enumerate(sorted_data.items())
+    ]
     # 下拉多选框
     multi_select_html = generate_select_options(measurement_file_list)
 
@@ -287,3 +309,10 @@ def get_measurement_file_list():
 
     measurement_file_list = query_table(table_name, columns, where)
     return measurement_file_list
+
+
+# 定义排序依据
+def get_key(item):
+    start_time: str = item.split('~')[0]  # 分割时间区间，获取起始时间
+    start_time: str = start_time.strip()
+    return int(start_time)  # 转换为整数以便排序

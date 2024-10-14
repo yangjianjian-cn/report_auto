@@ -1,42 +1,46 @@
 // 获取 total_minutes 的值
-var totalMinutes = document.getElementById('total-minutes').value;
+let totalMinutes = document.getElementById('total-minutes').value;
 
 // 获取 time_diffs 的值，并解析为 JSON 对象
-var timeDiffsJson = document.getElementById('time-diffs').value;
-var timeDiffs = JSON.parse( timeDiffsJson);
+//  [{'40 ~ 45': 0.77, 'idx': 0}, {'45 ~ 50': 62.38, 'idx': 1}, {'50 ~ 55': 5.5600000000000005, 'idx': 2}, {'55 ~ 60': 4.24, 'idx': 3}, {'60 ~ 65': 22.67, 'idx': 4}, {'65 ~ 70': 11.52, 'idx': 5}]
+let timeDiffsJson = document.getElementById('time-diffs').value;
+let timeDiffs = JSON.parse(timeDiffsJson);
 
-var dom = document.getElementById('temperature_duration');
-var myChart = echarts.init(dom, null, {
+// 定义颜色数组
+const t_colors = ['#0000FF', '#00FF00', '#FFFF00', '#FF0000'];
+
+// 使用 reduce 方法转换数据(柱形图)
+// {
+//     "40 ~ 45": 0.77,
+//     "45 ~ 50": 62.38,
+//     "50 ~ 55": 5.5600000000000005,
+//     "55 ~ 60": 4.24,
+//     "60 ~ 65": 22.67,
+//     "65 ~ 70": 11.52
+// }
+const convertedData = timeDiffs.reduce((acc, curr) => {
+    // 遍历当前对象的每个属性
+    for (let key in curr) {
+        if (curr.hasOwnProperty(key) && key !== 'idx') {
+            acc[key] = curr[key];
+        }
+    }
+    return acc;
+}, {});
+
+// 找到 idx 的最小值和最大值
+const idxValues = timeDiffs.map(item => item.idx);
+const minIdx = Math.min(...idxValues);
+const maxIdx = Math.max(...idxValues);
+
+let dom = document.getElementById('temperature_duration');
+let myChart = echarts.init(dom, null, {
     renderer: 'canvas',
     useDirtyRect: false
 });
-var app = {};
-
-var option;
-
-const builderJson = {
-    charts: timeDiffs
-};
-const downloadJson = timeDiffs;
-
-// const waterMarkText = 'RBCD-EED';
-// const canvas = document.createElement('canvas');
-// const ctx = canvas.getContext('2d');
-// canvas.width =200;
-// ctx.textAlign = 'center';
-// ctx.textBaseline = 'middle';
-// ctx.globalAlpha = 0.08;
-// ctx.font = '20px Microsoft Yahei';
-// ctx.translate(50, 50);
-// ctx.rotate(-Math.PI / 4);
-// ctx.fillText(waterMarkText, 0, 0);
+let option;
 
 option = {
-    // backgroundColor: {
-    //     type: 'pattern',
-    //     image: canvas,
-    //     repeat: 'repeat'
-    // },
     tooltip: {},
     title: [
         {
@@ -83,7 +87,7 @@ option = {
     yAxis: [
         {
             type: 'category',
-            data: Object.keys(builderJson.charts),
+            data: Object.keys(convertedData),
             axisLabel: {
                 interval: 0,
                 rotate: 30
@@ -93,6 +97,15 @@ option = {
             }
         }
     ],
+    visualMap: {
+        top: 50,
+        right: 10,
+        min: minIdx, // 最小idx
+        max: maxIdx, // 最大idx
+        inRange: {
+            color: t_colors // 蓝色到红色渐变
+        }
+    },
     series: [
         {
             type: 'bar',
@@ -102,25 +115,26 @@ option = {
                 position: 'right',
                 show: true
             },
-            data: Object.keys(builderJson.charts).map(function (key) {
-                return builderJson.charts[key];
+            data: Object.keys(convertedData).map(function (key) {
+                return convertedData[key];
             })
         },
         {
             type: 'pie',
             radius: [0, '40%'],
             center: ['75%', '40%'],
-            data: Object.keys(downloadJson).map(function (key) {
+            emphasis: {
+                focus: 'self'
+            },
+            data: Object.keys(convertedData).map(function (key) {
                 return {
-                    name: key.replace('.js', ''),
-                    value: downloadJson[key]
+                    name: key,
+                    value: convertedData[key]
                 };
             })
         }
     ]
 };
-
 if (option && typeof option === 'object') {
     myChart.setOption(option);
 }
-// window.addEventListener('resize', myChart.resize);

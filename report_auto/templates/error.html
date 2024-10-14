@@ -18,14 +18,14 @@
     <script type="text/javascript" src="/static/layer/layer.js"></script>
     <script type="text/javascript" src="/static/layer/layui.js"></script>
 
-   <style>
-       my_img {
+    <style>
+        my_img {
             position: absolute;
             top: 50%; /* 垂直居中 */
             left: 50%; /* 水平居中 */
             transform: translate(-50%, -50%); /* 考虑元素本身的宽度和高度 */
         }
-   </style>
+    </style>
 </head>
 <body>
 <div class="layui-header header header-docs">
@@ -47,10 +47,10 @@
     <div class="layui-panel site-menu" style="width: 18%; display: inline-block">
         <ul class="layui-menu layui-menu-lg site-docs-menu">
             <li class="layui-menu-item-group" lay-options="{type: 'group', isAllowSpread: true}">
-                <div class="layui-menu-body-title"> 菜单区</div>
+                <div class="layui-menu-body-title">Chip Temperature</div>
                 <hr>
                 <ul>
-                   <li>
+                    <li class="layui-menu-item-checked2">
                         <div class="layui-menu-body-title">
                             <a href="/temperature/list">
                                 <span>测量数据</span>
@@ -58,7 +58,7 @@
                             </a>
                         </div>
                     </li>
-                    <li class="layui-menu-item-checked2">
+                    <li>
                         <div class="layui-menu-body-title">
                             <a href="/temperature/overview">
                                 <span>数据概述</span>
@@ -66,7 +66,7 @@
                             </a>
                         </div>
                     </li>
-                    <li class="layui-menu-item-checked2">
+                    <li>
                         <div class="layui-menu-body-title">
                             <a href="/temperature/details">
                                 <span>数据详情</span>

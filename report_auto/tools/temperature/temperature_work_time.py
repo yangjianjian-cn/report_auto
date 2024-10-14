@@ -22,7 +22,7 @@ def process_file(file_ids: list):
     table_name = 'chip_temperature'
     columns = 'file_id, timestamps, TECU_t'
     file_ids_str_for_query = ', '.join(map(str, file_ids))
-    where_clause = f' WHERE file_id IN ({file_ids_str_for_query})'
+    where_clause = f' WHERE file_id = {file_ids_str_for_query} '
 
     try:
         records = query_table(table_name, columns, where=where_clause)
@@ -32,7 +32,7 @@ def process_file(file_ids: list):
         cur_time_diffs = defaultdict(float)
 
         # 定义温度区间
-        temperature_intervals = list(range(-40, 140, 5))
+        temperature_intervals = list(range(-40, 120, 5))
 
         # 计算每个温度区间的时间差
         for start_temp, end_temp in zip(temperature_intervals, temperature_intervals[1:]):
@@ -41,7 +41,7 @@ def process_file(file_ids: list):
 
             if not filtered_df.empty:
                 time_diff = (filtered_df['timestamps'].max() - filtered_df['timestamps'].min()) / 60
-                cur_time_diffs[f'{start_temp}-{end_temp}'] = round(time_diff, 2)
+                cur_time_diffs[f'{start_temp} ~ {end_temp}'] = round(time_diff, 2)
     except Exception as e:
         logging.error(f"An error occurred: {e}")
 
