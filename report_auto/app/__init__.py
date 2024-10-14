@@ -26,10 +26,17 @@ main = create_app()
 
 # Database connection configuration
 # 111.231.0.147:ba:3307:1qazxsw2:measurement
+# mysql_config = {
+#     'host': 'sh-cynosdbmysql-grp-rykty3lm.sql.tencentcdb.com',
+#     'user': 'ba',
+#     'port': 26338,
+#     'password': '1qazxsw2',
+#     'database': 'measurement'
+# }
 mysql_config = {
-    'host': 'sh-cynosdbmysql-grp-rykty3lm.sql.tencentcdb.com',
+    'host': '10.0.4.14',
     'user': 'ba',
-    'port': 26338,
+    'port': 3306,
     'password': '1qazxsw2',
     'database': 'measurement'
 }
