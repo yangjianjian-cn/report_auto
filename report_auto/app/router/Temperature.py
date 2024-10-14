@@ -4,6 +4,7 @@ import logging
 import os
 
 from asammdf import MDF
+from asammdf.blocks.utils import MdfException
 from flask import request, render_template, jsonify
 
 from app import main
@@ -82,7 +83,6 @@ def measure_file_intodb():
     logging.info(f"文件元信息索引:{last_id}")
 
     mdf = MDF(measure_file_path)
-
     selected_columns = ['DC1_Th1', 'DC1_Th2', 'DC1_Th3', 'DC1_Th4', 'DC1_Th5', 'DC1_Th6', 'DC1_Th7',
                         'DC1_Th8', 'TC1_Th1', 'TC1_Th2', 'TC1_Th3', 'TC1_Th4', 'TC1_Th5', 'TC1_Th6',
                         'TC1_Th7', 'TC1_Th8', 'TC1_Th9', 'TC1_Th10', 'TC1_Th11', 'TC1_Th12', 'TC1_Th13',
@@ -99,7 +99,13 @@ def measure_file_intodb():
     else:
         alias_column = None
 
-    df = mdf.to_dataframe(channels=selected_columns)
+    # 过滤掉不存在的列
+    existing_columns = [col for col in selected_columns if col in mdf.channels_db]
+    try:
+        df = mdf.to_dataframe(channels=existing_columns)
+    except MdfException as e:
+        logging.error(f"Error converting to DataFrame: {e}")
+
     # 如果存在 TECU_tRaw 或 TECU_t 列，为其起别名
     if alias_column is not None:
         df.rename(columns={alias_column: 'TECU_t'}, inplace=True)

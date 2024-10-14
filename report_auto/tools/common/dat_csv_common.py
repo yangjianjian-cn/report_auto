@@ -7,7 +7,7 @@ from asammdf import MDF
 from pojo.IOTestCounter import load_from_io_json, IOTestCounter
 from pojo.MSTCounter import load_from_mst_json, MSTCounter
 from pojo.MSTReqPOJO import ReqPOJO
-from tools.common.csv_column_rename import reMstDF, retIODF, retHTM
+from tools.common.csv_column_rename import reMstDF, retIODF
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 
@@ -68,19 +68,7 @@ def dat_csv_conversion(dat_file: str, req_data: ReqPOJO) -> str:
             df = df[columns_to_include]
 
         elif "HTM" == req_data.test_team:
-
-            selected_columns_dc1, selected_columns_tc1, selected_columns_tc2, selected_columns_tecu = retHTM()
-
-            dc1df = mdf.to_dataframe(channels=selected_columns_tecu)
-
-            df = mdf.to_dataframe(channels=selected_columns_dc1)
-
-            df = mdf.to_dataframe(channels=selected_columns_tc1)
-
-            df = mdf.to_dataframe(channels=selected_columns_tc2)
-
-            return csv_file
-
+            pass
         with open(csv_file, 'w', newline='') as f:
             df.to_csv(f, index=True)
         return csv_file

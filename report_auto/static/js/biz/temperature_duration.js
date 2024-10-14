@@ -42,6 +42,12 @@ let option;
 
 option = {
     tooltip: {},
+    toolbox: {
+        show: true,
+        feature: {
+            saveAsImage: {}
+        }
+    },
     title: [
         {
             text: 'TECU_T temperature duration',
@@ -97,15 +103,15 @@ option = {
             }
         }
     ],
-    visualMap: {
-        top: 50,
-        right: 10,
-        min: minIdx, // 最小idx
-        max: maxIdx, // 最大idx
-        inRange: {
-            color: t_colors // 蓝色到红色渐变
-        }
-    },
+    // visualMap: {
+    //     top: 50,
+    //     right: 10,
+    //     min: minIdx, // 最小idx
+    //     max: maxIdx, // 最大idx
+    //     inRange: {
+    //         color: t_colors // 蓝色到红色渐变
+    //     }
+    // },
     series: [
         {
             type: 'bar',

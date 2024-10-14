@@ -49,7 +49,7 @@ def initial_state(df_selected: DataFrame):
     err_msg = []
     begin_time = None
     end_time = None
-    replacements ={}
+    replacements = {}
 
     # Enter initial state
     # Tra_numGear
@@ -74,7 +74,7 @@ def initial_state(df_selected: DataFrame):
         err_msg.append('initial state Epm_nEng ∈ [600,800] failure')
         replacements = main_brake_plausibility_check_replacements(is_fail="√")
         return ret_fault_detection(begin_time, end_time, err_msg, replacements, initial_state_df)
-    return err_msg,replacements,initial_state_df
+    return err_msg, replacements, initial_state_df
 
 
 def fault_detection(initial_state_df: DataFrame, brkStMn: bool, brkStRed: bool):
@@ -142,9 +142,7 @@ def fault_detection(initial_state_df: DataFrame, brkStMn: bool, brkStRed: bool):
         return ret_fault_detection(begin_time, end_time, err_msg, replacements, initial_state_df)
 
     # Everything is OK.
-    replacements = main_brake_plausibility_check_replacements(brk_stmn="√", dfc_brkplauschk='√', brk_st='√',
-                                                              is_dfc_brknpl='√',
-                                                              is_pass='√')
+    replacements = main_brake_plausibility_check_replacements(brk_stmn="√", dfc_brkplauschk='√', brk_st='√',is_dfc_brknpl='√',is_pass='√')
 
     return ret_fault_detection(begin_time, end_time, err_msg, replacements, initial_state_df)
 

@@ -208,8 +208,6 @@ def fault_detection(initial_state_df: DataFrame):
 
     # DFC_APPPlausBrk
     signals_dfes = find_columns_with_dfc_err_type(fault_detection_df_8, FAULT_TYPE_MAPPING.get('brake_override_accelerator'))
-    print(signals_dfes)
-
     if len(signals_dfes) > 0:
         logging.info("DFC_APPPlausBrk is set")
     else:
