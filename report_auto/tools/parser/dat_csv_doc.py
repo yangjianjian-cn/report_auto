@@ -91,7 +91,7 @@ def dat_csv_docx(req_data: ReqPOJO):
             output_path = analogue_input(req_data)
             success_messages.append(output_path)
             success_messages.append("<br/>")
-            updateCounter(req_data)
+            # updateCounter(req_data)
         except Exception as e:
             raise CustomException(f"report generation exception:{e}")
         return success_messages, error_messages
