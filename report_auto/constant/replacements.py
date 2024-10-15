@@ -23,7 +23,7 @@ def brake_override_accelerator_replacements(brk_st=" ", app_bplabrk=" ", app_run
 
 def main_brake_plausibility_check_replacements(brk_stmn="", dfc_brkplauschk="", brk_st="", is_dfc_brkplauschk="",
                                                is_dfc_brknpl="",
-                                               is_pass="", is_fail=""):
+                                               is_pass="", is_fail="" ):
     replacements = {
         "{1}": brk_stmn,
         "{2}": dfc_brkplauschk,

@@ -104,6 +104,7 @@ option = {
         }
     ],
     // visualMap: {
+    //     show: true,
     //     top: 50,
     //     right: 10,
     //     min: minIdx, // 最小idx
@@ -132,7 +133,9 @@ option = {
             emphasis: {
                 focus: 'self'
             },
-            data: Object.keys(convertedData).map(function (key) {
+            data: Object.keys(convertedData).map((key, index) => {
+                const idx = timeDiffs.find(item => Object.keys(item).includes(key)).idx;
+                console.log(idx)
                 return {
                     name: key,
                     value: convertedData[key]

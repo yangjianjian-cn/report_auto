@@ -44,24 +44,21 @@ def initial_state(df_selected: DataFrame):
     end_time = None
     replacements = {}
 
+    begin_time = df_selected.iloc[0]['timestamps']
     condition1 = df_selected['CoEng_st'] == 'COENG_RUNNING'
     initial_state_df = df_selected[condition1]
-    if len(initial_state_df) > 0:
-        begin_time = initial_state_df.iloc[0]['timestamps']
-        logging.info(f"initial state Tra_numGear =0 succeed:{len(initial_state_df)}")
-    else:
+    if len(initial_state_df) == 0:
         err_msg.append('initial state Tra_numGear =0 failure ')
         replacements = neutral_gear_sensor_plausibility_replacements(is_fail='√', gbx_stnpos='❌ ')
-        return ret_fault_detection(end_time, begin_time, replacements, err_msg, initial_state_df)
+        return ret_fault_detection(begin_time + 5, begin_time, replacements, err_msg, initial_state_df)
 
+    begin_time = initial_state_df.iloc[0]['timestamps']
     condition2 = initial_state_df['VehV_v'] > 0
     initial_state_df = initial_state_df[condition2]
-    if len(initial_state_df) > 0:
-        logging.info(f"initial state VehV_v > 0 succeed:{len(initial_state_df)}")
-    else:
+    if len(initial_state_df) == 0:
         err_msg.append('initial state VehV_v > 0 failure ')
         replacements = neutral_gear_sensor_plausibility_replacements(is_fail='√', gbx_stnpos='❌ ')
-        return ret_fault_detection(end_time, begin_time, replacements, err_msg, initial_state_df)
+        return ret_fault_detection(begin_time + 5, begin_time, replacements, err_msg, initial_state_df)
 
     return err_msg, replacements, initial_state_df
 
@@ -72,15 +69,13 @@ def fault_detection(initial_state_df: DataFrame):
     err_msg = []
 
     # 2.Fault detection
+    begin_time = initial_state_df.iloc[0]['timestamps']
     condition3 = initial_state_df['Gbx_stNPos'] == 0
     fault_detection_df = initial_state_df[condition3]
-    if len(fault_detection_df) > 0:
-        begin_time = fault_detection_df.iloc[0]['timestamps']
-        logging.info(f"fault detection Gbx_stNPos =0 succeed:{len(fault_detection_df)}")
-    else:
+    if len(fault_detection_df) == 0:
         err_msg.append('fault detection Gbx_stNPos =0 failure ')
         replacements = neutral_gear_sensor_plausibility_replacements(is_fail='√', gbx_stnpos='❌ ')
-        return ret_fault_detection(end_time, begin_time, replacements, err_msg, fault_detection_df)
+        return ret_fault_detection(begin_time + 5, begin_time, replacements, err_msg, fault_detection_df)
 
     # 定义需要检查的档位列表
     gbx_stgearshftdet_is1 = None
