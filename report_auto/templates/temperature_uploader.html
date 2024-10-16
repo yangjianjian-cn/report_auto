@@ -147,6 +147,11 @@
                 test_area: ""
             },
             choose: function (obj) {
+                if (obj.filename.length > 64) {
+                    layer.alert('File name exceeding 64 characters', icon = 0)
+                    return
+                }
+
                 var that = this;
                 this.files = obj.pushFile(); // 将每次选择的文件追加到文件队列
 
