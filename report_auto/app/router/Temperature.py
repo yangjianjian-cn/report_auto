@@ -106,6 +106,11 @@ def measure_file_intodb():
     except MdfException as e:
         logging.error(f"Error converting to DataFrame: {e}")
 
+    # TECU_tRaw\ETKC:1
+    column_names = df.columns.tolist()
+    alias_column_names = {item: item.split('\\')[0] for item in column_names}
+    df.rename(columns=alias_column_names, inplace=True)
+
     # 如果存在 TECU_tRaw 或 TECU_t 列，为其起别名
     if alias_column is not None:
         df.rename(columns={alias_column: 'TECU_t'}, inplace=True)
