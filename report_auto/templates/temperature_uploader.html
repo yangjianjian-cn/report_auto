@@ -132,12 +132,18 @@
         auto: false, // 不自动上传
         swf: '/path/to/Uploader.swf', // swf 文件路径，用于 Flash 模式下运行
         server: '/temperature/upload', // 文件接收服务
+        // 设置超时时间为30秒
+        timeout: 30000,
         pick: '#temperature_picker', // 文件选择按钮
         accept: {
             title: 'Files',
             extensions: 'mf4,dat',
             mimeTypes: '.mf4,.dat'
         },
+        // 开启分片
+        chunked: true,
+        // 每个分片的大小，默认为20MB。
+        chunkSize: 20 * 1024 * 1024,
         duplicate: true, // 是否检查重复上传
         compress: false, // 不压缩图片
         fileNumLimit: 10, // 最多上传文件数量限制
@@ -165,8 +171,10 @@
         // var tr = $('#' + file.id);
         // tr.find('.progress-bar').hide(); // 隐藏进度条
         // tr.find('.demo-reload').removeClass('layui-hide'); // 显示重传按钮
+
+        layer.info("Uploaded file successfully");
         if (response.upload_success) {
-            var ret_data = {
+            let ret_data = {
                 "test_team": "HTM",
                 "test_scenario": "",
                 "test_area": "",
@@ -222,13 +230,13 @@
             .then(data => {
                 let generate_report_failed = data.generate_report_failed;
                 if (generate_report_failed.length === 0) {
-                    layer.alert("Upload successful", {icon: 6});
+                    layer.alert("Converted file successfully", {icon: 6});
                 } else {
                     layer.alert(generate_report_failed, {icon: 5});
                 }
             })
             .catch(error => {
-                layer.alert(`Request failed: ${error}`, {icon: 5});
+                layer.alert(`Failed to convert file: ${error}`, {icon: 5});
             });
     }
 

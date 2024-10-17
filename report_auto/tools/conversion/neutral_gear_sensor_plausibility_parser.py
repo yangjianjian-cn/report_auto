@@ -134,7 +134,7 @@ def fault_detection(initial_state_df: DataFrame):
 def draw_graph(draw_fault_detection_df: DataFrame, req_data: ReqPOJO, replacements: map):
     logging.info(f"模板参数:{replacements}")
 
-    signals = ['CoEng_st', 'VehV_v', 'Gbx_stNPos', 'Tra_numGear', 'Gbx_stGearShftDet', 'DFC_st.DFC_GbxNPosNpl']
+    signals = ['VehV_v', 'Gbx_stNPos', 'Tra_numGear', 'Gbx_stGearShftDet', 'DFC_st.DFC_GbxNPosNpl']
     logging.info(f"信号列:{signals}")
 
     output_name = Path(req_data.csv_path).stem

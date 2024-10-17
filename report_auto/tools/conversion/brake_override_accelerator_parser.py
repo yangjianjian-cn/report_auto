@@ -175,10 +175,8 @@ def fault_detection(initial_state_df: DataFrame):
 
 
 def draw_img(draw_fault_detection_df: DataFrame, req_data: ReqPOJO, replacements: map):
-    signals = ['Brk_st', 'APP_bPlaBrk', 'APP_rUnFlt', 'APP_r']
+    signals = ['Brk_st', 'APP_bPlaBrk', 'APP_rUnFlt', 'APP_r','VehV_v','Epm_nEng','CEngDsT_t','Tra_numGear']
     output_name = Path(req_data.csv_path).stem
     req_data.doc_output_name = output_name
-
-    # print(draw_fault_detection_df)
     output_path = replace_variables_in_doc(replacements, draw_fault_detection_df, signals, req_data)
     return output_path

@@ -1,4 +1,5 @@
 import logging
+from typing import List
 
 import pandas as pd
 from pandas import DataFrame
@@ -42,13 +43,18 @@ def replace_placeholders_in_boa_tables(doc, replacements):
     replace_placeholders_in_docx(doc, replacements)
 
 
+'''
+signals: 信号列
+'''
+
+
 def get_signals(fault_detection_df: DataFrame, docTemplateName: str, signals: list):
     # 异常类型
     fault_type: str = FAULT_TYPE_MAPPING.get(docTemplateName)
     # 异常类型数值列
     fault_type_column: str = f"DFC_st.{fault_type}"
 
-    # 异常类型列
+    # 异常类型
     fault_type: str = FAULT_TYPE_MAPPING.get(docTemplateName)
     if fault_type is not None:
         columns_with_faults = find_columns_with_dfc_err_type(fault_detection_df, fault_type)
@@ -65,29 +71,80 @@ def get_signals(fault_detection_df: DataFrame, docTemplateName: str, signals: li
     return signals, fault_detection_df
 
 
-def draw_img_in_boa_doc(fault_detection_df, img_output_path: str, docTemplateName: str, signals: list) -> str:
-    signals, fault_detection_df = get_signals(fault_detection_df, docTemplateName, signals)
+'''
+signals: 信号列
+'''
 
-    # 3. 绘制二维坐标轴
-    # ##创建一个新的图形
-    fig, ax = plt.subplots(figsize=(8, 4))  # 10,6
 
-    for signal in signals:
-        ax.plot(fault_detection_df['timestamps'], fault_detection_df[signal], label=signal)
+def draw_img_in_boa_doc(fault_detection_df: pd.DataFrame, img_output_path: str, docTemplateName: str,
+                        signals: List[str]) -> str:
+    try:
+        # 获取最终的信号列表和 DataFrame
+        signals, fault_detection_df = get_signals(fault_detection_df, docTemplateName, signals)
 
-    # ##添加图例
-    ax.legend()
+        # 确保 'timestamps' 在信号列表中
+        if 'timestamps' not in signals:
+            signals.append('timestamps')
+        fault_detection_df = fault_detection_df.loc[:, signals]
 
-    # ##设置图表标题和轴标签
-    ax.set_title('Signals Over Time')
-    ax.set_xlabel('Timestamps(s)')
-    ax.set_ylabel('Signal Value')
+        # 找出每个信号的最大值
+        max_values = fault_detection_df.drop(columns=['timestamps']).max()
 
-    # 4. 保存图表到文件
-    plt.tight_layout()
-    plt.savefig(img_output_path)
-    plt.close()
-    return img_output_path
+        # 分类信号
+        small_y_axis_signals = [col for col in max_values.index if max_values[col] <= 100]
+        large_y_axis_signals = [col for col in max_values.index if max_values[col] > 100]
+
+        # 创建一个新的图形
+        fig, ax1 = plt.subplots(figsize=(10, 6))
+
+        # 绘制第一个Y轴的信号
+        for signal in small_y_axis_signals:
+            ax1.plot(fault_detection_df['timestamps'], fault_detection_df[signal], label=signal)
+        ax1.set_xlabel('Timestamps (s)')
+        ax1.set_ylabel('Signal Values(L)', color='blue')
+        ax1.set_ylim(0, 100)  # 设置第一个Y轴的范围从0到100
+        ax1.yaxis.set_major_locator(plt.MultipleLocator(10))  # 设置第二个Y轴的刻度间隔为100
+        ax1.tick_params(axis='y', labelcolor='blue')
+
+        # 添加图例
+        if small_y_axis_signals:
+            ax1.legend(loc='upper left')  # 图例显示在左边
+
+        # 如果有大于100的信号，创建第二个Y轴
+        if large_y_axis_signals:
+            max_large_value = max_values[large_y_axis_signals].max()
+            ax2 = ax1.twinx()
+            for signal in large_y_axis_signals:
+                ax2.plot(fault_detection_df['timestamps'], fault_detection_df[signal], label=signal, linestyle='--')
+            ax2.set_ylabel('Signal Values(R)', color='red')
+            ax2.set_ylim(100, max_large_value)  # 动态设置第二个Y轴的范围
+            ax2.yaxis.set_major_locator(plt.MultipleLocator(100))  # 设置第二个Y轴的刻度间隔为100
+            ax2.tick_params(axis='y', labelcolor='red')
+
+            # 设置第二个Y轴的位置
+            ax2.spines['right'].set_position(('outward', 60))  # 可以调整数值来改变位置
+            ax2.yaxis.set_label_coords(1.15, 0.5)  # 调整Y轴标签的位置
+
+            # 添加图例
+            ax2.legend(loc='upper right')  # 图例显示在右边
+
+        # 设置图表标题
+        ax1.set_title('Signals Over Time')
+
+        # 调整布局
+        plt.tight_layout()
+
+        # 保存图表到文件
+        plt.savefig(img_output_path)
+
+        # 关闭图形
+        plt.close(fig)
+
+        return img_output_path
+
+    except Exception as e:
+        print(f"An error occurred: {e}")
+        return ""
 
 
 """
