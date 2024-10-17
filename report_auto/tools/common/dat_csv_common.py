@@ -56,7 +56,7 @@ def dat_csv_conversion(dat_file: str, req_data: ReqPOJO) -> str:
 
             df = reMstDF(df, output_file_name)
 
-        elif 'IO_Test' == req_data.test_team and 'AnalogueInput' == req_data.test_scenario:
+        elif 'IO_Test' == req_data.test_team and 'analogue_input' == req_data.test_scenario:
             # IO Test测量数据
             df = mdf.to_dataframe()
 

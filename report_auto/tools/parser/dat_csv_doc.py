@@ -131,7 +131,7 @@ def updateCounter(req_data: ReqPOJO):
         save_to_mst_json(counter_mst_file, mst_counter)
 
     elif 'IO_Test' == test_team:
-        counter_io_file = os.path.join(counter_path, 'mst_report_counter.json')
+        counter_io_file = os.path.join(counter_path, 'io_report_counter.json')
         io_counter = load_from_io_json(counter_io_file)
 
         # 如果文件内容为空或无法解析，创建默认对象

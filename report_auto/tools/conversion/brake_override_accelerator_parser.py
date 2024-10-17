@@ -50,19 +50,17 @@ def initial_state(df_selected: DataFrame):
     # 1.Enter initial state
     begin_time = df_selected.iloc[0]['timestamps']
 
-    condition1_1 = df_selected['Tra_numGear'] == 1  # 档位 1
-    condition1_2 = df_selected['timestamps'] >= begin_time
-    df_selected_1 = df_selected[condition1_1 & condition1_2]
+    condition1 = df_selected['Tra_numGear'] == 1  # 档位 1
+    df_selected_1 = df_selected[condition1]
     if len(df_selected_1) == 0:
-        err_msg.append('initial state Tra_numGear >=1 failed')
+        err_msg.append('initial state Tra_numGear =1 failed')
         draw_fault_detection_df = df_selected[
             df_selected['timestamps'] >= begin_time & df_selected['timestamps'] <= begin_time + 5]
         return err_msg, draw_fault_detection_df
 
     begin_time = df_selected_1.iloc[0]['timestamps']
-    condition2_1 = df_selected_1['timestamps'] >= begin_time
-    condition2_2 = df_selected_1['VehV_v'] > 0  # 车速 0
-    df_selected_2 = df_selected_1[condition2_1 & condition2_2]
+    condition2 = df_selected_1['VehV_v'] > 0  # 车速 0
+    df_selected_2 = df_selected_1[condition2]
     if len(df_selected_2) == 0:
         err_msg.append('initial state VehV_v >=10 failed')
         draw_fault_detection_df = df_selected_1[
@@ -70,9 +68,8 @@ def initial_state(df_selected: DataFrame):
         return err_msg, draw_fault_detection_df
 
     begin_time = df_selected_2.iloc[0]['timestamps']
-    condition4_1 = df_selected_2['timestamps'] >= begin_time
-    condition4_2 = df_selected_2['Epm_nEng'] >= 400  # 转速 >= 400rpm
-    df_selected_4 = df_selected_2[condition4_1 & condition4_2]
+    condition4 = df_selected_2['Epm_nEng'] >= 400  # 转速 >= 400rpm
+    df_selected_4 = df_selected_2[condition4]
     if len(df_selected_4) == 0:
         err_msg.append('initial state Epm_nEng >=400 failed')
         draw_fault_detection_df = df_selected_2[
@@ -80,32 +77,30 @@ def initial_state(df_selected: DataFrame):
         return err_msg, draw_fault_detection_df
 
     begin_time = df_selected_4.iloc[0]['timestamps']
-    condition5_1 = df_selected_4['timestamps'] >= begin_time
-    condition5_2 = df_selected_4['CEngDsT_t'] >= 25  # 水温大于等于25℃
-    df_selected_5 = df_selected_4[condition5_1 & condition5_2]
+    condition5 = df_selected_4['CEngDsT_t'] >= 25  # 水温大于等于25℃
+    df_selected_5 = df_selected_4[condition5]
     if len(df_selected_5) == 0:
         draw_fault_detection_df = df_selected_4[
             df_selected_4['timestamps'] >= begin_time & df_selected_4['timestamps'] <= begin_time + 5]
         return err_msg, draw_fault_detection_df
 
+    # df_selected_4数据集中，APP_r >= 20 存在即可
     begin_time = df_selected_5.iloc[0]['timestamps']
-    condition3_1 = df_selected_5['timestamps'] >= begin_time
-    condition3_2 = df_selected_5['APP_r'] >= 25  # 油门 >= 25%
-    df_selected_3 = df_selected_5[condition3_1 & condition3_2]
+    condition3 = df_selected_5['APP_r'] >= 20  # 油门 >= 25%
+    df_selected_3 = df_selected_5[condition3]
     if len(df_selected_3) == 0:
         err_msg.append('initial state APP_r >=20 failed')
         draw_fault_detection_df = df_selected_5[
             df_selected_5['timestamps'] >= begin_time & df_selected_5['timestamps'] <= begin_time + 5]
         return err_msg, draw_fault_detection_df
 
-    return err_msg, df_selected_3
+    return err_msg, df_selected_5
 
 
 def fault_detection(initial_state_df: DataFrame):
     err_msg = []
 
     # 2. Fault detection
-
     begin_time = initial_state_df.iloc[0]['timestamps']
     # Brk_stMn
     condition6 = initial_state_df['Brk_stMn'] == True
@@ -136,7 +131,7 @@ def fault_detection(initial_state_df: DataFrame):
     # 4.Press brake simultaneously (APP still pressed), until Brk_st=3 and hold it for some time (10sec)
     begin_time = fault_detection_df_8.iloc[0]['timestamps']
 
-    # APP_bPlaBrk
+    # fault_detection_df_8数据集中，APP_bPlaBrk=1，存在即可
     condition9 = fault_detection_df_8['APP_bPlaBrk'] == 1
     fault_detection_df_9 = fault_detection_df_8[condition9]
     if len(fault_detection_df_9) == 0:
@@ -144,40 +139,39 @@ def fault_detection(initial_state_df: DataFrame):
         replacements = brake_override_accelerator_replacements(brk_st='√', app_bplabrk='❌', isfail='√')
         return r_fault_detection(begin_time + 5, begin_time, fault_detection_df_8, err_msg, replacements)
 
-    # APP_rUnFlt
+    #  fault_detection_df_8数据集中，APP_rUnFlt >0 ,存在即可
     condition10 = fault_detection_df_8['APP_rUnFlt'] > 0
     fault_detection_df_10 = fault_detection_df_8[condition10]
     if len(fault_detection_df_10) == 0:
         err_msg.append('Fault detection:APP_rUnFlt > 0 failed')
         replacements = brake_override_accelerator_replacements(brk_st='√', app_bplabrk='√', app_runflt='❌', isfail='√')
-        return r_fault_detection(begin_time + 5, begin_time, initial_state_df, err_msg, replacements)
+        return r_fault_detection(begin_time + 5, begin_time, fault_detection_df_8, err_msg, replacements)
 
-    # APP_r
+    # fault_detection_df_8数据集，APP_r=0存在即可
     condition11 = fault_detection_df_8['APP_r'] == 0
     fault_detection_df_11 = fault_detection_df_8[condition11]
     if len(fault_detection_df_11) == 0:
-
         err_msg.append('Fault detection:APP_r == 0 failed')
         replacements = brake_override_accelerator_replacements(brk_st='√', app_bplabrk='√', app_runflt='√', app_r='❌',
                                                                isfail='√')
-        return r_fault_detection(begin_time + 5, begin_time, initial_state_df, err_msg, replacements)
+        return r_fault_detection(begin_time + 5, begin_time, fault_detection_df_8, err_msg, replacements)
 
-    # DFC_APPPlausBrk
+    # fault_detection_df_8数据集，DFC_APPPlausBrk异常出现即可
     signals_dfes = find_columns_with_dfc_err_type(fault_detection_df_8,FAULT_TYPE_MAPPING.get('brake_override_accelerator'))
     if len(signals_dfes) ==0:
         err_msg.append('Fault detection: DFC_APPPlausBrk is set failed')
         replacements = brake_override_accelerator_replacements(brk_st='√', app_bplabrk='√', app_runflt='√', app_r='√',
                                                                result='❌', isfail='√')
-        return r_fault_detection(begin_time + 5, begin_time, initial_state_df, err_msg, replacements)
+        return r_fault_detection(begin_time + 5, begin_time, fault_detection_df_8, err_msg, replacements)
 
-    # fault detection succeed
+    # fault detection succeed，计算end_time
     condition12 = fault_detection_df_8[signals_dfes[0]] == FAULT_TYPE_MAPPING.get('brake_override_accelerator')
     fault_detection_df_12 = fault_detection_df_8[condition12]
     end_time = fault_detection_df_12['timestamps'].iloc[-1]
     total_time_spent = end_time - begin_time
     replacements = brake_override_accelerator_replacements(brk_st='√', app_bplabrk='√', app_runflt='√', app_r='√',
                                                            result='√', ispass='√', total_time_spent=total_time_spent)
-    return r_fault_detection(end_time, begin_time, initial_state_df, err_msg, replacements)
+    return r_fault_detection(end_time, begin_time, fault_detection_df_8, err_msg, replacements)
 
 
 def draw_img(draw_fault_detection_df: DataFrame, req_data: ReqPOJO, replacements: map):
@@ -185,9 +179,6 @@ def draw_img(draw_fault_detection_df: DataFrame, req_data: ReqPOJO, replacements
     output_name = Path(req_data.csv_path).stem
     req_data.doc_output_name = output_name
 
+    # print(draw_fault_detection_df)
     output_path = replace_variables_in_doc(replacements, draw_fault_detection_df, signals, req_data)
     return output_path
-
-# req_data = ReqPOJO()
-# req_data.csv_path = r'C:\Users\Administrator\Downloads\output\MST_Test\csv\APP_PL_BR_1.csv'
-# brake_override_accelerator(req_data)

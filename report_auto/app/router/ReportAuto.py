@@ -16,10 +16,10 @@ from tools.utils.FileUtils import validate_filename
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 
 
-@report_bp.route('/', methods=['GET'])
-def index():
+@report_bp.route('/<string:test_type>', methods=['GET'])
+def index(test_type):
     # 获取查询参数
-    test_project_type = request.args.get('test_project_type', '1')
+    test_project_type = test_type
 
     # 定义测试项目类型的映射表
     test_project_types = {

@@ -79,11 +79,11 @@
                         <select id="select1" name="inputType" onchange="updateSelectCheck2()"
                                 style="margin-right: 10px;width: 100px;">
                             <option value="">--Please select--</option>
-                            <option value="AnalogueInput">AnalogueInput</option>
-                            <option value="DigitalInput">DigitalInput</option>
-                            <option value="PWM_input">PWM_input</option>
-                            <option value="DigitalOutput">DigitalOutput</option>
-                            <option value="PWM_output">PWM_output</option>
+                            <option value="analogue_input">AnalogueInput</option>
+                            <option value="digital_input">DigitalInput</option>
+                            <option value="pwm_input">PWM_input</option>
+                            <option value="digital_output">DigitalOutput</option>
+                            <option value="pwm_output">PWM_output</option>
                         </select>
 
                         <select id="select2" name="inputType" style="width: 100px;">
@@ -159,6 +159,7 @@
             layer.alert('Please select a test scenario', {icon: 3})
             return false;
         }
+        uploadedFileName = [];
         element.progress('report_auto_progress', '0%');
         $('#report_pro_text').empty();
     })

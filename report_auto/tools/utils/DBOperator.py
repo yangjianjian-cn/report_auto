@@ -1,6 +1,7 @@
 __coding__ = "utf-8"
 
 import logging
+from contextlib import closing
 from typing import Mapping
 
 import pandas as pd
@@ -34,7 +35,8 @@ def map_dtype_to_mysql(dtype):
 """
 
 
-def create_table(table_name, df):
+def create_table(table_name, df) -> str:
+    ret_msg = 'success'
     connection = connectionPool.get_connection()
     try:
         # 使用上下文管理器管理游标
@@ -61,41 +63,41 @@ def create_table(table_name, df):
         logging.error(f"Failed to create table '{table_name}': {e}")
         # 回滚事务（虽然建表不需要提交，但为了保持一致性，这里还是保留）
         connection.rollback()
+        ret_msg = f'{e}'
 
     finally:
         # 在 finally 块中归还连接
         connectionPool.release_connection(connection)
 
-
-"""
-单行插入
-"""
+    return ret_msg
 
 
 def insert_data(table_name, params: dict):
     # 构建插入SQL语句
     placeholders = ', '.join(['%s'] * len(params))
     columns = ', '.join(params.keys())
-
     insert_sql = f"INSERT INTO {table_name} ({columns}) VALUES ({placeholders})"
-    logging.info(f"insert_sql:{insert_sql}")
+    logging.info(f"insert_sql: {insert_sql}")
+
+    # 默认值
+    last_id = None
+    ret_msg = ''
 
     connection = connectionPool.get_connection()
     try:
-        # 使用上下文管理器管理游标
-        with connection.cursor() as cursor:
-            # 执行插入语句
+        with closing(connection.cursor()) as cursor:
             cursor.execute(insert_sql, list(params.values()))
-            # 获取最后插入行的ID
             last_id = cursor.lastrowid
-            # 提交事务
             connection.commit()
-            return last_id
+            ret_msg = ('success', last_id)
     except Exception as e:
         connection.rollback()
-        logging.error(f"An error occurred: {e}")
+        logging.error(f"An error occurred during data insertion: {str(e)}")
+        ret_msg = (str(e), last_id)
     finally:
         connectionPool.release_connection(connection)
+
+    return ret_msg
 
 
 """
@@ -103,7 +105,8 @@ def insert_data(table_name, params: dict):
 """
 
 
-def batch_insert_data(table_name, df: DataFrame, params, batch_size=1000):
+def batch_insert_data(table_name, df: DataFrame, params, batch_size=1000) -> str:
+    ret_msg = 'success'
     connection = connectionPool.get_connection()
     try:
 
@@ -162,9 +165,11 @@ def batch_insert_data(table_name, df: DataFrame, params, batch_size=1000):
     except Exception as e:
         connection.rollback()
         logging.error(f"An error occurred: {e}")
+        ret_msg = f'{e}'
     finally:
         # 关闭游标和连接
         connectionPool.release_connection(connection)
+    return ret_msg
 
 
 """

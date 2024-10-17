@@ -45,7 +45,6 @@ def analogue_input(req_data: ReqPOJO) -> str:
             if element_count > 0:
                 # level1符合条件
                 level1 = 'passed'
-
         if 'Level2-4' in dat_file:
             df_selected = pd.read_csv(dat_file, encoding='utf8')
 
@@ -112,7 +111,11 @@ def analogue_input(req_data: ReqPOJO) -> str:
             else:
                 level4 = "failed"
 
+    extracted_parts = [path.split('\\')[-1].split('.')[0] for path in all_files]
+    # 将提取的部分连接成一个字符串，以逗号分隔
+    extracted_parts_str = ', '.join(extracted_parts)
+
     # ########## 校验level2是否通过
     req_data.template_name = TestCaseType.IOTest_Man_Tmplt.name
-    xlsm_path = analogue_input_report(req_data, level1, level2, level3, level4)
+    xlsm_path = analogue_input_report(req_data, level1, level2, level3, level4,extracted_parts_str)
     return xlsm_path

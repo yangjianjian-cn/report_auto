@@ -79,7 +79,9 @@ def measure_file_intodb():
     params: dict = {"file_name": fileName, "create_time": getCurDateTime()}
 
     # 保存测量文件元信息
-    last_id = insert_data(table_name, params)
+    flag, last_id = insert_data(table_name, params)
+    if flag != 'success':
+        return jsonify({'generate_report_success': 'failed', 'generate_report_failed': flag})
     logging.info(f"文件元信息索引:{last_id}")
 
     mdf = MDF(measure_file_path)
@@ -105,6 +107,7 @@ def measure_file_intodb():
         df = mdf.to_dataframe(channels=existing_columns)
     except MdfException as e:
         logging.error(f"Error converting to DataFrame: {e}")
+        return jsonify({'generate_report_success': 'failed', 'generate_report_failed': {e}})
 
     # TECU_tRaw\ETKC:1
     column_names = df.columns.tolist()
@@ -127,23 +130,22 @@ def measure_file_intodb():
     df.reset_index(inplace=True)
     logging.info(f"重置索引:{len(df)}")
 
-    ret_sucess_msg = ''
-    ret_err_msg = ''
-    try:
-        table_name = 'chip_temperature'
-        params: dict = {'file_id': last_id}
+    table_name = 'chip_temperature'
+    params: dict = {'file_id': last_id}
 
-        # 创建表
-        create_table(table_name, df)
-        # 批量插入表
-        batch_insert_data(table_name, df, params)
+    # 创建表
+    c_ret_msg = create_table(table_name, df)
+    logging.info(c_ret_msg)
+    if c_ret_msg != 'success':
+        return jsonify({'generate_report_success': 'failed', 'generate_report_failed': {c_ret_msg}})
 
-        ret_sucess_msg = 'success'
-    except Exception as e:
-        ret_err_msg = f"{e}"
-        logging.error(f"入库失败...{e}")
+    # 批量插入表
+    i_ret_msg = batch_insert_data(table_name, df, params)
+    logging.info(i_ret_msg)
+    if i_ret_msg != 'success':
+        return jsonify({'generate_report_success': 'failed', 'generate_report_failed': {i_ret_msg}})
 
-    return jsonify({'generate_report_success': ret_sucess_msg, 'generate_report_failed': ret_err_msg})
+    return jsonify({'generate_report_success': 'success', 'generate_report_failed': ''})
 
 
 '''

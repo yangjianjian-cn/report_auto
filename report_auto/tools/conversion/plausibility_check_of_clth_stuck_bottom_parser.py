@@ -41,109 +41,99 @@ def plausibility_check_of_clth_stuck_bottom(req_data: ReqPOJO):
 
 def initial_state(df_selected: DataFrame):
     err_msg = []
-    begin_time = None
-    end_time = None
     replacements = {}
 
     # 1. Enter initial state
+    begin_time = df_selected.iloc[0]['timestamps']
+
     condition1 = df_selected['CoEng_st'] == 'COENG_RUNNING'
-    initial_state_df = df_selected[condition1]
-    if len(initial_state_df) > 0:
-        logging.info(f"initial state CoEng_st = COENG_RUNNING succeed: {len(initial_state_df)} ")
-    else:
+    initial_state_df_1 = df_selected[condition1]
+    if len(initial_state_df_1) == 0:
         err_msg.append("initial state CoEng_st = COENG_RUNNING failure")
         replacements = plausibility_check_of_clth_stuck_bottom_replacements(is_fail='√')
-        return ret_fault_detection(end_time, begin_time, replacements, err_msg, initial_state_df)
+        return ret_fault_detection(begin_time + 5, begin_time, replacements, err_msg, df_selected)
 
-    condition2 = df_selected['VehV_v'] > 0
-    initial_state_df = initial_state_df[condition2]
-    if len(initial_state_df) > 0:
-        logging.info(f"initial state VehV_v > 0 succeed: {len(initial_state_df)} ")
-    else:
+    begin_time = initial_state_df_1.iloc[0]['timestamps']
+    condition2 = initial_state_df_1['VehV_v'] > 0
+    initial_state_df_2 = initial_state_df_1[condition2]
+    if len(initial_state_df_2) == 0:
         err_msg.append("initial state VehV_v > 0 failure")
         replacements = plausibility_check_of_clth_stuck_bottom_replacements(is_fail='√')
-        return ret_fault_detection(end_time, begin_time, replacements, err_msg, initial_state_df)
+        return ret_fault_detection(begin_time + 5, begin_time, replacements, err_msg, initial_state_df_1)
 
-    return err_msg, replacements, initial_state_df
+    return err_msg, replacements, initial_state_df_2
 
 
 def fault_detection(initial_state_df: DataFrame):
-    begin_time = None
-    end_time = None
     err_msg = []
     fault_detection_df = initial_state_df.copy()
 
     # 2. Fault detection
+    begin_time = fault_detection_df.iloc[0]['timestamps']
+    g_begin_time = fault_detection_df.iloc[0]['timestamps']
+
     fault_detection_df.loc[:, 'clth_st_bit0'] = fault_detection_df['Clth_st'].apply(getBit0)
     condition3 = fault_detection_df['clth_st_bit0'] == '0'
-    fault_detection_df = fault_detection_df[condition3]
-    if len(fault_detection_df) > 0:
-        begin_time = fault_detection_df.iloc[0]['timestamps']
-        logging.info(f"fault detection Clth_st.0 =0 succeed: {len(fault_detection_df)}")
-    else:
+    fault_detection_df_3 = fault_detection_df[condition3]
+    if len(fault_detection_df_3) == 0:
         err_msg.append(f"fault detection Clth_st.0 =0 failure")
         replacements = plausibility_check_of_clth_stuck_bottom_replacements(is_fail='√', clth_st_0='❌ ')
-        return ret_fault_detection(end_time, begin_time, replacements, err_msg, fault_detection_df)
+        return ret_fault_detection(begin_time + 5, begin_time, replacements, err_msg, fault_detection_df)
 
-    condition4 = fault_detection_df['Clth_bAutoStrtEnaCond'] == 1
-    fault_detection_df = fault_detection_df[condition4]
-    if len(fault_detection_df) > 0:
-        logging.info(f"fault detection Clth_bAutoStrtEnaCond=1 succeed: {len(fault_detection_df)}")
-    else:
+    begin_time = fault_detection_df_3.iloc[0]['timestamps']
+    condition4 = fault_detection_df_3['Clth_bAutoStrtEnaCond'] == 1
+    fault_detection_df_4 = fault_detection_df_3[condition4]
+    if len(fault_detection_df_4) == 0:
         err_msg.append("fault detection Clth_bAutoStrtEnaCond=1 failure")
         replacements = plausibility_check_of_clth_stuck_bottom_replacements(is_fail='√', clth_st_0='√',
                                                                             clth_bautostrtenacond='❌ ')
-        return ret_fault_detection(end_time, begin_time, replacements, err_msg, fault_detection_df)
+        return ret_fault_detection(begin_time + 5, begin_time, replacements, err_msg, fault_detection_df)
 
-    condition5 = fault_detection_df['Tra_numGear'] != fault_detection_df['Clth_numLastVldGear']
-    fault_detection_df = fault_detection_df[condition5]
-    if len(fault_detection_df) > 0:
-        logging.info(f"fault detection Tra_numGear!=Clth_numLastVldGear succeed: {len(fault_detection_df)}")
-    else:
+    begin_time = fault_detection_df_4.iloc[0]['timestamps']
+    condition5 = fault_detection_df_4['Tra_numGear'] != fault_detection_df_4['Clth_numLastVldGear']
+    fault_detection_df_5 = fault_detection_df_4[condition5]
+    if len(fault_detection_df_5) == 0:
         err_msg.append("fault detection  Tra_numGear!=Clth_numLastVldGear failure")
         replacements = plausibility_check_of_clth_stuck_bottom_replacements(is_fail='√', clth_st_0='√',
                                                                             clth_bautostrtenacond='√', is_not_equ='❌ ')
-        return ret_fault_detection(end_time, begin_time, replacements, err_msg, fault_detection_df)
+        return ret_fault_detection(begin_time + 5, begin_time, replacements, err_msg, fault_detection_df)
 
-    condition6 = fault_detection_df['Clth_bClthPlausErr'] == 1
-    fault_detection_df = fault_detection_df[condition6]
-    if len(fault_detection_df) > 0:
-        logging.info(f"fault detection Clth_bClthPlausErr=1 succeed: {len(fault_detection_df)}")
-    else:
+    begin_time = fault_detection_df_5.iloc[0]['timestamps']
+    condition6 = fault_detection_df_5['Clth_bClthPlausErr'] == 1
+    fault_detection_df_6 = fault_detection_df_5[condition6]
+    if len(fault_detection_df_6) == 0:
         err_msg.append("fault detection Clth_bClthPlausErr=1 failure")
         replacements = plausibility_check_of_clth_stuck_bottom_replacements(is_fail='√', clth_st_0='√',
                                                                             clth_bautostrtenacond='√', is_not_equ='√',
                                                                             clth_bclthplauserr='❌ ')
-        return ret_fault_detection(end_time, begin_time, replacements, err_msg, fault_detection_df)
+        return ret_fault_detection(begin_time + 5, begin_time, replacements, err_msg, fault_detection_df)
 
         #  DFC_ClthNplOpn is set
     err_type: str = FAULT_TYPE_MAPPING.get('plausibility_check_of_clth_stuck_bottom')
-    signals_dfes = find_columns_with_dfc_err_type(fault_detection_df, err_type)
-    if len(signals_dfes) > 0:
-        signals_dfes_col = signals_dfes[0]
-        condition5 = fault_detection_df[signals_dfes_col] == err_type
-        fault_detection_df = fault_detection_df[condition5]
-        end_time = fault_detection_df.iloc[-1]['timestamps']
-        logging.info(f"fault detection {err_type} is set  succeed:{len(fault_detection_df)}")
-    else:
+    signals_dfes = find_columns_with_dfc_err_type(fault_detection_df_6, err_type)
+    if len(signals_dfes) == 0:
         err_msg.append(f"fault detection {err_type} is set  failure")
         replacements = plausibility_check_of_clth_stuck_bottom_replacements(is_fail='√', clth_st_0='√',
                                                                             clth_bautostrtenacond='√', is_not_equ='√',
                                                                             clth_bclthplauserr='√',
                                                                             dfc_clthplauschk='❌ ')
 
-        return ret_fault_detection(end_time, begin_time, replacements, err_msg, fault_detection_df)
+        return ret_fault_detection(begin_time + 5, begin_time, replacements, err_msg, fault_detection_df)
 
+    condition7 = fault_detection_df_6[signals_dfes[0]] == err_type
+    fault_detection_df_7 = fault_detection_df_6[condition7]
+    end_time = fault_detection_df_7.iloc[-1]['timestamps']
     replacements = plausibility_check_of_clth_stuck_bottom_replacements(is_pass='√', clth_st_0='√',
                                                                         clth_bautostrtenacond='√', is_not_equ='√',
                                                                         clth_bclthplauserr='√', dfc_clthplauschk='√')
-    return ret_fault_detection(end_time, begin_time, replacements, err_msg, fault_detection_df)
+    return ret_fault_detection(end_time, g_begin_time, replacements, err_msg, fault_detection_df)
 
 
 def draw_graph(draw_fault_detection_df: DataFrame, req_data: ReqPOJO, replacements: map):
     logging.info(f"模板参数:{replacements}")
 
-    signals = ['CoEng_st', 'VehV_v', 'Clth_st', 'Clth_bAutoStrtEnaCond', 'Tra_numGear', 'Clth_numLastVldGear','Clth_bClthPlausErr', 'DFC_st.DFC_ClthPlausChk']
+    signals = ['VehV_v', 'Clth_st', 'Clth_bAutoStrtEnaCond', 'Tra_numGear', 'Clth_numLastVldGear',
+               'Clth_bClthPlausErr', 'DFC_st.DFC_ClthPlausChk']
     logging.info(f"信号量:{signals}")
 
     output_name = Path(req_data.csv_path).stem
