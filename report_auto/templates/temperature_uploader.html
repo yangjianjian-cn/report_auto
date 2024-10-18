@@ -192,22 +192,19 @@
             };
             analysis_and_db(ret_data, layer_index);
         } else {
-            layer.alert(file.name + ' 上传失败:\n ' + response.msg, {icon: 5});
+            layer.alert(file.name + ' 上传失败:<br/> ' + response.msg, {icon: 5});
         }
     });
 
     //上传过程中发生异常，调用该方法
-    uploader.on('uploadError', function (file,error) {
-        layer.alert(file.name + ' 上传失败:\n ' + error, {icon: 5});
+    uploader.on('uploadError', function (file, error) {
+        layer.alert(file.name + ' 上传中异常:<br/> ' + error, {icon: 5});
     });
 
     //上传结束，无论文件最终是否上传成功，该方法都会被调用
     uploader.on('uploadComplete', function (file) {
-        completedFiles++;
-        if (completedFiles === totalFiles) {
-            // 所有文件上传完成后刷新页面
-            location.reload();
-        }
+        // 所有文件上传完成后刷新页面
+        // location.reload();
     });
 
     // 添加表格行
