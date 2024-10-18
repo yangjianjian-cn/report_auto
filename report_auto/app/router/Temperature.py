@@ -37,30 +37,70 @@ def temperature_list():
 
 
 '''
-测量文件上传
+测量文件分片上传
 '''
 
 
 @temperature_bp.route('/upload', methods=['POST'])
-def temperature_uploader():
+def temperature_uploader_upload():
     upload_file = request.files['file']
-    test_team = request.form.get('test_team')
-    filename = upload_file.filename
 
+    task_id = request.form.get('task_id')  # 获取文件唯一标识符
+    chunk = request.form.get('chunk', 0, type=int)  # 获取该分片在所有分片中的序号
+    total_chunks = request.form.get('total_chunks', 1, type=int)  # 获取总分片数
+    filename = f'{task_id}_{chunk}'  # 构成该分片唯一标识符
+    # print(f"Task: {task_id}, Chunk: {chunk}/{total_chunks}, Filename: {filename}")
+
+    test_team = request.form.get('test_team')
+    input_path = main.config['input_path']
+    input_path = os.path.join(input_path, test_team)
+    input_path = os.path.join(input_path, task_id)
+    if not os.path.exists(input_path):
+        os.makedirs(input_path, exist_ok=True)
+
+    output_file = os.path.join(input_path, filename)
+    upload_file.save(output_file)  # 保存分片到本地
+    return {'status': 'success', 'currentChunk': chunk, 'totalChunks': total_chunks, 'task_id': task_id}
+
+
+'''
+测量文件分片合并
+'''
+
+
+@temperature_bp.route('/merge', methods=['POST'])
+def temperature_uploader_merge():
+    # 获取请求体中的 JSON 数据
+    data = request.get_json()
+    test_team = data['test_team']
+    target_filename = data['filename']
+    task_id = data['task_id']  # 获取文件的唯一标识符
+
+    # 最终存储路径
     input_path = main.config['input_path']
     input_path = os.path.join(input_path, test_team)
     if not os.path.exists(input_path):
         os.makedirs(input_path, exist_ok=True)
 
-    save_path = f'{input_path}/{filename}'
+    # 最终存储文件(带路径)
+    target_filename = os.path.join(input_path, target_filename)
+    logging.info(f"目标文件路径: {target_filename}")
 
-    try:
-        upload_file.save(save_path)
-        logging.info(f"saved:{save_path}")
-    except Exception as e:
-        logging.error(f"upload failed:{e}")
+    chunk = 0  # 分片序号
+    with open(target_filename, 'wb') as target_file:  # 创建新文件
+        while True:
+            try:
+                filename = os.path.join(input_path, task_id, f'{task_id}_{chunk}')
+                with open(filename, 'rb') as source_file:  # 按序打开每个分片
+                    target_file.write(source_file.read())  # 读取分片内容写入新文件
+            except IOError:
+                break
+            chunk += 1
+            os.remove(filename)  # 删除该分片，节约空间
+    os.removedirs(os.path.join(input_path, task_id))
 
-    return jsonify({'upload_success': True, 'save_path': save_path})
+    into_db = measure_file_intodb(target_filename)
+    return into_db
 
 
 '''
@@ -68,20 +108,15 @@ def temperature_uploader():
 '''
 
 
-@temperature_bp.route('/intodb', methods=['POST'])
-def measure_file_intodb():
-    # 解析前端发送的 JSON 数据
-    data = request.get_json()
-    measure_file_path = data['measure_file_path']
-
+def measure_file_intodb(measure_file_path: str):
     fileName = get_filename_without_extension(measure_file_path)
     table_name = 'measurement_file'
     params: dict = {"file_name": fileName, "create_time": getCurDateTime()}
 
     # 保存测量文件元信息
-    flag, last_id = insert_data(table_name, params)
-    if flag != 'success':
-        return jsonify({'generate_report_success': 'failed', 'generate_report_failed': flag})
+    ret_msg, last_id = insert_data(table_name, params)
+    if ret_msg != 'success':
+        return jsonify({'generate_report_failed': ret_msg})
     logging.info(f"文件元信息索引:{last_id}")
 
     mdf = MDF(measure_file_path)
@@ -107,7 +142,7 @@ def measure_file_intodb():
         df = mdf.to_dataframe(channels=existing_columns)
     except MdfException as e:
         logging.error(f"Error converting to DataFrame: {e}")
-        return jsonify({'generate_report_success': 'failed', 'generate_report_failed': {e}})
+        return jsonify({'generate_report_failed': {e}})
 
     # TECU_tRaw\ETKC:1
     column_names = df.columns.tolist()
@@ -137,15 +172,15 @@ def measure_file_intodb():
     c_ret_msg = create_table(table_name, df)
     logging.info(c_ret_msg)
     if c_ret_msg != 'success':
-        return jsonify({'generate_report_success': 'failed', 'generate_report_failed': {c_ret_msg}})
+        return jsonify({'generate_report_failed': {c_ret_msg}})
 
     # 批量插入表
     i_ret_msg = batch_insert_data(table_name, df, params)
     logging.info(i_ret_msg)
     if i_ret_msg != 'success':
-        return jsonify({'generate_report_success': 'failed', 'generate_report_failed': {i_ret_msg}})
+        return jsonify({'generate_report_failed': {i_ret_msg}})
 
-    return jsonify({'generate_report_success': 'success', 'generate_report_failed': ''})
+    return jsonify({'generate_report_failed': ''})
 
 
 '''

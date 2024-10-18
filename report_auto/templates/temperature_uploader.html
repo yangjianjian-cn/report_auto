@@ -22,14 +22,6 @@
 <div class="layui-header header header-docs">
     <div class="layui-main">
         <ul class="layui-nav">
-            <!--
-            <li class="layui-nav-item ">
-                <a href="">其它页</a>
-            </li>
-            <li class="layui-nav-item layui-this">
-                <a href="javascript:;">报表区</a>
-            </li>
-            -->
             <span class="layui-nav-bar"></span></ul>
     </div>
 </div>
@@ -130,30 +122,49 @@
     // 初始化 WebUploader
     let uploader = WebUploader.create({
         auto: false, // 不自动上传
-        swf: '/path/to/Uploader.swf', // swf 文件路径，用于 Flash 模式下运行
+
+        swf: '../static/swf/Uploader.swf', // swf 文件路径，用于 Flash 模式下运行
         server: '/temperature/upload', // 文件接收服务
-        // 设置超时时间为30秒
-        //timeout: 30000,
+
+        timeout: 30000, // 设置超时时间为30秒
+
         pick: '#temperature_picker', // 文件选择按钮
+
         accept: {
             title: 'Files',
             extensions: 'mf4,dat',
             mimeTypes: '.mf4,.dat'
         },
+
         // 开启分片
-        chunked: false,
-        // 每个分片的大小，默认为20MB。
-        chunkSize: 20 * 1024 * 1024,
+        chunked: true,
+        chunkSize: 30 * 1024 * 1024,       // 每个分片的大小，默认为20MB。
+        chunkRetry: 3,                     //某分片若上传失败，重试次数
+        threads: 8,                        //线程数量
+
         duplicate: true, // 是否检查重复上传
         compress: false, // 不压缩图片
+
         fileNumLimit: 10, // 最多上传文件数量限制
-        fileSizeLimit: 0, // 总文件大小限制
-        fileSingleSizeLimit: 0,// 单个文件大小限制
+        fileSizeLimit: 4 * 1024 * 1024 * 1024, // 总文件大小限制
+        fileSingleSizeLimit: 2 * 1024 * 1024 * 1024,// 单个文件大小限制
+
         formData: {
             test_team: "HTM",
             test_scenario: "", // 这里可以根据实际需求动态设置值
-            test_area: ""      // 这里可以根据实际需求动态设置值
+            test_area: "",      // 这里可以根据实际需求动态设置值
+            task_id: WebUploader.Base.guid() // 区分不同用户
         }
+    });
+
+    // 记录文件总数
+    let totalFiles = uploader.getFiles().length;
+    // 已经完成上传的文件数
+    let completedFiles = 0;
+
+    //开始上传时，调用该方法
+    uploader.on('startUpload', function (file) {
+
     });
 
     // 当有文件被添加进队列的时候
@@ -170,27 +181,33 @@
     uploader.on('uploadSuccess', function (file, response) {
         // 显示提示信息，不自动关闭
         let layer_index = layer.msg('Upload file successful, Data Analytics in progress', {time: 0});
-        if (response.upload_success) {
+
+        if (response.status == 'success') {
             let ret_data = {
                 "test_team": "HTM",
                 "test_scenario": "",
                 "test_area": "",
-                "measure_file_path": response.save_path
+                "task_id": response.task_id || '',
+                "filename": file.name || ''
             };
-            data_into_db(ret_data, layer_index, file.id);
+            analysis_and_db(ret_data, layer_index);
+        } else {
+            layer.alert(file.Name + ' 上传失败', {icon: 5});
         }
     });
 
-    // 文件上传失败
+    //上传过程中发生异常，调用该方法
     uploader.on('uploadError', function (file) {
-        // var tr = $('#' + file.id);
-        // tr.find('.progress-bar').hide(); // 隐藏进度条
-        // tr.find('.demo-reload').removeClass('layui-hide'); // 显示重传按钮
-        layer.alert(file.Name + ' 上传失败，请重试', {icon: 5});
+        layer.alert(file.Name + ' 上传失败', {icon: 5});
     });
 
-    // 所有文件上传完毕
+    //上传结束，无论文件最终是否上传成功，该方法都会被调用
     uploader.on('uploadComplete', function (file) {
+        completedFiles++;
+        if (completedFiles === totalFiles) {
+            // 所有文件上传完成后刷新页面
+            location.reload();
+        }
         location.reload();
     });
 
@@ -215,8 +232,8 @@
     }
 
     // 测量文件数据入库
-    function data_into_db(ret_data, layer_index, fileId) {
-        fetch('/temperature/intodb', {
+    function analysis_and_db(ret_data, layer_index) {
+        fetch('/temperature/merge', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
@@ -225,17 +242,17 @@
         })
             .then(response => response.json())
             .then(data => {
-                let generate_report_failed = data.generate_report_failed;
-                if (generate_report_failed.length === 0) {
+                let intodb_failed = data.generate_report_failed;
+                if (intodb_failed.length === 0) {
                     layer.close(layer_index); // 关闭提示框
                     layer.alert("Converted file successfully", {icon: 6});
                 } else {
-                    layer.close(layer_index); // 关闭提示框
-                    layer.alert(generate_report_failed, {icon: 5});
+                    layer.close(layer_index);
+                    layer.alert(intodb_failed, {icon: 5});
                 }
             })
             .catch(error => {
-                layer.close(layer_index); // 关闭提示框
+                layer.close(layer_index);
                 layer.alert(`Failed to convert file: ${error}`, {icon: 5});
             });
     }
