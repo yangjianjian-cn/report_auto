@@ -47,6 +47,7 @@ def getClientIp():
     else:
         # 如果没有 X-Forwarded-For 头部，则直接使用远程地址
         client_ip = request.remote_addr
+    client_ip = client_ip.replace('.', '')
     logging.info(f"client_ip:{client_ip}")
     return client_ip
 
