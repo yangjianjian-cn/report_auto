@@ -192,13 +192,13 @@
             };
             analysis_and_db(ret_data, layer_index);
         } else {
-            layer.alert(file.name + ' 上传失败:' + response.msg, {icon: 5});
+            layer.alert(file.name + ' 上传失败:\n ' + response.msg, {icon: 5});
         }
     });
 
     //上传过程中发生异常，调用该方法
     uploader.on('uploadError', function (file,error) {
-        layer.alert(file.name + ' 上传失败' + error, {icon: 5});
+        layer.alert(file.name + ' 上传失败:\n ' + error, {icon: 5});
     });
 
     //上传结束，无论文件最终是否上传成功，该方法都会被调用
