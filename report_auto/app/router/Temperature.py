@@ -13,7 +13,7 @@ from tools.temperature.temperature_work_time import temperature_duration, temper
     str_to_list, relative_difference
 from tools.utils.DBOperator import create_table, batch_insert_data, insert_data, query_table, delete_from_tables
 from tools.utils.DateUtils import getCurDateTime
-from tools.utils.FileUtils import get_filename_without_extension
+from tools.utils.FileUtils import extract_prefix
 from tools.utils.HtmlGenerator import generate_select_options
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
@@ -32,75 +32,69 @@ def temperature_list():
     try:
         measurement_file_list = query_table(table_name, columns, where=whereClause)
     except Exception as e:
+        logging.error(f'查询异常:{e}')
         return render_template('error.html', failure_msg=f'{e}')
     return render_template('temperature_uploader.html', measurement_file_list=measurement_file_list)
 
 
-'''
-测量文件分片上传
-'''
+def getClientIp():
+    client_ip = ''
+    if 'X-Forwarded-For' in request.headers:
+        x_forwarded_for = request.headers['X-Forwarded-For']
+        # 分割并获取最后一个IP地址
+        client_ips = x_forwarded_for.split(',')
+        client_ip = client_ips[-1].strip()
+    else:
+        # 如果没有 X-Forwarded-For 头部，则直接使用远程地址
+        client_ip = request.remote_addr
+    return client_ip
 
 
 @temperature_bp.route('/upload', methods=['POST'])
-def temperature_uploader_upload():
-    upload_file = request.files['file']
+def upload():
+    client_ip = getClientIp()
 
-    task_id = request.form.get('task_id')  # 获取文件唯一标识符
-    chunk = request.form.get('chunk', 0, type=int)  # 获取该分片在所有分片中的序号
-    total_chunks = request.form.get('total_chunks', 1, type=int)  # 获取总分片数
-    filename = f'{task_id}_{chunk}'  # 构成该分片唯一标识符
-    # print(f"Task: {task_id}, Chunk: {chunk}/{total_chunks}, Filename: {filename}")
+    file = request.files['file']
+    chunk_index = int(request.form.get('chunk', 0))
+    total_chunks = int(request.form.get('chunks', 1))
+    file_name = request.form.get('name')
 
+    input_path = main.config['input_path']
     test_team = request.form.get('test_team')
-    input_path = main.config['input_path']
     input_path = os.path.join(input_path, test_team)
-    input_path = os.path.join(input_path, task_id)
+    input_path = os.path.join(input_path, client_ip)
     if not os.path.exists(input_path):
         os.makedirs(input_path, exist_ok=True)
 
-    output_file = os.path.join(input_path, filename)
-    upload_file.save(output_file)  # 保存分片到本地
-    return {'status': 'success', 'currentChunk': chunk, 'totalChunks': total_chunks, 'task_id': task_id}
+    temp_file_path = os.path.join(input_path, f'{file_name}.part{chunk_index}')
+    file.save(temp_file_path)  # 存储分片
+
+    save_file = ''
+    if chunk_index == total_chunks - 1:
+        save_file = merge(file_name, total_chunks)  # 分片合并
+
+    return {'status': 'success', 'save_file': save_file}
 
 
-'''
-测量文件分片合并
-'''
+def merge(file_name, total_chunks) -> str:
+    client_ip = getClientIp()
 
+    save_path = main.config['input_path']
+    test_team = request.form.get('test_team')
+    save_path = os.path.join(save_path, test_team)
+    save_path = os.path.join(save_path, client_ip)
 
-@temperature_bp.route('/merge', methods=['POST'])
-def temperature_uploader_merge():
-    # 获取请求体中的 JSON 数据
-    data = request.get_json()
-    test_team = data['test_team']
-    target_filename = data['filename']
-    task_id = data['task_id']  # 获取文件的唯一标识符
+    if not os.path.exists(save_path):
+        os.makedirs(save_path, exist_ok=True)
 
-    # 最终存储路径
-    input_path = main.config['input_path']
-    input_path = os.path.join(input_path, test_team)
-    if not os.path.exists(input_path):
-        os.makedirs(input_path, exist_ok=True)
-
-    # 最终存储文件(带路径)
-    target_filename = os.path.join(input_path, target_filename)
-    logging.info(f"目标文件路径: {target_filename}")
-
-    chunk = 0  # 分片序号
-    with open(target_filename, 'wb') as target_file:  # 创建新文件
-        while True:
-            try:
-                filename = os.path.join(input_path, task_id, f'{task_id}_{chunk}')
-                with open(filename, 'rb') as source_file:  # 按序打开每个分片
-                    target_file.write(source_file.read())  # 读取分片内容写入新文件
-            except IOError:
-                break
-            chunk += 1
-            os.remove(filename)  # 删除该分片，节约空间
-    os.removedirs(os.path.join(input_path, task_id))
-
-    into_db = measure_file_intodb(target_filename)
-    return into_db
+    save_file = os.path.join(save_path, file_name)
+    temp_files = [os.path.join(save_path, f'{file_name}.part{i}') for i in range(total_chunks)]
+    with open(save_file, 'wb') as outfile:
+        for temp_file in temp_files:
+            with open(temp_file, 'rb') as infile:
+                outfile.write(infile.read())
+            os.remove(temp_file)
+    return save_file
 
 
 '''
@@ -108,8 +102,12 @@ def temperature_uploader_merge():
 '''
 
 
-def measure_file_intodb(measure_file_path: str):
-    fileName = get_filename_without_extension(measure_file_path)
+@temperature_bp.route('/todb', methods=['POST'])
+def todb():
+    data = request.get_json()
+    measure_file_path = data['save_file']
+    logging.info(f"measure_file_path:{measure_file_path}")
+    fileName = extract_prefix(measure_file_path)
     table_name = 'measurement_file'
     params: dict = {"file_name": fileName, "create_time": getCurDateTime()}
 

@@ -84,3 +84,34 @@ def merge_docs(output_path, input_paths):
 
     # 保存合并后的文档
     composer.save(output_path)
+
+
+def insert_string_before_extension(filename, insert_str, delimiter='.'):
+    """
+    在给定文件名的扩展名前插入指定字符串。
+
+    参数:
+        filename (str): 原始文件名。
+        insert_str (str): 要在文件名扩展名前插入的字符串。
+        delimiter (str): 用于分割文件名和扩展名的字符，默认为点号 ('.')。
+
+    返回:
+        str: 修改后的文件名。
+    """
+    # 分离文件名和扩展名
+    name_part, ext_part = filename.rsplit('.', 1)
+
+    # 在文件名与扩展名之间插入字符串
+    new_filename = f"{name_part}{delimiter}{insert_str}{'.'}{ext_part}"
+
+    return new_filename
+
+
+def extract_prefix(file_path: str):
+    # 去掉文件扩展名
+    base_name = os.path.splitext(file_path)[0]
+
+    # 按照路径分隔符来切分，取文件名部分
+    file_name = os.path.basename(base_name)
+
+    return file_name

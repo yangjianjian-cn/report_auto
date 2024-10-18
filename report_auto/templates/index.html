@@ -181,9 +181,7 @@
             resize: true,
             auto: true,
             //开启分片上传
-            chunked: true,
-            chunkSize: 10 * 1024 * 1024,
-            concurrency: 5,
+            chunked: false,
             accept: {
                 extensions: "dat",
                 mimeTypes: '.dat'
@@ -225,6 +223,7 @@
         uploader.options.formData['test_team'] = selectedValue0;
         uploader.options.formData['test_scenario'] = selectedValue1;
         uploader.options.formData['test_area'] = selectedValues2;
+        uploader.options.formData['task_id'] = WebUploader.Base.guid();
     });
 
     // 文件上传过程中创建进度条实时显示。

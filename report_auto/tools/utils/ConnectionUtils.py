@@ -23,12 +23,12 @@ class ConnectionPool:
                         print(f"Failed to establish connection: {e}")
 
     def get_connection(self):
-        with self.lock:
-            if self.connection_queue.empty():
-                self.init_pool()
-            conn = self.connection_queue.get()
-            self.connections.add(conn)
-            return conn
+        # with self.lock:
+        if self.connection_queue.empty():
+            self.init_pool()
+        conn = self.connection_queue.get()
+        self.connections.add(conn)
+        return conn
 
     def release_connection(self, connection):
         with self.lock:

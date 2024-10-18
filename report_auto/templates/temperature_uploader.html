@@ -140,7 +140,7 @@
         chunked: true,
         chunkSize: 30 * 1024 * 1024,       // 每个分片的大小，默认为20MB。
         chunkRetry: 3,                     //某分片若上传失败，重试次数
-        // threads: 8,                        //线程数量
+        threads: 8,                        //线程数量
 
         duplicate: true, // 是否检查重复上传
         compress: false, // 不压缩图片
@@ -154,7 +154,8 @@
             test_scenario: "", // 这里可以根据实际需求动态设置值
             test_area: "",      // 这里可以根据实际需求动态设置值
             task_id: WebUploader.Base.guid() // 区分不同用户
-        }
+        },
+        multiple: true
     });
 
     // 记录文件总数
@@ -187,8 +188,7 @@
                 "test_team": "HTM",
                 "test_scenario": "",
                 "test_area": "",
-                "task_id": response.task_id || '',
-                "filename": file.name || ''
+                "save_file": response.save_file
             };
             analysis_and_db(ret_data, layer_index);
         } else {
@@ -232,7 +232,7 @@
 
     // 测量文件数据入库
     function analysis_and_db(ret_data, layer_index) {
-        fetch('/temperature/merge', {
+        fetch('/temperature/todb', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'

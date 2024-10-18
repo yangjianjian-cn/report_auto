@@ -73,6 +73,9 @@ def create_table(table_name, df) -> str:
 
 
 def insert_data(table_name, params: dict):
+    logging.info(f'table_name:{table_name}')
+    logging.info(f'params:{params}')
+
     # 构建插入SQL语句
     placeholders = ', '.join(['%s'] * len(params))
     columns = ', '.join(params.keys())
@@ -81,7 +84,6 @@ def insert_data(table_name, params: dict):
 
     # 默认值
     last_id = None
-    ret_msg = ''
 
     connection = connectionPool.get_connection()
     try:
