@@ -168,11 +168,8 @@
 
     // 文件上传成功
     uploader.on('uploadSuccess', function (file, response) {
-        // var tr = $('#' + file.id);
-        // tr.find('.progress-bar').hide(); // 隐藏进度条
-        // tr.find('.demo-reload').removeClass('layui-hide'); // 显示重传按钮
-
-        layer.info("Uploaded file successfully");
+        // 显示提示信息，不自动关闭
+        let layer_index = layer.msg('Upload file successful, Data Analytics in progress', {time: 0});
         if (response.upload_success) {
             let ret_data = {
                 "test_team": "HTM",
@@ -180,7 +177,7 @@
                 "test_area": "",
                 "measure_file_path": response.save_path
             };
-            data_into_db(ret_data, file.id);
+            data_into_db(ret_data, layer_index, file.id);
         }
     });
 
@@ -218,7 +215,7 @@
     }
 
     // 测量文件数据入库
-    function data_into_db(ret_data, fileId) {
+    function data_into_db(ret_data, layer_index, fileId) {
         fetch('/temperature/intodb', {
             method: 'POST',
             headers: {
@@ -230,12 +227,15 @@
             .then(data => {
                 let generate_report_failed = data.generate_report_failed;
                 if (generate_report_failed.length === 0) {
+                    layer.close(layer_index); // 关闭提示框
                     layer.alert("Converted file successfully", {icon: 6});
                 } else {
+                    layer.close(layer_index); // 关闭提示框
                     layer.alert(generate_report_failed, {icon: 5});
                 }
             })
             .catch(error => {
+                layer.close(layer_index); // 关闭提示框
                 layer.alert(`Failed to convert file: ${error}`, {icon: 5});
             });
     }
