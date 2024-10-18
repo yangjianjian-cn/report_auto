@@ -47,6 +47,7 @@ def getClientIp():
     else:
         # 如果没有 X-Forwarded-For 头部，则直接使用远程地址
         client_ip = request.remote_addr
+    logging.info(f"client_ip:{client_ip}")
     return client_ip
 
 
@@ -66,14 +67,19 @@ def upload():
     if not os.path.exists(input_path):
         os.makedirs(input_path, exist_ok=True)
 
-    temp_file_path = os.path.join(input_path, f'{file_name}.part{chunk_index}')
-    file.save(temp_file_path)  # 存储分片
-
     save_file = ''
-    if chunk_index == total_chunks - 1:
-        save_file = merge(file_name, total_chunks)  # 分片合并
+    msg = ''
+    try:
+        temp_file_path = os.path.join(input_path, f'{file_name}.part{chunk_index}')
+        file.save(temp_file_path)  # 存储分片
 
-    return {'status': 'success', 'save_file': save_file}
+        if chunk_index == total_chunks - 1:
+            save_file = merge(file_name, total_chunks)  # 分片合并
+    except Exception as e:
+        msg = f'{e}'
+        logging.error(f'file saved err:{msg}')
+
+    return {'status': 'success', 'save_file': save_file, 'msg': msg}
 
 
 def merge(file_name, total_chunks) -> str:
