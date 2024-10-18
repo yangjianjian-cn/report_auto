@@ -133,7 +133,7 @@
         swf: '/path/to/Uploader.swf', // swf 文件路径，用于 Flash 模式下运行
         server: '/temperature/upload', // 文件接收服务
         // 设置超时时间为30秒
-        timeout: 30000,
+        //timeout: 30000,
         pick: '#temperature_picker', // 文件选择按钮
         accept: {
             title: 'Files',
@@ -141,7 +141,7 @@
             mimeTypes: '.mf4,.dat'
         },
         // 开启分片
-        chunked: true,
+        chunked: false,
         // 每个分片的大小，默认为20MB。
         chunkSize: 20 * 1024 * 1024,
         duplicate: true, // 是否检查重复上传
