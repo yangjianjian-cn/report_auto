@@ -6,41 +6,31 @@ from dotenv import load_dotenv
 from flask import Flask
 
 from config.ChipNamesConfig import ChipNamesConfig
-from tools.utils.ConnectionUtils import ConnectionPool
+from tools.utils.ConnectionUtils import DatabasePool
+
+load_dotenv()
+
+# 创建全局数据库连接池实例
+jdbc_mysql: str = os.getenv('jdbc_mysql')
+jdbc_mysql_arr = jdbc_mysql.split(":")
+mysql_config = {
+    'host': jdbc_mysql_arr[0],
+    'user': jdbc_mysql_arr[1],
+    'port': int(jdbc_mysql_arr[2]),
+    'password': jdbc_mysql_arr[3],
+    'database': jdbc_mysql_arr[4],
+    'charset': 'utf8mb4'
+}
+db_pool = DatabasePool(max_connections=60, min_cached=20, max_cached=20, max_shared=0, **mysql_config)
+chipNamesConfig = ChipNamesConfig()
 
 
 def create_app():
     main = Flask(__name__, template_folder='../templates', static_folder='../static')
-    # 加载 .env 文件
-    load_dotenv()
-    # 从环境变量中读取配置
     main.config['input_path'] = os.getenv('input_path')
     main.config['output_path'] = os.getenv('output_path')
     main.config['template_path'] = os.getenv('template_path')
-    # 111.231.0.147:ba:3307:1qazxsw2:measurement:5
-    main.config['jdbc_mysql'] = os.getenv('jdbc_mysql')
     return main
 
 
 main = create_app()
-
-# Database connection configuration
-# 111.231.0.147:ba:3307:1qazxsw2:measurement
-# mysql_config = {
-#     'host': 'sh-cynosdbmysql-grp-rykty3lm.sql.tencentcdb.com',
-#     'user': 'ba',
-#     'port': 26338,
-#     'password': '1qazxsw2',
-#     'database': 'measurement'
-# }
-mysql_config = {
-    'host': '10.0.4.14',
-    'user': 'ba',
-    'port': 3306,
-    'password': '1qazxsw2',
-    'database': 'measurement'
-}
-connectionPool = ConnectionPool(config=mysql_config, max_connections=30)
-connectionPool.init_pool()
-
-chipNamesConfig = ChipNamesConfig()

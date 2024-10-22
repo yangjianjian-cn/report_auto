@@ -2,21 +2,39 @@ __coding__ = "utf-8"
 
 import logging
 import os
+import time
 
 from asammdf import MDF
 from asammdf.blocks.utils import MdfException
 from flask import request, render_template, jsonify
 
-from app import main
+from app import main, db_pool
 from app.router import temperature_bp
-from tools.temperature.temperature_work_time import temperature_duration, temperature_chip, create_data_structure, \
-    str_to_list, relative_difference
+from tools.temperature.temperature_work_time import str_to_list, relative_difference
+from tools.temperature.temperature_work_time import temperature_duration, temperature_chip, create_data_structure
 from tools.utils.DBOperator import create_table, batch_insert_data, insert_data, query_table, delete_from_tables
 from tools.utils.DateUtils import getCurDateTime
 from tools.utils.FileUtils import extract_prefix
 from tools.utils.HtmlGenerator import generate_select_options
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+
+
+def monitor_pool_status(interval=10):
+    """
+    定期监控连接池状态
+    :param interval: 监控间隔时间（秒）
+    """
+    while True:
+        status = db_pool.get_pool_status()
+        logging.info("Database pool status: %s", status)
+        time.sleep(interval)
+
+
+@temperature_bp.route('/', methods=['GET'])
+def temperature_idx():
+    return render_template('temperature.html')
+
 
 '''
 测量文件列表
@@ -25,12 +43,8 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(level
 
 @temperature_bp.route('/list', methods=['GET'])
 def temperature_list():
-    table_name = 'measurement_file'
-    columns = 'id,file_name'
-    whereClause = ' where status = "0" order by id desc'
-
     try:
-        measurement_file_list = query_table(table_name, columns, where=whereClause)
+        measurement_file_list = get_measurement_file_list()
     except Exception as e:
         logging.error(f'查询异常:{e}')
         return render_template('error.html', failure_msg=f'{e}')
@@ -119,7 +133,7 @@ def todb():
     params: dict = {"file_name": fileName, "create_time": getCurDateTime()}
 
     # 保存测量文件元信息
-    ret_msg, last_id = insert_data(table_name, params)
+    ret_msg, last_id = insert_data(db_pool, table_name=table_name, params=params)
     if ret_msg != 'success':
         return jsonify({'generate_report_failed': ret_msg})
     logging.info(f"文件元信息索引:{last_id}")
@@ -174,13 +188,13 @@ def todb():
     params: dict = {'file_id': last_id}
 
     # 创建表
-    c_ret_msg = create_table(table_name, df)
+    c_ret_msg = create_table(db_pool, table_name=table_name, df=df)
     logging.info(c_ret_msg)
     if c_ret_msg != 'success':
         return jsonify({'generate_report_failed': {c_ret_msg}})
 
     # 批量插入表
-    i_ret_msg = batch_insert_data(table_name, df, params)
+    i_ret_msg = batch_insert_data(db_pool, table_name=table_name, params=params, df=df)
     logging.info(i_ret_msg)
     if i_ret_msg != 'success':
         return jsonify({'generate_report_failed': {i_ret_msg}})
@@ -218,22 +232,25 @@ def temperature_details():
     selected_columns_dc1_str = 'DC1_Th1,DC1_Th2,DC1_Th3,DC1_Th4,DC1_Th5,DC1_Th6,DC1_Th7,DC1_Th8,TECU_t,timestamps'
     selected_columns_dc1: list = str_to_list(selected_columns_dc1_str)
 
-    temperature_time_dc1 = temperature_chip(selected_columns_dc1_str, selected_ids)
-    data_structure_dc1 = create_data_structure(temperature_time_dc1, selected_columns_dc1, num_processes=3)
+    temperature_time_dc1 = temperature_chip(db_pool, selected_columns=selected_columns_dc1_str,
+                                            file_ids_int=selected_ids)
+    data_structure_dc1 = create_data_structure(temperature_time_dc1, selected_columns_dc1, num_processes=2)
 
     # #TC1_Th
     selected_columns_tc1_str = "TC1_Th1,TC1_Th2,TC1_Th3,TC1_Th4,TC1_Th5,TC1_Th6,TC1_Th7,TC1_Th8,TC1_Th9,TC1_Th10,TC1_Th11,TC1_Th12,TC1_Th13,TC1_Th14,TC1_Th15,TC1_Th16,TECU_t,timestamps"
     selected_columns_tc1: list = str_to_list(selected_columns_tc1_str)
 
-    temperature_time_tc1 = temperature_chip(selected_columns_tc1_str, selected_ids)
-    data_structure_tc1 = create_data_structure(temperature_time_tc1, selected_columns_tc1, num_processes=3)
+    temperature_time_tc1 = temperature_chip(db_pool, selected_columns=selected_columns_tc1_str,
+                                            file_ids_int=selected_ids)
+    data_structure_tc1 = create_data_structure(temperature_time_tc1, selected_columns_tc1, num_processes=2)
 
     # #TC2_Th
     selected_columns_tc2_str: str = "TC2_Th1,TC2_Th2,TC2_Th3,TC2_Th4,TC2_Th5,TC2_Th6,TC2_Th7,TC2_Th8,TC2_Th9,TC2_Th10,TC2_Th11,TC2_Th12,TC2_Th13,TECU_t,timestamps"
     selected_columns_tc2: list = str_to_list(selected_columns_tc2_str)
 
-    temperature_time_tc2 = temperature_chip(selected_columns_tc2_str, selected_ids)
-    data_structure_tc2 = create_data_structure(temperature_time_tc2, selected_columns_tc2, num_processes=3)
+    temperature_time_tc2 = temperature_chip(db_pool, selected_columns=selected_columns_tc2_str,
+                                            file_ids_int=selected_ids)
+    data_structure_tc2 = create_data_structure(temperature_time_tc2, selected_columns_tc2, num_processes=2)
 
     # 下拉复选框
     multi_select_html = generate_select_options(measurement_file_list)
@@ -283,7 +300,7 @@ def temperature_overview():
         selected_ids.append(measurement_file_list[0].get('id'))
 
     # 温度时长柱形图和饼状图
-    time_diffs, total_minutes = temperature_duration(selected_ids, max_workers=3)
+    time_diffs, total_minutes = temperature_duration(db_pool, file_ids_int=selected_ids, max_workers=2)
     # 使用排序函数
     sorted_data = dict(sorted(time_diffs.items(), key=lambda item: float(item[0].split(' ~ ')[0])))
     # 创建转换后的数据结构，并添加索引
@@ -295,7 +312,7 @@ def temperature_overview():
     multi_select_html = generate_select_options(measurement_file_list)
 
     # 温度阈值 和 相对温差
-    chip_dict_list = relative_difference(selected_ids)
+    chip_dict_list = relative_difference(db_pool, selected_ids)
     chip_names = [chip['chip_name'] for chip in chip_dict_list]
     max_allowed_values = [chip['max_allowed_value'] for chip in chip_dict_list]
     max_temperature = [chip['max_temperature'] for chip in chip_dict_list]
@@ -329,25 +346,19 @@ def delete_file():
         second_table_name = 'chip_temperature'
         second_param: map = {'file_id': file_id}
 
-        result, message = delete_from_tables(primary_table_name, second_table_name, primary_param, second_param)
-
+        result, message = delete_from_tables(db_pool, primary_table_name=primary_table_name,
+                                             primary_param=primary_param)
         if result:
-            return jsonify({'success': True, 'message': '文件删除成功'})
+            result, message = delete_from_tables(db_pool, second_table_name=second_table_name,
+                                                 second_param=second_param)
+            if result:
+                return jsonify({'success': True, 'message': '文件删除成功'})
+            else:
+                return jsonify({'success': False, 'message': '文件删除失败'})
         else:
             return jsonify({'success': False, 'message': '文件删除失败'})
     except Exception as e:
         return jsonify({'success': False, 'message': str(e)}), 500
-
-
-@temperature_bp.route('/test', methods=['GET'])
-def test():
-    chip_dict_list = relative_difference()
-    # 提取所有chip_name
-    chip_names = [chip['chip_name'] for chip in chip_dict_list]
-    max_allowed_values = [chip['max_allowed_value'] for chip in chip_dict_list]
-    difference_temperatures = [chip['difference_temperature'] for chip in chip_dict_list]
-    return render_template('test.html', chip_names=chip_names, max_allowed_values=max_allowed_values,
-                           difference_temperatures=difference_temperatures)
 
 
 '''
@@ -356,11 +367,9 @@ def test():
 
 
 def get_measurement_file_list():
-    table_name = 'measurement_file'
-    columns = ' file_name,id '
-    where = ' where status = "0" order by id desc'
-
-    measurement_file_list = query_table(table_name, columns, where)
+    query_sql = 'SELECT file_name, id FROM measurement_file WHERE status = %s ORDER BY id DESC'
+    params = ('0',)
+    measurement_file_list = query_table(db_pool, query=query_sql, params=params)
     return measurement_file_list
 
 

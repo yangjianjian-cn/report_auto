@@ -23,15 +23,14 @@
 <div class="layui-header header header-docs">
     <div class="layui-main">
         <ul class="layui-nav">
-            <!--
-           <li class="layui-nav-item ">
-               <a href="">其它页</a>
-           </li>
-           <li class="layui-nav-item layui-this">
-               <a href="javascript:;">报表区</a>
-           </li>
-            -->
-            <span class="layui-nav-bar"></span></ul>
+            <li class="layui-nav-item ">
+                <a href="/report/1" ,target="_blank">MST测试报告</a>
+            </li>
+            <li class="layui-nav-item layui-this">
+                <a href="/report/2" ,target="_blank">IOTest测试报告</a>
+            </li>
+            <span class="layui-nav-bar"></span>
+        </ul>
     </div>
 </div>
 
@@ -118,9 +117,13 @@
         <input type="hidden" id="init_selected_files" value='{{ init_selected_files|safe }}'>
     </div>
 </div>
+<div class="layui-footer footer footer-demo">
+    <p>Copyright &copy; 2024</p>
+    <p id="LAY-footer-info"> <span style="color: #007bff"></span></p>
+    <p><span></span></p>
+</div>
 </body>
 <script type="text/javascript" src="/static/js/biz/file_list_multi_select_details.js?v=2"></script>
-
 <script type="text/javascript" src="/static/js/echarts.min.js"></script>
 <script>
     c_tooltip = {

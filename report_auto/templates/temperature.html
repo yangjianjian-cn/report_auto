@@ -17,33 +17,23 @@
     <script type="text/javascript" src="/static/js/jquery.min.js"></script>
     <script type="text/javascript" src="/static/layer/layer.js"></script>
     <script type="text/javascript" src="/static/layer/layui.js"></script>
-
-    <style>
-        my_img {
-            position: absolute;
-            top: 50%; /* 垂直居中 */
-            left: 50%; /* 水平居中 */
-            transform: translate(-50%, -50%); /* 考虑元素本身的宽度和高度 */
-        }
-    </style>
 </head>
 <body>
 <div class="layui-header header header-docs">
     <div class="layui-main">
         <ul class="layui-nav">
             <li class="layui-nav-item ">
-                <a href="/report/1" ,target="_blank">MST测试报告</a>
+                <a href="/report/1" target="_blank">MST测试报告</a>
             </li>
-            <li class="layui-nav-item layui-this">
-                <a href="/report/2" ,target="_blank">IOTest测试报告</a>
+            <li class="layui-nav-item">
+                <a href="/report/2" target="_blank">IOTest测试报告</a>
             </li>
-            <span class="layui-nav-bar"></span>
         </ul>
     </div>
 </div>
 
-<div class="layui-container" style="width: 99%">
-    <div class="layui-panel site-menu" style="width: 18%; display: inline-block">
+<div class="layui-container" style="width: 100%">
+    <div class="layui-panel site-menu" style="width: 18%; float: left; height: calc(100vh - 60px); overflow-y: auto;">
         <ul class="layui-menu layui-menu-lg site-docs-menu">
             <li class="layui-menu-item-group" lay-options="{type: 'group', isAllowSpread: true}">
                 <div class="layui-menu-body-title">Chip Temperature</div>
@@ -51,7 +41,7 @@
                 <ul>
                     <li class="layui-menu-item-checked2">
                         <div class="layui-menu-body-title">
-                            <a href="/temperature/list">
+                            <a href="javascript:void(0);" data-url="/temperature/list">
                                 <span>测量数据</span>
                                 <span class="layui-font-12 layui-font-gray">Temperature Uploader</span>
                             </a>
@@ -59,7 +49,7 @@
                     </li>
                     <li>
                         <div class="layui-menu-body-title">
-                            <a href="/temperature/overview">
+                            <a href="javascript:void(0);" data-url="/temperature/overview">
                                 <span>数据概述</span>
                                 <span class="layui-font-12 layui-font-gray">Data Overview</span>
                             </a>
@@ -67,7 +57,7 @@
                     </li>
                     <li>
                         <div class="layui-menu-body-title">
-                            <a href="/temperature/details">
+                            <a href="javascript:void(0);" data-url="/temperature/details">
                                 <span>数据详情</span>
                                 <span class="layui-font-12 layui-font-gray">Data Details</span>
                             </a>
@@ -77,15 +67,33 @@
             </li>
         </ul>
     </div>
-    <div class="site-content" style="width: 80%; display: inline-block">
-        <img src="{{ url_for('static', filename='images/500.jpeg') }}" class="my_img"/>
-        <h3>{{ failure_msg }}</h3>
+    <div class="layui-body" style="width: 82%; float: right; height: calc(100vh - 60px);">
+        <div style="padding: 15px; height: 100%;">
+            <iframe id="contentFrame" src=""  width="100%" height="100%"></iframe>
+        </div>
     </div>
 </div>
 <div class="layui-footer footer footer-demo">
     <p>Copyright &copy; 2024</p>
-    <p id="LAY-footer-info"> <span style="color: #007bff"></span></p>
+    <p id="LAY-footer-info"><span style="color: #007bff"></span></p>
     <p><span></span></p>
 </div>
 </body>
+<script type="text/javascript">
+    layui.use(['element'], function () {
+        var element = layui.element;
+
+        // 监听导航点击事件
+        element.on('click', '.layui-menu-body-title a', function () {
+            var url = $(this).data('url');
+            console.log(url)
+            if (url) {
+                document.getElementById('contentFrame').src = url;
+            }
+        });
+
+        // 初始化时加载默认页面
+        document.getElementById('contentFrame').src = '/temperature/list';
+    });
+</script>
 </html>

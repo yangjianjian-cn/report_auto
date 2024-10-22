@@ -35,7 +35,7 @@ def index(test_type):
 
     # 渲染模板
     return render_template(
-        'index.html',
+        'report.html',
         test_project_type_id=test_project_type,
         test_project_type_val=test_project_type_info['val'],
         test_project_type_name=test_project_type_info['name'],
