@@ -134,6 +134,8 @@ def merge(file_name, total_chunks, save_path) -> str:
 
 
 def get_rename_mapping(columns: list[str]):
+    logging.info(f"get_rename_mapping:{columns}")
+
     source: str = 'v1'
     rename_mapping: dict = {}
     for col in columns:
