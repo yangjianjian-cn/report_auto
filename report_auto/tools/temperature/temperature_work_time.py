@@ -18,7 +18,7 @@ from concurrent.futures import ThreadPoolExecutor
 
 
 def process_file(db_pool, file_ids: list, measurement_source: str, all_special_columns_str: str):
-    if 'v2' == measurement_source:
+    if 'ng' == measurement_source:
         all_special_columns_str = all_special_columns_str + ',TC1_Th9'
     # 构建参数化查询语句
     placeholders = ', '.join(['%s'] * len(file_ids))  # 创建占位符字符串，如 '%s, %s, %s'
@@ -43,7 +43,7 @@ def process_file(db_pool, file_ids: list, measurement_source: str, all_special_c
 
         # 计算每个温度区间的时间差
         for start_temp, end_temp in zip(temperature_intervals, temperature_intervals[1:]):
-            if 'v2' == measurement_source:
+            if 'ng' == measurement_source:
                 mask = (df['TC1_Th9'] >= start_temp) & (df['TC1_Th9'] < end_temp)
             else:
                 mask = (df['TECU_t'] >= start_temp) & (df['TECU_t'] < end_temp)
@@ -144,7 +144,7 @@ def process_sensor(sensor, temperature_time_dc1, tecu_temperatures):
 def create_data_structure(temperature_time_dc: DataFrame, sensors_list: list, measurement_source: str,
                           num_processes=None):
     tecu_temperatures = temperature_time_dc.get('TECU_t', [])
-    if 'v2' == measurement_source:
+    if 'ng' == measurement_source:
         tecu_temperatures = temperature_time_dc.get('ECU_25(X3)', [])
 
     with multiprocessing.Pool(processes=num_processes) as pool:

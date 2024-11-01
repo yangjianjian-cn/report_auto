@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="en" style="height: 100%">
+<head>
+    <meta charset="UTF-8">
+    <title>Test Report</title>
+
+    <link rel="stylesheet" type="text/css" href="/static/css/webuploader.css">
+    <link rel="stylesheet" type="text/css" href="/static/css/bootstrap.min.css">
+    <link rel="stylesheet" type="text/css" href="/static/css/style.css?v=1">
+    <link rel="stylesheet" type="text/css" href="/static/layer/theme/default/layer.css">
+    <link rel="stylesheet" type="text/css" href="/static/layer/theme/default/layui.css">
+
+    <script type="text/javascript" src="/static/js/jquery.min.js"></script>
+    <script type="text/javascript" src="/static/layer/layer.js"></script>
+    <script type="text/javascript" src="/static/layer/layui.js"></script>
+    <script type="text/javascript" src="/static/js/webuploader.min.js"></script>
+    <style>
+        #picker {
+            display: inline-block;
+            line-height: 1.428571429;
+            vertical-align: middle;
+            margin: 0 12px 0 0;
+        }
+
+        .div_container {
+            display: flex;
+            align-items: stretch; /* 子元素高度一致 */
+        }
+
+        #file_upload_div, #report_pro_text {
+            flex: 1; /* 等分宽度 */
+            margin: 5px; /* 元素间的间距 */
+        }
+
+        #report_pro_text {
+            height: 150px;
+            overflow-y: auto;
+        }
+    </style>
+</head>
+<body style="height: 100%;">
+<div class="container-custom">
+    <table class="custom-background">
+        <tr>
+            <td colspan="3">
+                <div class="image-container">
+                    <!-- style="width: 31%"-->
+                    <!-- <img src="{{ url_for('static', filename='images/bosch.jpeg') }}" class="image" alt="Logo">-->
+                    <!--  style="width: 40%" -->
+                    <img src="{{ url_for('static', filename='images/dev_ops.png') }}" class="image" alt="dev_ops"
+                         style="float: right;"/>
+                    <!-- style="width: 34%" -->
+                    <img src="{{ url_for('static', filename='images/system_software.png') }}" class="image"
+                         alt="system_software" style="float: right;">
+                </div>
+            </td>
+            <td colspan="2">
+                <div class="image-container"><img src="{{ url_for('static', filename='images/bosch.jpeg') }}"
+                                                  class="image_logo" alt="Logo"/></div>
+            </td>
+        </tr>
+    </table>
+
+    <table class="custom-background_table02">
+        <tr>
+            <td colspan="10" style="text-align: right;">
+                <div class="inline-flex">
+                    <p class="type-label" style="margin-right: 10px;">
+                        <strong>test project:
+                            <span style="color: blue; "> {{ test_project_type_name }} </span>
+                        </strong>
+                    </p>
+
+                    <p id="select1-p" class="type-label" style="margin-right: 10px;"><span
+                            style="color: red; ">*</span><strong>test scenario:</strong>
+                    </p>
+                    <select id="select1" name="inputType" onchange="updateSelectCheck2()"
+                            style="margin-right: 10px;width: 100px;">
+                        <option value="">--Please select--</option>
+                        <option value="analogue_input">AnalogueInput</option>
+                        <option value="digital_input">DigitalInput</option>
+                        <option value="pwm_input">PWM_input</option>
+                        <option value="digital_output">DigitalOutput</option>
+                        <option value="pwm_output">PWM_output</option>
+                    </select>
+
+                    <select id="select2" name="inputType" style="width: 100px;">
+                        <option value="">--Please select--</option>
+                    </select>
+                </div>
+            </td>
+        </tr>
+        <tr>
+            <td colspan="10">
+                <input type="hidden" id="test_project_type_id" value="{{ test_project_type_id }}"/>
+                <input type="hidden" id="test_project_type_name" value="{{ test_project_type_name }}"/>
+                <input type="hidden" id="test_project_type_val" value="{{ test_project_type_val }}"/>
+            </td>
+        </tr>
+    </table>
+
+
+    <div class="content-area">
+        <div>
+            <div class="row">
+                <div class="col-md-4">
+                    <button type="button" class="btn btn-primary btn-lg mb-3" id="report_generation">
+                        <p style="font-size: 16px">report generation</p>
+                    </button>
+                </div>
+
+                <div class="col-md-4">
+                    <button type="button" class="btn btn-success btn-lg mb-3" id="report_download"><p
+                            style="font-size: 16px">download the report</p>
+                    </button>
+                </div>
+            </div>
+        </div>
+        <div id="uploader" class="wu-example">
+            <div class="queueList">
+                <div id="dndArea" class="placeholder">
+                    <div id="filePicker"></div>
+                    <p>或将照片拖到这里，单次最多可选300张</p>
+                </div>
+            </div>
+            <div class="statusBar" style="display:none;">
+                <div class="progress">
+                    <span class="text">0%</span>
+                    <span class="percentage"></span>
+                </div>
+                <div class="info"></div>
+                <div class="btns">
+                    <div id="filePicker2"></div>
+                    <div class="uploadBtn">开始上传</div>
+                </div>
+            </div>
+        </div>
+        <div class="layui-progress layui-progress-big" lay-showPercent="true" lay-filter="report_auto_progress">
+            <div class="layui-progress-bar" lay-percent="0%"></div>
+        </div>
+    </div>
+</div>
+<div class="chart_container">
+    <div class="chart" id="chart1"></div>
+    <div class="chart" id="chart2"></div>
+    <div class="chart" id="chart3"></div>
+</div>
+</body>
+<script type="text/javascript" src="/static/js/selectcheckbox.js"></script>
+<script type="text/javascript" src="/static/js/fileuploader.js"></script>
+<script type="text/javascript" src="/static/js/echarts.min.js"></script>
+<script type="text/javascript">
+    // 全局变量，计数器
+    const counters = JSON.parse('{{ counters|tojson }}');
+    // 全局变量，报告生成成功
+    var report_success = false;
+    // 全局变量，用于保存上传成功的文件名
+    var uploadedFileName = [];
+    var element
+    layui.use('element', function () {
+        element = layui.element;
+    });
+
+    $('#picker').click(function () {
+        const selectedValue1 = $('#select1').val();
+        const selectedValues2 = $('#select2').val();
+        if (selectedValue1 == '' || selectedValues2 == '') {
+            layer.alert('Please select a test scenario', {icon: 3})
+            return false;
+        }
+        uploadedFileName = [];
+        element.progress('report_auto_progress', '0%');
+        $('#report_pro_text').empty();
+    })
+
+    /* 构建WebUploader对象，实现文件上传*/
+    const uploader = WebUploader
+        .create({
+            // swf文件路径
+            swf: '../static/swf/Uploader.swf',
+            // 文件接收服务端。
+            server: '/report/upload',
+            // 选择文件的按钮。可选。
+            // 内部根据当前运行是创建，可能是input元素，也可能是flash.
+            pick: {
+                id: '#picker',//这个id是你要点击上传文件的id
+                multiple: true
+            },
+            // 不压缩image, 默认如果是jpeg，文件上传前会压缩一把再上传！
+            resize: true,
+            auto: true,
+            //开启分片上传
+            chunked: false,
+            accept: {
+                extensions: "dat",
+                mimeTypes: '.dat'
+            },
+            fileNumLimit: 10
+        });
+
+    // 当有文件被添加进队列的时候
+    uploader.on('fileQueued', function (file) {
+        const fileSize = file.size;
+        let fileSizeStr = WebUploader.Base.formatSize(fileSize);
+
+        // 测试项目
+        const selectedValue0 = $('#test_project_type_val').val();
+
+        // 测试场景
+        let selectedValue1 = $('#select1').val();
+        let selectedName1 = $('#select1 option:selected').text();
+        if (selectedValue1 == 'undefined' || selectedValue1 == undefined) {
+            selectedValue1 = '';
+            selectedName1 = '';
+        }
+
+        // 测试区域
+        var selectedValues2 = $('#select2').val();
+        var selectedName2 = $('#select2').find("option:selected").text();
+        if (selectedValues2 == 'undefined' || selectedValues2 == undefined) {
+            selectedValues2 = '';
+            selectedName2 = '';
+        }
+
+        $('#report_pro_text').append('file: ' +
+            '<span style="color: blue;">' +
+            file.name + '(' + fileSizeStr + ')' +
+            '</span>' +
+            '<br>');
+
+
+        uploader.options.formData['test_team'] = selectedValue0;
+        uploader.options.formData['test_scenario'] = selectedValue1;
+        uploader.options.formData['test_area'] = selectedValues2;
+        uploader.options.formData['task_id'] = WebUploader.Base.guid();
+    });
+
+    // 文件上传过程中创建进度条实时显示。
+    uploader.on('uploadProgress', function (file, percentage) {
+        element.progress('report_auto_progress', Math.round(percentage * 100) + '%');
+    });
+
+    uploader.on('uploadSuccess', function (file, response) {
+            if (response.upload_success) {
+                $('#report_pro_text').append('file: ' +
+                    '<span style="color: blue;">' +
+                    file.name + ' upload successful' +
+                    '</span>' +
+                    '<br>');
+            }
+
+            if (typeof response.upload_error !== "undefined") {
+                $('#report_pro_text').append('file: ' +
+                    '<span style="color: indianred;">' +
+                    file.name + ' upload failure : ' + response.upload_error +
+                    '</span>' +
+                    '<br>');
+            }
+        }
+    );
+
+    uploader.on('uploadError', function (file, e) {
+        $('#report_pro_text').append('file: ' +
+            '<span style="color: blue;">' +
+            file.name + ' upload error: ' +
+            e +
+            '</span>' +
+            '<br>');
+    });
+
+    uploader.on('uploadComplete', function (file) {
+        uploadedFileName.push(file.name)
+        uploader.removeFile(file);
+    });
+    // 当有文件添加进队列后，开始上传
+    uploader.on('all', function (type, response) {
+        if (type === 'startUpload') {
+        } else if (type === 'uploadSuccess') {
+        } else if (type === 'uploadFailed') {
+            console.log(response)
+        }
+    });
+</script>
+<script type="text/javascript" src="/static/js/index.js?v=1"></script>
+<script type="text/javascript" src="/static/js/Piechart.js?v=1"></script>
+</html>

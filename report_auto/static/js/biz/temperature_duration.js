@@ -3,7 +3,7 @@ let totalMinutes = document.getElementById('total-minutes').value;
 let measurement_source =  document.getElementById('measurement_source').value;
 debugger
 let title_text = 'TECU_T'
-if ( 'v2' == measurement_source){
+if ( 'ng' == measurement_source){
     title_text = 'ECU25'
 }
 
