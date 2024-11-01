@@ -1,5 +1,11 @@
 // 获取 total_minutes 的值
 let totalMinutes = document.getElementById('total-minutes').value;
+let measurement_source =  document.getElementById('measurement_source').value;
+debugger
+let title_text = 'TECU_T'
+if ( 'v2' == measurement_source){
+    title_text = 'ECU25'
+}
 
 // 获取 time_diffs 的值，并解析为 JSON 对象
 //  [{'40 ~ 45': 0.77, 'idx': 0}, {'45 ~ 50': 62.38, 'idx': 1}, {'50 ~ 55': 5.5600000000000005, 'idx': 2}, {'55 ~ 60': 4.24, 'idx': 3}, {'60 ~ 65': 22.67, 'idx': 4}, {'65 ~ 70': 11.52, 'idx': 5}]
@@ -50,13 +56,13 @@ option = {
     },
     title: [
         {
-            text: 'TECU_T temperature duration',
+            text: title_text +' temperature duration',
             subtext: 'Total (minutes) ' + totalMinutes,
             left: '25%',
             textAlign: 'center'
         },
         {
-            text: 'TECU_T temperature duration',
+            text: title_text + ' temperature duration',
             subtext:
                 'Total (minutes)' + totalMinutes,
             left: '75%',

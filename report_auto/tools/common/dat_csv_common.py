@@ -94,18 +94,21 @@ def counter_report(template_path: str):
 
     # mst报告统计器
     mst_file_path = os.path.join(counter_path, 'mst_report_counter.json')
-    mst_counter = load_from_mst_json(mst_file_path)
-    # 如果文件内容为空或无法解析，创建默认对象
-    if mst_counter is None:
+    if not os.path.exists(mst_file_path):
         mst_counter = MSTCounter()
-    mst_dict = mst_counter.__dict__
+        mst_dict = mst_counter.__dict__
+    else:
+        mst_counter = load_from_mst_json(mst_file_path)
+        mst_dict = mst_counter.__dict__
 
     # io报告统计器
     io_file_path = os.path.join(counter_path, 'io_report_counter.json')
-    io_counter = load_from_io_json(io_file_path)
-    # 如果文件内容为空或无法解析，创建默认对象
-    if io_counter is None:
+    if not os.path.exists(io_file_path):
         io_counter = IOTestCounter()
-    io_dict = io_counter.__dict__
+        io_dict = io_counter.__dict__
+    else:
+        io_counter = load_from_io_json(io_file_path)
+        io_dict = io_counter.__dict__
+
     merged_dict = {**mst_dict, **io_dict}
     return merged_dict

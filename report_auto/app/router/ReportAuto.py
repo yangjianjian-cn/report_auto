@@ -6,12 +6,13 @@ import os
 
 from flask import request, render_template, jsonify, make_response, send_file
 
-from app import main
+from app import env_template_path, env_output_path, env_input_path
 from app.router import report_bp
 from pojo.MSTReqPOJO import ReqPOJO
 from tools.common.dat_csv_common import counter_report
 from tools.parser.dat_csv_doc import dat_csv_docx, docx_merge
 from tools.utils.FileUtils import validate_filename
+from tools.utils.IPUtils import get_client_ip
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 
@@ -31,7 +32,7 @@ def index(test_type):
     test_project_type_info = test_project_types.get(test_project_type, {'val': 'MST_Test', 'name': 'MST Test'})
 
     # 报告统计器
-    merged_dict = counter_report(main.config['template_path'])
+    merged_dict = counter_report(env_template_path)
 
     # 渲染模板
     return render_template(
@@ -58,7 +59,8 @@ def upload():
     if check_rslt:
         return jsonify({'upload_error': check_rslt})
 
-    input_path = main.config['input_path']
+    input_path = env_input_path
+    input_path = os.path.join(input_path, get_client_ip(request))
 
     if test_team:
         input_path = os.path.join(input_path, test_team)
@@ -80,14 +82,21 @@ def upload():
 def report_download():
     fileName = request.args.get('fileName')
     test_team = request.args.get('test_team')
-    output_path = main.config['output_path']
-    merge_path = main.config['template_path']
-    # 检查 docx_path 是否为空
+
+    output_path = env_output_path
+    output_path = os.path.join(output_path, get_client_ip(request))
+
+    merge_path = env_template_path
+    merge_path = os.path.join(merge_path, get_client_ip(request))
+
     if not output_path:
         logging.error({'generate_report_fail': f'The docx_path is empty.'})
-
     output_path = os.path.join(output_path, test_team)
+
     merge_path = os.path.join(merge_path, 'merge')
+    if not merge_path:
+        logging.error({'generate_report_fail': f'The merge_path is empty.'})
+
     if 'MST_Test' == test_team:
         output_path = os.path.join(output_path, 'docx')
     elif 'IO_Test' == test_team:
@@ -130,45 +139,44 @@ def report_download():
 # 生成报告
 @report_bp.route('/generate_report', methods=['POST'])
 def generate_report():
-    # 解析前端发送的 JSON 数据
+    # 1. 解析前端发送的 JSON 数据
     data = request.get_json()
     test_team = data['test_team']
     test_scenario = data['test_scenario']
     test_area = data['test_area']
+    client_ip = get_client_ip(request)
+
     u_files = data['u_files']
 
-    # dat文件目录
-    dat_path = main.config['input_path']
+    # 2. dat文件目录
+    dat_path = env_input_path
     if not dat_path:
         return jsonify({'generate_report_fail': f'The input path is empty'})
 
-    # test_team
-    if test_team:
-        dat_path = os.path.join(dat_path, test_team)
-
-    # test_scenario
-    if test_scenario:
-        dat_path = os.path.join(dat_path, test_scenario)
-
-    # test_area
-    if test_area:
-        dat_path = os.path.join(dat_path, test_area)
-
-    # 完整dat_path目录
-    if not os.path.exists(dat_path):
-        return jsonify({'generate_report_fail': f"Error: The directory '{dat_path}' does not exist."})
-
-    # 输出目录: 测试团队/测试场景
-    output_path = main.config['output_path']
+    # output文件目录
+    output_path = env_output_path
     if not output_path:
         return jsonify({'generate_report_fail': f'The output path is empty.'})
 
-    csv_path = os.path.join(output_path, test_team)
-    csv_path = os.path.join(csv_path, test_scenario)
-    csv_path = os.path.join(csv_path, test_area)
+    # 3. 完整dat_path、csv_path、output_path目录
+    dat_path = os.path.join(dat_path, client_ip)
+    for subdir in [test_team, test_scenario, test_area]:
+        if subdir:
+            dat_path = os.path.join(dat_path, subdir)
+    if not os.path.exists(dat_path):
+        return jsonify({'generate_report_fail': f"Error: The directory '{dat_path}' does not exist."})
+    os.makedirs(dat_path, exist_ok=True)
+
+    # 完整csv_path目录
+    csv_path = os.path.join(output_path, client_ip)
+    for subdir in [test_team, test_scenario, test_area]:
+        if subdir:
+            csv_path = os.path.join(csv_path, subdir)
     os.makedirs(csv_path, exist_ok=True)
 
-    output_path = os.path.join(output_path, test_team)
+    # 完整output_path目录
+    output_path = os.path.join(output_path, client_ip, test_team)
+
     logging.info(f"dat路径: {dat_path}")
     logging.info(f"csv路径: {csv_path}")
     logging.info(f"输出路径: {output_path}")
@@ -182,7 +190,7 @@ def generate_report():
             test_team=test_team,
             test_scenario=test_scenario,
             test_area=test_area,
-            template_path=main.config['template_path'],
+            template_path=env_template_path,
             u_files=u_files
         )
         ret_sucess_msg, ret_err_msg = dat_csv_docx(req_data)

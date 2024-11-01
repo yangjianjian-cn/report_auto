@@ -2,7 +2,6 @@ import logging
 
 from pojo.MSTReqPOJO import ReqPOJO
 from tools.conversion.brake_plausibility_check_parser import brake_plausibility_check
-
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 
 

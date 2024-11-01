@@ -23,7 +23,7 @@ $("#report_generation").on("click", function () {
         selectedValues2 = ''
     }
 
-    var test_project_type_id = $("#test_project_type_id").val()
+    const test_project_type_id = $("#test_project_type_id").val();
     if ('2' == test_project_type_id) {
         if (selectedValue1 == '' || selectedValues2 == '') {
             layer.alert('Please select a test scenario', {icon: 3})
@@ -38,7 +38,7 @@ $("#report_generation").on("click", function () {
         "u_files": uploadedFileName.join(',')
     });
 
-    var index = layer.load(0, {shade: false}); //0代表加载的风格，支持0-2
+    const index = layer.load(0, {shade: false}); //0代表加载的风格，支持0-2
 
     // 生成报告
     $.ajax({
@@ -80,37 +80,41 @@ $("#report_generation").on("click", function () {
 $("#report_download").on("click", function () {
     // 测试项目
     const selectedValue0 = $('#test_project_type_val').val();
-    var filenames = uploadedFileName.join(',');
-    window.location.href = '/report/report_download?test_team=' + selectedValue0 + '&fileName=' + filenames
+    const filenames = uploadedFileName.join(',');
+    if (filenames != '') {
+        window.location.href = '/report/report_download?test_team=' + selectedValue0 + '&fileName=' + filenames
+    } else {
+        alert('Please upload the measurement file and generate the test report, and then click Download.')
+    }
     uploadedFileName = []
 })
 $('#APP_PL_BR_1_SPAN').on('mouseenter', function () {
-    var that = this;
+    const that = this;
     layer.tips('Brake Override Accelerator', that, {tips: 1});
 
 });
 $('#Brk_04_SPAN').on('mouseenter', function () {
-    var that = this;
+    const that = this;
     layer.tips('Main Brake Plausibility Check (DIO)', that, {tips: 1});
 
 });
 $('#Brk_05_SPAN').on('mouseenter', function () {
-    var that = this;
+    const that = this;
     layer.tips('Redundant Brake Plausibility Check (DIO)', that, {tips: 1});
 
 });
 $('#NGS_06_SPAN').on('mouseenter', function () {
-    var that = this;
+    const that = this;
     layer.tips('Neutral Gear Sensor Plausibility Check (Digital Sensor)', that, {tips: 1});
 
 });
 $('#Clth_05_SPAN').on('mouseenter', function () {
-    var that = this;
+    const that = this;
     layer.tips('Plausibility check of CLTH-stuck (Digital Sensor-Top Clutch)r', that, {tips: 1});
 
 });
 $('#Clth_06_SPAN').on('mouseenter', function () {
-    var that = this;
+    const that = this;
     layer.tips('Plausibility check of CLTH-stuck (Digital Sensor-Bottom Clutch)', that, {tips: 1});
 });
 

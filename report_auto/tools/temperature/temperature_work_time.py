@@ -7,7 +7,7 @@ from typing import Dict, List
 import pandas as pd
 from pandas import DataFrame
 
-from app import chipNamesConfig
+from app import chipNamesConfig, db_pool
 from tools.utils.DBOperator import query_table, query_table_sampling, query_table_by_sql
 from tools.utils.MathUtils import relative_difference_chip, difference_chip
 
@@ -17,12 +17,22 @@ from collections import defaultdict
 from concurrent.futures import ThreadPoolExecutor
 
 
-def process_file(db_pool, file_ids: list):
-    # 查询多个文件的数据
-    file_ids_str_for_query = ', '.join(map(str, file_ids))
-    query_sql = f'select file_id, timestamps, TECU_t from chip_temperature where file_id = {file_ids_str_for_query} '
+def process_file(db_pool, file_ids: list, measurement_source: str, all_special_columns_str: str):
+    if 'v2' == measurement_source:
+        all_special_columns_str = all_special_columns_str + ',TC1_Th9'
+    # 构建参数化查询语句
+    placeholders = ', '.join(['%s'] * len(file_ids))  # 创建占位符字符串，如 '%s, %s, %s'
+    query_sql = f"""
+            SELECT file_id, {all_special_columns_str}
+            FROM chip_temperature 
+            WHERE file_id IN ({placeholders}) 
+            AND source = %s
+        """
+    # 构建参数列表
+    params = file_ids + [str(measurement_source)]  # 将 file_ids 和 measurement_source 组合成一个列表
+
     try:
-        records = query_table(db_pool, query=query_sql)
+        records = query_table(db_pool, query=query_sql, params=params)
         df = pd.DataFrame(records)
 
         # 初始化一个字典来存储每个温度区间的总分钟数
@@ -33,7 +43,10 @@ def process_file(db_pool, file_ids: list):
 
         # 计算每个温度区间的时间差
         for start_temp, end_temp in zip(temperature_intervals, temperature_intervals[1:]):
-            mask = (df['TECU_t'] >= start_temp) & (df['TECU_t'] < end_temp)
+            if 'v2' == measurement_source:
+                mask = (df['TC1_Th9'] >= start_temp) & (df['TC1_Th9'] < end_temp)
+            else:
+                mask = (df['TECU_t'] >= start_temp) & (df['TECU_t'] < end_temp)
             filtered_df = df[mask]
 
             if not filtered_df.empty:
@@ -43,18 +56,18 @@ def process_file(db_pool, file_ids: list):
         logging.error(f"An error occurred: {e}")
 
     # 计算总的分钟数
-    cur_total_minutes = sum(cur_time_diffs.values())
+    cur_total_minutes = round(sum(cur_time_diffs.values()), 2)
 
     return cur_time_diffs, cur_total_minutes
 
 
-def temperature_duration(db_pool, file_ids_int: list = None, max_workers=None):
-    # file_ids_int = [int(fid) for fid in file_id.split(',')]
-
+def temperature_duration(db_pool, file_ids_int: list = None, max_workers=None, measurement_source=None,
+                         all_special_columns_str=None):
     # 使用 ThreadPoolExecutor 并行处理每个文件
     with ThreadPoolExecutor(max_workers=max_workers) as executor:
-        results = list(executor.map(lambda fids: process_file(db_pool, [fids]), file_ids_int))
-        logging.info(f"{len(results)}")
+        results = list(
+            executor.map(lambda fids: process_file(db_pool, [fids], measurement_source, all_special_columns_str),
+                         file_ids_int))
 
     # 合并所有文件的结果
     combined_time_diffs = defaultdict(float)
@@ -81,29 +94,29 @@ def modify_records(records):
     return modified_records
 
 
-'''
-
-'''
-
-
-def temperature_chip(db_pool, selected_columns: list, file_ids_int: list):
+def temperature_chip(selected_columns: list, file_ids_int: list, measurement_source: str, kv_chip_dict: dict):
     # file_ids_int = [int(file_id) for file_id in file_id.split(',')]
     file_ids_str_for_query = ', '.join(map(str, file_ids_int))
 
     result_dicts = query_table_sampling(db_pool, columns=selected_columns,
-                                        file_ids_str_for_query=file_ids_str_for_query)
+                                        file_ids_str_for_query=file_ids_str_for_query,
+                                        measurement_source=measurement_source)
     if result_dicts is None or len(result_dicts) < 1:
         # 返回一个空的 temperature_time 字典
         return {col: [] for col in selected_columns}
 
     result_dicts = modify_records(result_dicts)
+
     # 使用字典推导式来创建结果字典
     temperature_time: Dict[str, List] = {
         col: [row[col] for row in result_dicts] for col in result_dicts[0].keys()
     }
 
-    # 预先构建映射表
-    key_mapping = {key: chipNamesConfig.get('chip_names', key) for key in temperature_time.keys()}
+    # 构建 key_mapping
+    all_keys = set()
+    for record in temperature_time:
+        all_keys.add(record)
+    key_mapping = {key: kv_chip_dict.get(key, key) for key in all_keys}
 
     # 使用映射表替换 temperature_time 中的键
     new_temperature_time: Dict[str, List] = {
@@ -128,11 +141,15 @@ def process_sensor(sensor, temperature_time_dc1, tecu_temperatures):
             "markArea": markArea}
 
 
-def create_data_structure(temperature_time_dc1, sensors_list: list, num_processes=None):
-    tecu_temperatures = temperature_time_dc1.get('TECU_t', [])
+def create_data_structure(temperature_time_dc: DataFrame, sensors_list: list, measurement_source: str,
+                          num_processes=None):
+    tecu_temperatures = temperature_time_dc.get('TECU_t', [])
+    if 'v2' == measurement_source:
+        tecu_temperatures = temperature_time_dc.get('ECU_25(X3)', [])
+
     with multiprocessing.Pool(processes=num_processes) as pool:
         results = pool.starmap(process_sensor,
-                               [(sensor, temperature_time_dc1, tecu_temperatures) for sensor in sensors_list])
+                               [(sensor, temperature_time_dc, tecu_temperatures) for sensor in sensors_list])
 
     # 过滤掉 None 结果
     results = [res for res in results if res is not None]
@@ -159,18 +176,20 @@ def str_to_list(sensors_str: str) -> List[str]:
 
 
 # table_name: str, columns: str, where: str
-def relative_difference(db_pool, selected_ids: list[int]) -> list[dict]:
+def relative_difference(db_pool, selected_ids: list[int], measurement_source: str) -> list[dict]:
     # 芯片字典(包含芯片名称、芯片温度阈值)
-    chip_dict_list = chip_dict(db_pool)
+    chip_dict_list = chip_dict(measurement_source=measurement_source)
 
     # 查看每个芯片的最大测量温度
-    max_rlt_df = max_query(db_pool, selected_ids)
+    max_rlt_df = max_query(selected_ids)
     for column in max_rlt_df.columns:
         # 值小于-100或大于200的值置0
         max_rlt_df.loc[(max_rlt_df[column] < -100) | (max_rlt_df[column] > 200), column] = 0
 
     df_transposed = max_rlt_df.T
+    logging.info(f"df_transposed:{df_transposed}")
     result_map = df_transposed[0].to_dict()
+    logging.info(f"result_map:{result_map}")
 
     # 遍历 chip_dict_list，并从 data_map 中查找每个 measured_variable 对应的值
     # 然后将这些值添加到 chip_dict_list 中的新列 max_temperature 中
@@ -184,52 +203,34 @@ def relative_difference(db_pool, selected_ids: list[int]) -> list[dict]:
     return chip_dict_list
 
 
-def chip_dict(db_pool):
-    query_sql = " select measured_variable, chip_name,max_allowed_value from chip_dict  where status = '1' "
-    result_dicts = query_table(db_pool, query=query_sql)
+def chip_dict(measurement_source: str) -> dict:
+    # 使用参数化查询防止SQL注入
+    query_sql = """
+        SELECT measured_variable, chip_name, max_allowed_value 
+        FROM chip_dict 
+        WHERE status = %s AND source = %s
+    """
+    # 构建参数列表
+    params = ('1', measurement_source)
+
+    # 调用query_table函数执行查询
+    result_dicts = query_table(db_pool, query=query_sql, params=params)
     return result_dicts
 
 
-def max_query(db_pool, selected_ids: list) -> DataFrame:
-    max_query_sql = """
-            SELECT
-            ROUND(MAX(DC1_Th1)) AS DC1_Th1,
-            ROUND(MAX(DC1_Th2)) AS DC1_Th2,
-            ROUND(MAX(DC1_Th3)) AS DC1_Th3,
-            ROUND(MAX(DC1_Th4)) AS DC1_Th4,
-            ROUND(MAX(DC1_Th5)) AS DC1_Th5,
-            ROUND(MAX(DC1_Th6)) AS DC1_Th6,
-            ROUND(MAX(DC1_Th7)) AS DC1_Th7,
-            ROUND(MAX(DC1_Th8)) AS DC1_Th8,
-            ROUND(MAX(TC1_Th1)) AS TC1_Th1,
-            ROUND(MAX(TC1_Th2)) AS TC1_Th2,
-            ROUND(MAX(TC1_Th3)) AS TC1_Th3,
-            ROUND(MAX(TC1_Th4)) AS TC1_Th4,
-            ROUND(MAX(TC1_Th5)) AS TC1_Th5,
-            ROUND(MAX(TC1_Th6)) AS TC1_Th6,
-            ROUND(MAX(TC1_Th7)) AS TC1_Th7,
-            ROUND(MAX(TC1_Th8)) AS TC1_Th8,
-            ROUND(MAX(TC1_Th9)) AS TC1_Th9,
-            ROUND(MAX(TC1_Th10)) AS TC1_Th10,
-            ROUND(MAX(TC1_Th11)) AS TC1_Th11,
-            ROUND(MAX(TC1_Th12)) AS TC1_Th12,
-            ROUND(MAX(TC1_Th13)) AS TC1_Th13,
-            ROUND(MAX(TC1_Th14)) AS TC1_Th14,
-            ROUND(MAX(TC1_Th15)) AS TC1_Th15,
-            ROUND(MAX(TC1_Th16)) AS TC1_Th16,
-            ROUND(MAX(TC2_Th1)) AS TC2_Th1,
-            ROUND(MAX(TC2_Th2)) AS TC2_Th2,
-            ROUND(MAX(TC2_Th3)) AS TC2_Th3,
-            ROUND(MAX(TC2_Th4)) AS TC2_Th4,
-            ROUND(MAX(TC2_Th5)) AS TC2_Th5,
-            ROUND(MAX(TC2_Th6)) AS TC2_Th6,
-            ROUND(MAX(TC2_Th7)) AS TC2_Th7,
-            ROUND(MAX(TC2_Th8)) AS TC2_Th8,
-            ROUND(MAX(TC2_Th9)) AS TC2_Th9,
-            ROUND(MAX(TC2_Th10)) AS TC2_Th10,
-            ROUND(MAX(TC2_Th11)) AS TC2_Th11,
-            ROUND(MAX(TC2_Th12)) AS TC2_Th12,
-            ROUND(MAX(TC2_Th13)) AS TC2_Th13
+def max_query(selected_ids: list) -> DataFrame:
+    results_df: DataFrame = query_table_by_sql(db_pool, query_sql="DESCRIBE chip_temperature")
+    column_list: list = results_df['Field'].tolist()
+
+    # 去掉指定的列
+    filtered_column_list = list(filter(lambda x: x not in ['id', 'file_id', 'source'], column_list))
+    logging.debug(f"filtered_column_list:{filtered_column_list}")
+
+    # 动态生成 SQL 查询
+    select_clause = ",\n".join([f"ROUND(MAX({col})) AS {col}" for col in filtered_column_list])
+    max_query_sql = f"""
+        SELECT
+        {select_clause}
         FROM chip_temperature
     """
     if len(selected_ids) > 0:
@@ -241,9 +242,13 @@ def max_query(db_pool, selected_ids: list) -> DataFrame:
     logging.info(f"max_query_sql:{max_sql}")
     max_query_rslt_df = query_table_by_sql(db_pool, query_sql=max_sql)
 
-    # 重置索引
+    # # 重置索引
     results_df = max_query_rslt_df.reset_index()
+    logging.debug(results_df)
 
     # 为列起别名
-    results_df = results_df.rename(columns={'index': 'Measurement_Point', 0: 'Measurement'})
+    # results_df = results_df.rename(columns={'index': 'Measurement_Point', 0: 'Measurement'})
+    results_df = results_df.rename(columns={'index': 'Measurement_Point'})
+    logging.info(results_df)
+
     return results_df

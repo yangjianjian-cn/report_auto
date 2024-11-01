@@ -11,8 +11,11 @@
     <meta name="format-detection" content="telephone=no">
 
     <link rel="stylesheet" type="text/css" href="/static/layer/theme/default/layui.css">
-    <link rel="stylesheet" type="text/css" href="/static/layer/theme/default/layer.css">
     <link rel="stylesheet" type="text/css" href="/static/layer/theme/default/global.css">
+    <link rel="stylesheet" type="text/css" href="/static/layer/theme/default/layer.css">
+    <link rel="stylesheet" type="text/css" href="/static/css/bootstrap.min.css"/>
+    <link rel="stylesheet" type="text/css" href="/static/css/bootstrap-multiselect.css"/>
+    <link rel="stylesheet" type="text/css" href="/static/css/style.css">
 
     <script type="text/javascript" src="/static/js/jquery.min.js"></script>
     <script type="text/javascript" src="/static/layer/layer.js"></script>
@@ -25,7 +28,7 @@
             <li class="layui-nav-item ">
                 <a href="/report/1" ,target="_blank">MST测试报告</a>
             </li>
-            <li class="layui-nav-item layui-this">
+            <li class="layui-nav-item">
                 <a href="/report/2" ,target="_blank">IOTest测试报告</a>
             </li>
             <span class="layui-nav-bar"></span>
@@ -48,7 +51,7 @@
                             </a>
                         </div>
                     </li>
-                    <li>
+                    <li class="">
                         <div class="layui-menu-body-title">
                             <a href="/temperature/overview">
                                 <span>数据概述</span>
@@ -69,57 +72,57 @@
         </ul>
     </div>
     <div class="site-content" style="width: 80%; display: inline-block">
-        <fieldset class="layui-elem-field layui-field-title" style="margin-top: 30px;">
-            <legend>Chip temperature acquisition</legend>
-        </fieldset>
-        <div class="layui-upload">
-            <div id="temperature_picker">Select file(dat、mf4)</div>
-            <span style="color: #01aaed">(You can select one file at a time or multiple files at a time)</span>
-            <div class="layui-upload-list">
-                <table class="layui-table">
-                    <colgroup>
-                        <col>
-                        <col style="width:150px;">
-                        <col style="width:260px;">
-                        <col style="width:150px;">
-                    </colgroup>
-                    <thead>
+        <div id="temperature_picker">Select file(dat、mf4)</div>
+        <span style="color: #01aaed">(You can select one file at a time or multiple files at a time)</span>
+        <div class="layui-upload-list">
+            <table class="layui-table">
+                <colgroup>
+                    <col>
+                    <col style="width:150px;">
+                    <col style="width:260px;">
+                    <col style="width:150px;">
+                </colgroup>
+                <thead>
+                <tr>
+                    <th>File Name</th>
+                    <th>size</th>
+                    <th>Upload Progress</th>
+                    <th>operation</th>
+                </tr>
+                </thead>
+                <tbody id="demoList">
+                {% if measurement_file_list is not none and measurement_file_list|length > 0 %}
+                    {% for file in measurement_file_list %}
+                        <tr>
+                            <td>{{ file.file_name }}</td>
+                            <td>--</td>
+                            <td>--</td>
+                            <td>
+                                <button class="layui-btn layui-btn-xs layui-btn-danger demo-delete_db"
+                                        onclick="delete_file_in_db({{ file.id }})">delete
+                                </button>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                {% elif measurement_file_list is none %}
                     <tr>
-                        <th>File Name</th>
-                        <th>size</th>
-                        <th>Upload Progress</th>
-                        <th>operation</th>
+                        <td colspan="4"><span style="color: red;">database query exception</span></td>
                     </tr>
-                    </thead>
-                    <tbody id="demoList">
-                    {% if measurement_file_list is not none and measurement_file_list|length > 0 %}
-                        {% for file in measurement_file_list %}
-                            <tr>
-                                <td>{{ file.file_name }}</td>
-                                <td>--</td>
-                                <td>--</td>
-                                <td>
-                                    <button class="layui-btn layui-btn-xs layui-btn-danger demo-delete_db"
-                                            onclick="delete_file_in_db({{ file.id }})">delete
-                                    </button>
-                                </td>
-                            </tr>
-                        {% endfor %}
-                    {% elif measurement_file_list is none %}
-                        <tr>
-                            <td colspan="4"><span style="color: red;">database query exception</span></td>
-                        </tr>
-                    {% else %}
-                        <tr>
-                            <td colspan="4">There is no documentation yet.</td>
-                        </tr>
-                    {% endif %}
-                    </tbody>
-                </table>
-            </div>
-            <button type="button" class="layui-btn" id="startUpload">Start uploading</button>
+                {% else %}
+                    <tr>
+                        <td colspan="4">There is no documentation yet.</td>
+                    </tr>
+                {% endif %}
+                </tbody>
+            </table>
         </div>
+        <button type="button" class="layui-btn" id="startUpload">Start uploading</button>
     </div>
+</div>
+<div class="layui-footer footer footer-demo">
+    <p>Copyright &copy; 2024</p>
+    <p id="LAY-footer-info"><span style="color: #007bff"></span></p>
+    <p><span></span></p>
 </div>
 </body>
 <link rel="stylesheet" type="text/css" href="/static/css/webuploader.css">
@@ -145,16 +148,16 @@
 
         // 开启分片
         chunked: true,
-        chunkSize: 30 * 1024 * 1024,       // 每个分片的大小，默认为20MB。
+        chunkSize: 500 * 1024 * 1024,       // 每个分片的大小，默认为20MB。
         chunkRetry: 3,                     //某分片若上传失败，重试次数
         threads: 8,                        //线程数量
 
         duplicate: true, // 是否检查重复上传
         compress: false, // 不压缩图片
 
-        fileNumLimit: 10, // 最多上传文件数量限制
-        fileSizeLimit: 4 * 1024 * 1024 * 1024, // 总文件大小限制
-        fileSingleSizeLimit: 2 * 1024 * 1024 * 1024,// 单个文件大小限制
+        fileNumLimit: 3, // 最多上传文件数量限制
+        fileSizeLimit: 500 * 1024 * 1024 * 1024, // 总文件大小限制
+        fileSingleSizeLimit: 1 * 1024 * 1024 * 1024,// 单个文件大小限制
 
         formData: {
             test_team: "HTM",

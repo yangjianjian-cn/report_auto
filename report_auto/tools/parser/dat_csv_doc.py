@@ -66,6 +66,7 @@ def dat_csv_docx(req_data: ReqPOJO):
             if fname_no_extension in u_files:
                 req_data.csv_path = csvPath
                 try:
+                    # 生成测试报告
                     msg = mst_report(req_data)
                     contains_succeed = any('succeed' in m for m in msg)
                     file_name = get_filename_without_extension(req_data.csv_path)
@@ -86,7 +87,7 @@ def dat_csv_docx(req_data: ReqPOJO):
         return html_success, html_error
 
     # 3.IOTest 生成测试报告
-    if 'IO_Test' == req_data.test_team and req_data.test_scenario == 'analogue_input' and req_data.test_area == 'I_A_APP1':
+    if 'IO_Test' == req_data.test_team:
         try:
             output_path = analogue_input(req_data)
             success_messages.append(output_path)

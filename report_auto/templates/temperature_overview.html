@@ -26,7 +26,7 @@
             <li class="layui-nav-item ">
                 <a href="/report/1" ,target="_blank">MST测试报告</a>
             </li>
-            <li class="layui-nav-item layui-this">
+            <li class="layui-nav-item">
                 <a href="/report/2" ,target="_blank">IOTest测试报告</a>
             </li>
             <span class="layui-nav-bar"></span>
@@ -85,6 +85,7 @@
         <input type="hidden" id="total-minutes" value="{{ total_minutes }}">
         <input type="hidden" id="time-diffs" value='{{ time_diffs|tojson }}'>
         <input type="hidden" id="init_selected_files" value='{{ init_selected_files|safe }}'>
+        <input type="hidden" id="measurement_source" value='{{measurement_source}}'>
     </div>
 </div>
 <div class="layui-footer footer footer-demo">
@@ -95,7 +96,7 @@
 </body>
 <script type="text/javascript" src="/static/js/biz/file_list_multi_select_overview.js?v=2"></script>
 <script type="text/javascript" src="/static/js/echarts.min.js"></script>
-<script type="text/javascript" src="/static/js/biz/temperature_duration.js?v=1"></script>
+<script type="text/javascript" src="/static/js/biz/temperature_duration.js?v=2"></script>
 <script>
     const chipNames = {{ chip_names | tojson }};
     const maxAllowedValues = {{ max_allowed_values | tojson }};

@@ -13,7 +13,6 @@ from tools.common.csv_column_rename import find_columns_with_dfc_err_type
 from tools.common.report_common import ret_fault_detection
 from tools.report.report_generation import replace_variables_in_doc
 from tools.utils.MathUtils import getBit0
-
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 
 
@@ -90,10 +89,10 @@ def fault_detection(initial_state_df: DataFrame):
         return ret_fault_detection(begin_time + 5, begin_time, replacements, err_msg, fault_detection_df)
 
     #  3. DFC_ClthNplOpn is set
-    begin_time = fault_detection_df_3.iloc[0]['timestamps']
     err_type: str = FAULT_TYPE_MAPPING.get('plausibility_check_of_clth_stuck_top')
     signals_dfes = find_columns_with_dfc_err_type(fault_detection_df_3, err_type)
     if len(signals_dfes) == 0:
+        begin_time = fault_detection_df_3.iloc[0]['timestamps']
         err_msg.append(f"fault detection {err_type} is set  failure:{len(fault_detection_df)}")
         replacements = plausibility_check_of_clth_stuck_top_replacements(is_fail='❌ ', clth_st_0='√', is_not_equ='√',
                                                                          dfc_clthnplopn='❌ ')
@@ -103,7 +102,7 @@ def fault_detection(initial_state_df: DataFrame):
     fault_detection_df_4 = fault_detection_df_3[condition4]
     end_time = fault_detection_df_4.iloc[-1]['timestamps']
     replacements = plausibility_check_of_clth_stuck_top_replacements(is_pass='√', clth_st_0='√', is_not_equ='√',dfc_clthnplopn='√')
-    return ret_fault_detection(end_time, begin_time, replacements, err_msg, fault_detection_df_3)
+    return ret_fault_detection(end_time, begin_time, replacements, err_msg, fault_detection_df)
 
 
 def draw_graph(draw_fault_detection_df: DataFrame, req_data: ReqPOJO, replacements: map):
