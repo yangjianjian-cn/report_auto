@@ -195,7 +195,7 @@ def todb():
         return jsonify({'generate_report_failed': {e}})
 
     # 重命名DataFrame中的列
-    df.rename(columns={df.columns[0]: rename_columns(df.columns[0])}, inplace=True)
+    df.columns = [rename_columns(col) for col in df.columns]
     column_names = df.columns.tolist()
 
     # 2. 数据清洗
