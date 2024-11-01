@@ -134,7 +134,7 @@ def merge(file_name, total_chunks, save_path) -> str:
 
 
 def get_rename_mapping(columns: list[str]):
-    logging.info(f"get_rename_mapping:{columns}")
+    logging.debug(f"get_rename_mapping:{columns}")
 
     source: str = 'v1'
     rename_mapping: dict = {}
@@ -195,6 +195,7 @@ def todb():
         return jsonify({'generate_report_failed': {e}})
 
     column_names = df.columns.tolist()
+    column_names = [one_name.split('\\')[0] if '\\' in one_name else one_name for one_name in column_names]
 
     # 2. 数据清洗
     # 构建列名映射字典
