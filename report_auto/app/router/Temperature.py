@@ -194,8 +194,9 @@ def todb():
         logging.error(f"Error converting to DataFrame: {e}")
         return jsonify({'generate_report_failed': {e}})
 
+    # 重命名DataFrame中的列
+    df.rename(columns={df.columns[0]: rename_columns(df.columns[0])}, inplace=True)
     column_names = df.columns.tolist()
-    column_names = [one_name.split('\\')[0] if '\\' in one_name else one_name for one_name in column_names]
 
     # 2. 数据清洗
     # 构建列名映射字典
@@ -522,3 +523,11 @@ def get_key(item):
     start_time: str = item.split('~')[0]  # 分割时间区间，获取起始时间
     start_time: str = start_time.strip()
     return int(start_time)  # 转换为整数以便排序
+
+
+# 定义一个函数来处理列名
+def rename_columns(column_name):
+    if '\\' in column_name:
+        return column_name.split('\\')[0]
+    else:
+        return column_name
