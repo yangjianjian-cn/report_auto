@@ -96,7 +96,6 @@ def modify_records(records):
 
 
 def temperature_chip(selected_columns: list, file_ids_int: list, measurement_source: str, kv_chip_dict: dict):
-    # file_ids_int = [int(file_id) for file_id in file_id.split(',')]
     file_ids_str_for_query = ', '.join(map(str, file_ids_int))
 
     result_dicts = query_table_sampling(db_pool, columns=selected_columns,
@@ -112,6 +111,7 @@ def temperature_chip(selected_columns: list, file_ids_int: list, measurement_sou
     temperature_time: Dict[str, List] = {
         col: [row[col] for row in result_dicts] for col in result_dicts[0].keys()
     }
+    temperature_time = {k: v for k, v in temperature_time.items() if not all(x is None for x in v)}
 
     # 构建 key_mapping
     all_keys = set()
@@ -156,24 +156,6 @@ def create_data_structure(temperature_time_dc: DataFrame, sensors_list: list, me
     results = [res for res in results if res is not None]
 
     return results
-
-
-def str_to_list(sensors_str: str) -> List[str]:
-    # 将字符串分割成列表
-    selected_columns_dc1_list: List[str] = sensors_str.split(',')
-
-    # 创建一个新的列表，存储替换后的列名
-    sensors_list: List[str] = []
-
-    for column in selected_columns_dc1_list:
-        try:
-            new_column = chipNamesConfig.get('chip_names', column.strip())
-            sensors_list.append(new_column)
-        except KeyError as e:
-            logging.error(f"Key not found: {column}")
-            sensors_list.append(column)  # 如果找不到键，保留原值
-
-    return sensors_list
 
 
 # table_name: str, columns: str, where: str

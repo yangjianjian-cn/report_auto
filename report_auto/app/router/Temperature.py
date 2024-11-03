@@ -254,11 +254,11 @@ def todb():
 @temperature_bp.route('/details', methods=['GET'])
 def temperature_details():
     selected_ids = []
-    # 获取已上传文件的元数据
     measurement_file_list = None
     measurement_source = ''
     fileId = request.args.get('fileId')
 
+    # 1. 获取测量文件列表
     try:
         measurement_file_list = get_measurement_file_list(fileId)
     except Exception as e:
@@ -280,6 +280,7 @@ def temperature_details():
     measurement_source = measurement_file_list[0].get('source')
     logging.info(f"特殊信号量:{all_special_columns_list},文件来源:{measurement_source}")
 
+    # 2. 获取芯片字典列表
     r_chip_dict: list[dict] = chip_dict(measurement_source=measurement_source)
     kv_chip_dict: dict = {item['measured_variable']: item['chip_name'] for item in r_chip_dict}
     measured_variables_list: list[str] = [item['measured_variable'] for item in r_chip_dict]
@@ -292,19 +293,18 @@ def temperature_details():
     data_structure_dc1: list = []
     dc1_measured_variables_list = [var for var in measured_variables_list if var.startswith('DC1_')]
     if len(dc1_measured_variables_list) > 0:
-        dc1_measured_variables_list.extend(all_special_columns_list)
-        if 'NG_FILES' == measurement_source:
-            dc1_measured_variables_list.append('TC1_Th9')
+        for column in all_special_columns_list:
+            dc1_measured_variables_list.extend(column.split(','))
+        dc1_measured_variables_list = list(set(dc1_measured_variables_list))
         logging.info(f"DC1_组件信号量:{dc1_measured_variables_list}")
 
-        filtered_chips = [chip for chip in r_chip_dict if chip['measured_variable'] in dc1_measured_variables_list]
-        selected_columns_dc1 = [chip['chip_name'] for chip in filtered_chips]  # 提取芯片名称
-        logging.info(f"DC1_组件信号量中文名:{selected_columns_dc1}")
-
-        selected_columns_dc1_str = ','.join(dc1_measured_variables_list)
-        temperature_time_dc1 = temperature_chip(selected_columns=selected_columns_dc1_str,
+        temperature_time_dc1 = temperature_chip(selected_columns=','.join(dc1_measured_variables_list),
                                                 file_ids_int=selected_ids, measurement_source=measurement_source,
                                                 kv_chip_dict=kv_chip_dict)
+
+        selected_columns_dc1 = [key for key in temperature_time_dc1 if key != 'timestamps']
+        logging.info(f"DC1_组件信号量中文名:{selected_columns_dc1}")
+
         data_structure_dc1 = create_data_structure(temperature_time_dc1, selected_columns_dc1, measurement_source,
                                                    num_processes=len(selected_ids))
 
@@ -314,17 +314,18 @@ def temperature_details():
     data_structure_tc1: list = []
     tc1_measured_variables_list = [var for var in measured_variables_list if var.startswith('TC1_')]
     if len(tc1_measured_variables_list) > 0:
-        tc1_measured_variables_list.extend(all_special_columns_list)
+        # 将特殊列分解并添加到原始列表中
+        for column in all_special_columns_list:
+            tc1_measured_variables_list.extend(column.split(','))
+        tc1_measured_variables_list = list(set(tc1_measured_variables_list))
         logging.info(f"TC1_组件信号量:{tc1_measured_variables_list}")
 
-        filtered_chips = [chip for chip in r_chip_dict if chip['measured_variable'] in tc1_measured_variables_list]
-        selected_columns_tc1 = [chip['chip_name'] for chip in filtered_chips]  # 提取芯片名称
-        logging.info(f"TC1_组件信号量中文名:{selected_columns_tc1}")
-
-        selected_columns_tc1_str = ','.join(tc1_measured_variables_list)
-        temperature_time_tc1 = temperature_chip(selected_columns=selected_columns_tc1_str,
+        temperature_time_tc1 = temperature_chip(selected_columns=','.join(tc1_measured_variables_list),
                                                 file_ids_int=selected_ids, measurement_source=measurement_source,
                                                 kv_chip_dict=kv_chip_dict)
+        selected_columns_tc1 = [key for key in temperature_time_tc1 if key != 'timestamps']
+        logging.info(f"TC1_组件信号量中文名:{selected_columns_tc1}")
+
         data_structure_tc1 = create_data_structure(temperature_time_tc1, selected_columns_tc1, measurement_source,
                                                    num_processes=len(selected_ids))
 
@@ -334,20 +335,18 @@ def temperature_details():
     data_structure_tc2: list = []
     tc2_measured_variables_list = [var for var in measured_variables_list if var.startswith('TC2_')]
     if len(tc2_measured_variables_list) > 0:
-        tc2_measured_variables_list.extend(all_special_columns_list)
-        if 'NG_FILES' == measurement_source:
-            tc2_measured_variables_list.append('TC1_Th9')
+        for column in all_special_columns_list:
+            tc2_measured_variables_list.extend(column.split(','))
+        tc2_measured_variables_list = list(set(tc2_measured_variables_list))
         logging.info(f"TC2_组件信号量:{tc2_measured_variables_list}")
 
-        # 过滤 r_chip_dict 中与 tc2_measured_variables_list 匹配的项
-        filtered_chips = [chip for chip in r_chip_dict if chip['measured_variable'] in tc2_measured_variables_list]
-        selected_columns_tc2 = [chip['chip_name'] for chip in filtered_chips]  # 提取芯片名称
-        logging.info(f"TC2_组件信号量中文名:{selected_columns_tc2}")
-
-        selected_columns_tc2_str = ','.join(tc2_measured_variables_list)
-        temperature_time_tc2 = temperature_chip(selected_columns=selected_columns_tc2_str,
+        temperature_time_tc2 = temperature_chip(selected_columns=','.join(tc2_measured_variables_list),
                                                 file_ids_int=selected_ids, measurement_source=measurement_source,
                                                 kv_chip_dict=kv_chip_dict)
+
+        # 过滤 r_chip_dict 中与 tc2_measured_variables_list 匹配的项
+        selected_columns_tc2 = [key for key in temperature_time_tc2 if key != 'timestamps']
+        logging.info(f"TC2_组件信号量中文名:{selected_columns_tc2}")
 
         data_structure_tc2 = create_data_structure(temperature_time_tc2, selected_columns_tc2, measurement_source,
                                                    num_processes=len(selected_ids))
