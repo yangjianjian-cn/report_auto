@@ -170,7 +170,7 @@ def todb():
     if 'DS_FILES' == file_source:
         params['special_columns'] = 'timestamps,TECU_t'
     elif 'NG_FILES' == file_source:
-        params['special_columns'] = 'timestamps,TC1_Th9'
+        params['special_columns'] = 'timestamps'
 
     # 保存测量文件元信息
     ret_msg, last_id = insert_data(db_pool, table_name=table_name, params=params)
@@ -256,9 +256,7 @@ def temperature_details():
     selected_ids = []
     # 获取已上传文件的元数据
     measurement_file_list = None
-    # v1版本
-    measurement_source = 'DS_FILES'
-    # 请求报文中获取请求参数fileId
+    measurement_source = ''
     fileId = request.args.get('fileId')
 
     try:
@@ -269,28 +267,25 @@ def temperature_details():
     if measurement_file_list is None or len(measurement_file_list) == 0:
         return render_template('error.html', failure_msg='Please upload the file first.')
 
+    all_special_columns_list: list = []
     if fileId:
         selected_ids = [int(id) for id in fileId.split(',')]
+        all_special_columns = set(
+            column for file_info in measurement_file_list for column in file_info.get('special_columns', '').split(','))
+        all_special_columns_list = list(all_special_columns)
     else:
         selected_ids.append(measurement_file_list[0].get('id'))
-    measurement_source = measurement_file_list[0].get('source')
+        all_special_columns_list = [measurement_file_list[0].get('special_columns')]
 
-    # 折线图
+    measurement_source = measurement_file_list[0].get('source')
+    logging.info(f"特殊信号量:{all_special_columns_list},文件来源:{measurement_source}")
+
     r_chip_dict: list[dict] = chip_dict(measurement_source=measurement_source)
     kv_chip_dict: dict = {item['measured_variable']: item['chip_name'] for item in r_chip_dict}
-    logging.info(f"芯片字典:{r_chip_dict}")
-
-    # 提取所有的 measured_variable
     measured_variables_list: list[str] = [item['measured_variable'] for item in r_chip_dict]
-    logging.info(f"芯片字典-信号量:{measured_variables_list}")
+    logging.info(f"芯片字典-NG全部信号量:{measured_variables_list}")
 
-    # 使用集合推导式提取并合并所有 special_columns
-    all_special_columns = set(
-        column for file_info in measurement_file_list for column in file_info.get('special_columns', '').split(','))
-    # 将集合转换为列表
-    all_special_columns_list = list(all_special_columns)
-    logging.info(f"特殊信号量:{all_special_columns_list}")
-
+    # 折线图
     # #DC1_Th
     selected_columns_dc1: list = []
     temperature_time_dc1: Dict[str, List] = {}

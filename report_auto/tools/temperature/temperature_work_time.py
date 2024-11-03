@@ -204,7 +204,7 @@ def relative_difference(selected_ids: list[int], measurement_source: str) -> lis
 
 
 def chip_dict(measurement_source: str) -> dict:
-    logging.info("查询芯片字典:")
+    logging.info("获取芯片字典列表:")
     # 使用参数化查询防止SQL注入
     query_sql = """
         SELECT measured_variable, chip_name, max_allowed_value 
