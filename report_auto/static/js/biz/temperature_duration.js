@@ -3,8 +3,8 @@ let totalMinutes = document.getElementById('total-minutes').value;
 let measurement_source =  document.getElementById('measurement_source').value;
 debugger
 let title_text = 'TECU_T'
-if ( 'ng' == measurement_source){
-    title_text = 'ECU25'
+if ( 'NG_FILES' == measurement_source){
+    title_text = 'NGECU'
 }
 
 // 获取 time_diffs 的值，并解析为 JSON 对象

@@ -16,7 +16,7 @@ from app.router import temperature_bp
 from tools.temperature.temperature_work_time import relative_difference, chip_dict
 from tools.temperature.temperature_work_time import temperature_duration, temperature_chip, create_data_structure
 from tools.utils.DBOperator import create_table, batch_insert_data, insert_data, query_table, delete_from_tables, \
-    update_table, alter_table_add_columns
+    alter_table_add_columns
 from tools.utils.DateUtils import getCurDateTime
 from tools.utils.FileUtils import extract_prefix
 from tools.utils.HtmlGenerator import generate_select_options
@@ -51,10 +51,13 @@ def temperature_idx():
 def temperature_list():
     try:
         measurement_file_list = get_measurement_file_list(fileId=None)
+        measurement_file_source_list = get_measurement_file_source_list()
     except Exception as e:
         logging.error(f'查询异常:{e}')
         return render_template('error.html', failure_msg=f'{e}')
-    return render_template('temperature_uploader.html', measurement_file_list=measurement_file_list)
+    return render_template('temperature_uploader.html',
+                           measurement_file_list=measurement_file_list,
+                           measurement_file_source_list=measurement_file_source_list)
 
 
 def getClientIp():
@@ -136,7 +139,6 @@ def merge(file_name, total_chunks, save_path) -> str:
 def get_rename_mapping(columns: list[str]):
     logging.debug(f"get_rename_mapping:{columns}")
 
-    source: str = 'ds'
     rename_mapping: dict = {}
     for col in columns:
         if '\\' in col:  # TECU_tRaw\ETKC:1
@@ -146,25 +148,29 @@ def get_rename_mapping(columns: list[str]):
             parts = col.split('_')
             new_col = '_'.join(parts[:2])  # 只取前两部分
             rename_mapping[col] = new_col
-            source = 'ng'
         else:
             rename_mapping[col] = col  # 保持原样
 
     # 特殊情况处理：TECU_tRaw 列，别名为 TECU_t
     if 'TECU_t' not in columns and 'TECU_tRaw' in columns:
         rename_mapping['TECU_tRaw'] = 'TECU_t'
-    return source, rename_mapping
+    return rename_mapping
 
 
 @temperature_bp.route('/todb', methods=['POST'])
 def todb():
     data = request.get_json()
+    file_source = data['file_source']
     measure_file_path = data['save_file']
     logging.info(f"measure_file_path:{measure_file_path}")
 
     fileName = extract_prefix(measure_file_path)
     table_name = 'measurement_file'
-    params: dict = {"file_name": fileName, "create_time": getCurDateTime()}
+    params: dict = {"file_name": fileName, "create_time": getCurDateTime(), 'source': file_source}
+    if 'DS_FILES' == file_source:
+        params['special_columns'] = 'timestamps,TECU_t'
+    elif 'NG_FILES' == file_source:
+        params['special_columns'] = 'timestamps,TC1_Th9'
 
     # 保存测量文件元信息
     ret_msg, last_id = insert_data(db_pool, table_name=table_name, params=params)
@@ -175,18 +181,18 @@ def todb():
     # 1.采集测量数据
     mdf = MDF(measure_file_path)
     query = "select value from tool_parameters where name =%s  and status =%s "
-    params = ('HTM_SELECTED_COLUMNS', 'active')
+    params = (file_source, 'active')
 
     selected_columns_dict: list[dict] = query_table(db_pool, query=query, params=params)
     selected_columns_str = selected_columns_dict[0].get("value")
     selected_columns = [col.strip("' ") for col in selected_columns_str.strip("[]").split(",")]
-    logging.info(f"[信号列]已配置:{selected_columns}")
+    logging.info(f"[信号量]已配置:{selected_columns}")
 
     channels_db_keys = mdf.channels_db.keys()
-    logging.info(f"[信号列]待采集:{channels_db_keys}")
+    logging.info(f"[信号量]待采集:{channels_db_keys}")
 
     existing_columns = list(set(col for col in selected_columns if col in channels_db_keys))
-    logging.info(f"[信号列]可采集:{existing_columns}")
+    logging.info(f"[信号量]可采集:{existing_columns}")
 
     try:
         df = mdf.to_dataframe(channels=existing_columns)
@@ -198,8 +204,9 @@ def todb():
     # 重命名DataFrame中的列
     df.columns = [rename_columns(col) for col in df.columns]
     column_names = df.columns.tolist()
+
     # 再进一步重命名
-    source, rename_mapping = get_rename_mapping(column_names)
+    rename_mapping = get_rename_mapping(column_names)
     logging.info(f"信号列和数据库列映射:{rename_mapping}")
     df.rename(columns=rename_mapping, inplace=True)  # 重命名列名
 
@@ -216,7 +223,7 @@ def todb():
 
     # 3.数据保存
     table_name = 'chip_temperature'
-    params: dict = {'file_id': last_id, 'source': source}
+    params: dict = {'file_id': last_id, 'source': file_source}
 
     # 创建表
     c_ret_msg, columns_in_db = create_table(db_pool, table_name=table_name, df=df)
@@ -236,21 +243,6 @@ def todb():
     if i_ret_msg != 'success':
         return jsonify({'generate_report_failed': {i_ret_msg}})
 
-    # 特殊信号量
-    special_columns: list = ['timestamps']
-    value_set = set(rename_mapping.values())
-
-    if 'ds' == source:
-        if 'TECU_t' in value_set:
-            special_columns.append('TECU_t')
-        if 'EnvT_t' in value_set:
-            special_columns.append('EnvT_t')
-
-    special_columns_str = ",".join(special_columns)
-
-    # 测量文件来源
-    update_table(db_pool, table='measurement_file',
-                 set_params={'source': source, "special_columns": special_columns_str}, where_params={'id': last_id})
     return jsonify({'generate_report_failed': ''})
 
 
@@ -265,7 +257,7 @@ def temperature_details():
     # 获取已上传文件的元数据
     measurement_file_list = None
     # v1版本
-    measurement_source = 'ds'
+    measurement_source = 'DS_FILES'
     # 请求报文中获取请求参数fileId
     fileId = request.args.get('fileId')
 
@@ -306,7 +298,7 @@ def temperature_details():
     dc1_measured_variables_list = [var for var in measured_variables_list if var.startswith('DC1_')]
     if len(dc1_measured_variables_list) > 0:
         dc1_measured_variables_list.extend(all_special_columns_list)
-        if 'ng' == measurement_source:
+        if 'NG_FILES' == measurement_source:
             dc1_measured_variables_list.append('TC1_Th9')
         logging.info(f"DC1_组件信号量:{dc1_measured_variables_list}")
 
@@ -348,7 +340,7 @@ def temperature_details():
     tc2_measured_variables_list = [var for var in measured_variables_list if var.startswith('TC2_')]
     if len(tc2_measured_variables_list) > 0:
         tc2_measured_variables_list.extend(all_special_columns_list)
-        if 'ng' == measurement_source:
+        if 'NG_FILES' == measurement_source:
             tc2_measured_variables_list.append('TC1_Th9')
         logging.info(f"TC2_组件信号量:{tc2_measured_variables_list}")
 
@@ -400,8 +392,9 @@ def temperature_overview():
     selected_ids = []
     # 请求报文中获取参数fileId
     fileId: str = request.args.get('fileId')
-    measurement_source: str = 'ds'
+    measurement_source: str = 'DS_FILES'
     try:
+        # 获取测量文件列表
         measurement_file_list = get_measurement_file_list(fileId)
     except Exception as e:
         return render_template('error.html', failure_msg=f'{e}')
@@ -409,21 +402,22 @@ def temperature_overview():
     if measurement_file_list is None or len(measurement_file_list) == 0:
         return render_template('error.html', failure_msg='Please upload the file first.')
 
+    all_special_columns_str: str = ''
     if fileId:
         selected_ids = [int(id) for id in fileId.split(',')]
+        # 使用集合推导式提取并合并所有 special_columns
+        all_special_columns = set(
+            column for file_info in measurement_file_list for column in file_info.get('special_columns', '').split(','))
+        # 将集合转换为列表
+        all_special_columns_list = list(all_special_columns)
+        all_special_columns_str = ",".join(all_special_columns_list)
+        logging.info(f"特殊信号量:{all_special_columns_str}")
     else:
         selected_ids.append(measurement_file_list[0].get('id'))
+        all_special_columns_str = measurement_file_list[0].get('special_columns')
 
     measurement_source = measurement_file_list[0].get('source')
     logging.info(f"测量文件来源:{measurement_source}")
-
-    # 使用集合推导式提取并合并所有 special_columns
-    all_special_columns = set(
-        column for file_info in measurement_file_list for column in file_info.get('special_columns', '').split(','))
-    # 将集合转换为列表
-    all_special_columns_list = list(all_special_columns)
-    all_special_columns_str = ",".join(all_special_columns_list)
-    logging.info(f"特殊信号量:{all_special_columns_str}")
 
     # 温度时长柱形图和饼状图
     time_diffs, total_minutes = temperature_duration(db_pool, file_ids_int=selected_ids, max_workers=len(selected_ids),
@@ -440,7 +434,7 @@ def temperature_overview():
     multi_select_html = generate_select_options(get_measurement_file_list(fileId=None))
 
     # 温度阈值 和 相对温差
-    chip_dict_list = relative_difference(db_pool, selected_ids, measurement_source=measurement_source)
+    chip_dict_list = relative_difference(selected_ids, measurement_source=measurement_source)
     chip_names = [chip['chip_name'] for chip in chip_dict_list]
     max_allowed_values = [chip['max_allowed_value'] for chip in chip_dict_list]
     max_temperature = [chip['max_temperature'] for chip in chip_dict_list]
@@ -496,6 +490,7 @@ def delete_file():
 
 
 def get_measurement_file_list(fileId: str):
+    logging.info("获取测量文件列表:")
     # 构建基础查询语句
     query_sql = 'SELECT file_name, id, source,special_columns,source FROM measurement_file WHERE status = %s'
 
@@ -512,6 +507,18 @@ def get_measurement_file_list(fileId: str):
     # 添加排序子句
     query_sql += ' ORDER BY id DESC'
 
+    # 执行查询
+    measurement_file_list = query_table(db_pool, query=query_sql, params=params)
+    return measurement_file_list
+
+
+'''测量文件来源'''
+
+
+def get_measurement_file_source_list():
+    # 构建基础查询语句
+    query_sql = 'select dict_value,dict_name from tool_dictionary where dict_type = %s order by dict_id'
+    params = ['file_source']  # 初始化参数列表
     # 执行查询
     measurement_file_list = query_table(db_pool, query=query_sql, params=params)
     return measurement_file_list

@@ -74,6 +74,17 @@
     <div class="site-content" style="width: 80%; display: inline-block">
         <div id="temperature_picker">Select file(dat、mf4)</div>
         <span style="color: #01aaed">(You can select one file at a time or multiple files at a time)</span>
+        <span>
+            <!-- Note the missing multiple attribute! -->
+            <select id="measurement_file_list_selected">
+                <option value="" selected="selected">全部数据来源</option>
+                {% if measurement_file_source_list is not none and measurement_file_source_list|length > 0 %}
+                    {% for source_file in measurement_file_source_list %}
+                        <option value="{{ source_file.dict_value }}">{{ source_file.dict_name }}</option>
+                    {% endfor %}
+                {% endif %}
+            </select>
+        </span>
         <div class="layui-upload-list">
             <table class="layui-table">
                 <colgroup>
@@ -97,7 +108,7 @@
                     {% for file in measurement_file_list %}
                         <tr>
                             <td>{{ file.file_name }}</td>
-                            <td>{{ file.source}}</td>
+                            <td>{{ file.source }}</td>
                             <td>--</td>
                             <td>--</td>
                             <td>
@@ -131,7 +142,16 @@
 <link rel="stylesheet" type="text/css" href="/static/css/webuploader.css">
 <link rel="stylesheet" type="text/css" href="/static/css/bootstrap.min.css"/>
 <script type="text/javascript" src="/static/js/webuploader.min.js"></script>
+
 <script type="text/javascript">
+    const measurement_file_list_selected_value = $('#measurement_file_list_selected').val();
+    $('#temperature_picker').click(function () {
+        if (measurement_file_list_selected_value == '') {
+            layer.alert('Please select a file source', {icon: 3})
+            return false;
+        }
+    })
+
     // 初始化 WebUploader
     let uploader = WebUploader.create({
         auto: false, // 不自动上传
@@ -201,7 +221,8 @@
                 "test_team": "HTM",
                 "test_scenario": "",
                 "test_area": "",
-                "save_file": response.save_file
+                "save_file": response.save_file,
+                "file_source": measurement_file_list_selected_value
             };
             analysis_and_db(ret_data, layer_index);
         } else {
