@@ -215,7 +215,7 @@
     uploader.on('uploadSuccess', function (file, response) {
         // 显示提示信息，不自动关闭
         let layer_index = layer.msg('Upload file successful, Data Analytics in progress', {time: 0});
-
+         const measurement_file_list_selected_value = $('#measurement_file_list_selected').val();
         if (response.status == 'success') {
             let ret_data = {
                 "test_team": "HTM",
