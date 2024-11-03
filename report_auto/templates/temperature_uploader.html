@@ -144,8 +144,8 @@
 <script type="text/javascript" src="/static/js/webuploader.min.js"></script>
 
 <script type="text/javascript">
-    const measurement_file_list_selected_value = $('#measurement_file_list_selected').val();
     $('#temperature_picker').click(function () {
+        const measurement_file_list_selected_value = $('#measurement_file_list_selected').val();
         if (measurement_file_list_selected_value == '') {
             layer.alert('Please select a file source', {icon: 3})
             return false;
