@@ -77,7 +77,7 @@
         <span>
             <!-- Note the missing multiple attribute! -->
             <select id="measurement_file_list_selected">
-                <option value="" selected="selected">全部数据来源</option>
+                <option value="">全部数据来源</option>
                 {% if measurement_file_source_list is not none and measurement_file_source_list|length > 0 %}
                     {% for source_file in measurement_file_source_list %}
                         <option value="{{ source_file.dict_value }}">{{ source_file.dict_name }}</option>
