@@ -170,7 +170,7 @@ def todb():
     if 'DS_FILES' == file_source:
         params['special_columns'] = 'timestamps,TECU_t'
     elif 'NG_FILES' == file_source:
-        params['special_columns'] = 'timestamps'
+        params['special_columns'] = 'timestamps,TC1_Th9,TECU_t'
 
     # 保存测量文件元信息
     ret_msg, last_id = insert_data(db_pool, table_name=table_name, params=params)

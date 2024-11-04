@@ -2,9 +2,9 @@
 let totalMinutes = document.getElementById('total-minutes').value;
 let measurement_source =  document.getElementById('measurement_source').value;
 debugger
-let title_text = 'TECU_T'
+let title_text = 'DS Ambient'
 if ( 'NG_FILES' == measurement_source){
-    title_text = 'NGECU'
+    title_text = 'NG Ambient'
 }
 
 // 获取 time_diffs 的值，并解析为 JSON 对象

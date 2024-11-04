@@ -25,8 +25,8 @@ mysql_config = {
     'database': jdbc_mysql_arr[4],
     'charset': 'utf8mb4'
 }
-db_pool = DatabasePool(max_connections=6, min_cached=3, max_cached=4, max_shared=0, **mysql_config)
+db_pool = DatabasePool(max_connections=20, min_cached=6, max_cached=10, max_shared=0, **mysql_config)
 
-from config.ChipNamesConfig import ChipNamesConfig
-
-chipNamesConfig = ChipNamesConfig()
+# from config.ChipNamesConfig import ChipNamesConfig
+#
+# chipNamesConfig = ChipNamesConfig()

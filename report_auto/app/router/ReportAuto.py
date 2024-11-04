@@ -11,6 +11,7 @@ from app.router import report_bp
 from pojo.MSTReqPOJO import ReqPOJO
 from tools.common.dat_csv_common import counter_report
 from tools.parser.dat_csv_doc import dat_csv_docx, docx_merge
+from tools.utils.CustomException import CustomException
 from tools.utils.FileUtils import validate_filename
 from tools.utils.IPUtils import get_client_ip
 

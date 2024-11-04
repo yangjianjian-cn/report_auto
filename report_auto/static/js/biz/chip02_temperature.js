@@ -26,7 +26,7 @@ chipOption02 = {
     legend: {
         type: 'scroll',
         orient: 'vertical',
-        left: 450,
+        left: 420,
         top: 30,
         bottom: 5,
         show: true,

@@ -7,7 +7,7 @@ from typing import Dict, List
 import pandas as pd
 from pandas import DataFrame
 
-from app import chipNamesConfig, db_pool
+from app import db_pool
 from tools.utils.DBOperator import query_table, query_table_sampling, query_table_by_sql
 from tools.utils.MathUtils import relative_difference_chip, difference_chip
 
