@@ -16,7 +16,7 @@ from app.router import temperature_bp
 from tools.temperature.temperature_work_time import relative_difference, chip_dict
 from tools.temperature.temperature_work_time import temperature_duration, temperature_chip, create_data_structure
 from tools.utils.DBOperator import create_table, batch_insert_data, insert_data, query_table, delete_from_tables, \
-    alter_table_add_columns
+    alter_table_add_columns, update_table
 from tools.utils.DateUtils import getCurDateTime
 from tools.utils.FileUtils import extract_prefix
 from tools.utils.HtmlGenerator import generate_select_options
@@ -167,10 +167,6 @@ def todb():
     fileName = extract_prefix(measure_file_path)
     table_name = 'measurement_file'
     params: dict = {"file_name": fileName, "create_time": getCurDateTime(), 'source': file_source}
-    if 'DS_FILES' == file_source:
-        params['special_columns'] = 'timestamps,TECU_t'
-    elif 'NG_FILES' == file_source:
-        params['special_columns'] = 'timestamps,TC1_Th9,TECU_t'
 
     # 保存测量文件元信息
     ret_msg, last_id = insert_data(db_pool, table_name=table_name, params=params)
@@ -222,10 +218,22 @@ def todb():
     # logging.info(f"重置索引:{len(df)}")
 
     # 3.数据保存
-    table_name = 'chip_temperature'
-    params: dict = {'file_id': last_id, 'source': file_source}
+
+    # 更新measurement_file，特殊列
+    if 'DS_FILES' == file_source:
+        params['special_columns'] = 'timestamps,TECU_t'
+    elif 'NG_FILES' == file_source:
+        ng_files_str: str = 'timestamps,TC1_Th9'
+        if 'TECU_t' in rename_mapping:
+            ng_files_str = ','.join([ng_files_str, 'TECU_t'])  # 使用 join 方法将新列名添加到字符串中
+        params['special_columns'] = ng_files_str
+    set_params = params
+    where_params = {'id': last_id}
+    update_table(db_pool, table='measurement_file', set_params=set_params, where_params=where_params)
 
     # 创建表
+    table_name = 'chip_temperature'
+    params: dict = {'file_id': last_id, 'source': file_source}
     c_ret_msg, columns_in_db = create_table(db_pool, table_name=table_name, df=df)
     if c_ret_msg != 'success':
         return jsonify({'generate_report_failed': {c_ret_msg}})
@@ -382,6 +390,7 @@ def temperature_details():
 
 @temperature_bp.route('/overview', methods=['GET'])
 def temperature_overview():
+    logging.info("数据概览")
     # 获取所有上传文件的元数据
     selected_ids = []
     # 请求报文中获取参数fileId
@@ -401,7 +410,10 @@ def temperature_overview():
         selected_ids = [int(id) for id in fileId.split(',')]
         # 使用集合推导式提取并合并所有 special_columns
         all_special_columns = set(
-            column for file_info in measurement_file_list for column in file_info.get('special_columns', '').split(','))
+            column
+            for file_info in measurement_file_list
+            for column in file_info.get('special_columns', '').split(',')
+        )
         # 将集合转换为列表
         all_special_columns_list = list(all_special_columns)
         all_special_columns_str = ",".join(all_special_columns_list)
@@ -414,17 +426,17 @@ def temperature_overview():
     logging.info(f"测量文件来源:{measurement_source}")
 
     # 温度时长柱形图和饼状图
-    time_diffs, total_minutes = temperature_duration(db_pool, file_ids_int=selected_ids, max_workers=len(selected_ids),
-                                                     measurement_source=measurement_source,
-                                                     all_special_columns_str=all_special_columns_str)
-    # 使用排序函数
-    sorted_data = dict(sorted(time_diffs.items(), key=lambda item: float(item[0].split(' ~ ')[0])))
-    # 创建转换后的数据结构，并添加索引
-    time_diffs = [
-        {**{key: value}, 'idx': idx}
-        for idx, (key, value) in enumerate(sorted_data.items())
-    ]
+    time_diffs_tecut, total_minutes_tecut, time_diffs_tc1th9, total_minutes_tc1th9 = temperature_duration(
+        file_ids_int=selected_ids, max_workers=len(selected_ids),
+        measurement_source=measurement_source,
+        all_special_columns_str=all_special_columns_str)
+
+    # # 排序并转换数据结构，添加索引
+    # time_diffs_tecut = sort_and_convert(time_diffs_tecut)
+    # time_diffs_tc1th9 = sort_and_convert(time_diffs_tc1th9)
+
     # 下拉多选框
+
     multi_select_html = generate_select_options(get_measurement_file_list(fileId=None))
 
     # 温度阈值 和 相对温差
@@ -436,8 +448,10 @@ def temperature_overview():
 
     # 渲染页面
     return render_template('temperature_overview.html',
-                           total_minutes=total_minutes,
-                           time_diffs=time_diffs,
+                           total_minutes_tecut=total_minutes_tecut,
+                           total_minutes_tc1th9=total_minutes_tc1th9,
+                           time_diffs_tecut=time_diffs_tecut,
+                           time_diffs_tc1th9=time_diffs_tc1th9,
 
                            multi_select_html=multi_select_html,
                            init_selected_files=fileId,
@@ -484,7 +498,7 @@ def delete_file():
 
 
 def get_measurement_file_list(fileId: str):
-    logging.info("获取测量文件列表:")
+    logging.info(">>测量文件列表:")
     # 构建基础查询语句
     query_sql = 'SELECT file_name, id, source,special_columns,source FROM measurement_file WHERE status = %s'
 
@@ -531,3 +545,12 @@ def rename_columns(column_name):
         return column_name.split('\\')[0]
     else:
         return column_name
+
+
+def sort_and_convert(data):
+    """排序并转换数据结构，添加索引"""
+    sorted_data = dict(sorted(data.items(), key=lambda item: float(item[0].split(' ~ ')[0])))
+    return [
+        {**{key: value}, 'idx': idx}
+        for idx, (key, value) in enumerate(sorted_data.items())
+    ]

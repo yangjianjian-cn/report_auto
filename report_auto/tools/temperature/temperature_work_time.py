@@ -4,6 +4,7 @@ import logging
 import multiprocessing
 from typing import Dict, List
 
+import numpy as np
 import pandas as pd
 from pandas import DataFrame
 
@@ -17,69 +18,83 @@ from collections import defaultdict
 from concurrent.futures import ThreadPoolExecutor
 
 
-def process_file(db_pool, file_ids: list, measurement_source: str, all_special_columns_str: str):
-    if 'NG_FILES' == measurement_source:
-        all_special_columns_str = all_special_columns_str
-    # 构建参数化查询语句
-    placeholders = ', '.join(['%s'] * len(file_ids))  # 创建占位符字符串，如 '%s, %s, %s'
-    query_sql = f"""
-            SELECT file_id, {all_special_columns_str}
-            FROM chip_temperature 
-            WHERE file_id IN ({placeholders}) 
-            AND source = %s
-        """
+def process_file(file_ids: list, measurement_source: str, all_special_columns_str: str):
     # 构建参数列表
-    params = file_ids + [str(measurement_source)]  # 将 file_ids 和 measurement_source 组合成一个列表
-
+    placeholders = ",".join(map(str, file_ids))
     try:
-        logging.info("获取测量数据")
-        records = query_table(db_pool, query=query_sql, params=params)
-        df = pd.DataFrame(records)
-
         # 初始化一个字典来存储每个温度区间的总分钟数
-        cur_time_diffs = defaultdict(float)
+        cur_time_diffs_tecut = defaultdict(float)
+        cur_time_diffs_tc1th9 = defaultdict(float)
 
-        # 定义温度区间
-        temperature_intervals = list(range(-40, 120, 5))
+        logging.info(f"file_id:{placeholders}")
+        if 'TECU_t' in all_special_columns_str:
+            query_sql = f"""
+                  SELECT TECU_group AS TECU_T, ROUND( (MAX(timestamps) - MIN(timestamps)) /60,2)  AS timestamps
+                    FROM
+                        ( SELECT
+                            CONCAT(FLOOR((TECU_t + 40) / 5) * 5 - 40, '-', FLOOR((TECU_t + 40) / 5) * 5 - 35) AS TECU_group,timestamps
+                            FROM chip_temperature
+                            WHERE file_id ={placeholders} 
+                        )TMP
+                    GROUP BY TECU_group
+                    order by TECU_T
+            """
+            results_df: DataFrame = query_table_by_sql(db_pool, query_sql=query_sql)
+            results_df = results_df.dropna(axis=1, how='all')  # 剔除所有值都为 None 的列
+            logging.info(f"TECU_T:{len(results_df)}")
+            if 'TECU_T' in results_df.columns:
+                cur_time_diffs_tecut = results_df.set_index('TECU_T')['timestamps'].to_dict()
+                logging.info(f"TECU_t温度时长:{cur_time_diffs_tecut}")
 
-        # 计算每个温度区间的时间差
-        for start_temp, end_temp in zip(temperature_intervals, temperature_intervals[1:]):
-            if 'NG_FILES' == measurement_source:
-                mask = (df['TC1_Th9'] >= start_temp) & (df['TC1_Th9'] < end_temp)
-            else:
-                mask = (df['TECU_t'] >= start_temp) & (df['TECU_t'] < end_temp)
-            filtered_df = df[mask]
+        if 'TC1_Th9' in all_special_columns_str and 'NG_FILES' == measurement_source:
+            query_sql = f"""
+                SELECT TC1_Th9_group AS TC1_Th9, ROUND( (MAX(timestamps) - MIN(timestamps)) /60,2)  AS timestamps
+                FROM
+                    ( SELECT
+                        CONCAT(FLOOR((TC1_Th9 + 40) / 5) * 5 - 40, '-', FLOOR((TC1_Th9 + 40) / 5) * 5 - 35) AS TC1_Th9_group,timestamps
+                        FROM chip_temperature
+                        WHERE file_id = {placeholders} 
+                    )TMP
+                GROUP BY TC1_Th9_group
+                ORDER BY TC1_Th9
+            """
+            results_df: DataFrame = query_table_by_sql(db_pool, query_sql=query_sql)
+            results_df = results_df.dropna(axis=1, how='all')  # 剔除所有值都为 None 的列
+            logging.info(f"TECU_T:{len(results_df)}")
+            if 'TC1_Th9' in results_df.columns:
+                cur_time_diffs_tc1th9 = results_df.set_index('TC1_Th9')['timestamps'].to_dict()
+                logging.info(f"TC1_Th9温度时长:{cur_time_diffs_tc1th9}")
 
-            if not filtered_df.empty:
-                time_diff = (filtered_df['timestamps'].max() - filtered_df['timestamps'].min()) / 60
-                cur_time_diffs[f'{start_temp} ~ {end_temp}'] = round(time_diff, 2)
     except Exception as e:
         logging.error(f"An error occurred: {e}")
-
     # 计算总的分钟数
-    cur_total_minutes = round(sum(cur_time_diffs.values()), 2)
+    cur_total_minutes_tecut = round(sum(cur_time_diffs_tecut.values()), 2)
+    cur_total_minutes_tc1th9 = round(sum(cur_time_diffs_tc1th9.values()), 2)
+    return cur_time_diffs_tecut, cur_time_diffs_tc1th9, cur_total_minutes_tecut, cur_total_minutes_tc1th9
 
-    return cur_time_diffs, cur_total_minutes
 
-
-def temperature_duration(db_pool, file_ids_int: list = None, max_workers=None, measurement_source=None,
+def temperature_duration(file_ids_int: list = None, max_workers=None, measurement_source=None,
                          all_special_columns_str=None):
     # 使用 ThreadPoolExecutor 并行处理每个文件
     with ThreadPoolExecutor(max_workers=max_workers) as executor:
         results = list(
-            executor.map(lambda fids: process_file(db_pool, [fids], measurement_source, all_special_columns_str),
-                         file_ids_int))
-
+            executor.map(lambda fids: process_file([fids], measurement_source, all_special_columns_str), file_ids_int))
     # 合并所有文件的结果
-    combined_time_diffs = defaultdict(float)
-    total_minutes = 0
+    combined_time_diffs_tecut = defaultdict(float)
+    combined_time_diffs_tc1th9 = defaultdict(float)
+    total_minutes_tecut = 0
+    total_minutes_tc1th9 = 0
 
-    for time_diffs, total_minute in results:
-        for interval, minutes in time_diffs.items():
-            combined_time_diffs[interval] += minutes
-        total_minutes += total_minute
+    for time_diffs_tecut, time_diffs_tc1th9, total_minute_tecut, total_minute_tc1th9 in results:
+        for interval, minutes in time_diffs_tecut.items():
+            combined_time_diffs_tecut[interval] += minutes
+        total_minutes_tecut += total_minute_tecut
 
-    return dict(combined_time_diffs), total_minutes
+        for interval, minutes in time_diffs_tc1th9.items():
+            combined_time_diffs_tc1th9[interval] += minutes
+        total_minutes_tc1th9 += total_minute_tc1th9
+
+    return dict(combined_time_diffs_tecut), total_minutes_tecut, dict(combined_time_diffs_tc1th9), total_minutes_tc1th9
 
 
 def modify_records(records):
@@ -224,7 +239,7 @@ def max_query(selected_ids: list) -> DataFrame:
         where_clause = f' WHERE file_id IN ({selected_ids_str})'
         max_sql = max_query_sql + where_clause
 
-    logging.info(f"获取芯片阈值:{max_sql}")
+    logging.debug(f"获取芯片阈值:{max_sql}")
     max_query_rslt_df = query_table_by_sql(db_pool, query_sql=max_sql)
     # 删除所有值为 None 的列
     max_query_rslt_df = max_query_rslt_df.dropna(axis=1, how='all')
@@ -235,3 +250,33 @@ def max_query(selected_ids: list) -> DataFrame:
     logging.info(results_df)
 
     return results_df
+
+
+# def calculate_time_diff(df, column_name, temperature_intervals):
+#     time_diffs = defaultdict(float)
+#     for start_temp, end_temp in zip(temperature_intervals, temperature_intervals[1:]):
+#         mask = (df[column_name] >= start_temp) & (df[column_name] < end_temp)
+#         filtered_df = df[mask]
+#         if not filtered_df.empty:
+#             time_diff = (filtered_df['timestamps'].max() - filtered_df['timestamps'].min()) / 60
+#             time_diffs[f'{start_temp} ~ {end_temp}'] = round(time_diff, 2)
+#     return time_diffs
+
+def calculate_time_diff(df, column_name, temperature_intervals, batch_size=100000):
+    time_diffs = defaultdict(float)
+    num_batches = len(df) // batch_size + (len(df) % batch_size > 0)
+
+    for i in range(num_batches):
+        start_idx = i * batch_size
+        end_idx = (i + 1) * batch_size
+        batch_df = df.iloc[start_idx:end_idx]
+
+        for start_temp, end_temp in zip(temperature_intervals, temperature_intervals[1:]):
+            mask = (batch_df[column_name] >= start_temp) & (batch_df[column_name] < end_temp)
+            if mask.any():
+                filtered_timestamps = batch_df.loc[mask, 'timestamps'].values
+                if len(filtered_timestamps) > 0:
+                    time_diff = (np.max(filtered_timestamps) - np.min(filtered_timestamps)) / 60
+                    time_diffs[f'{start_temp} ~ {end_temp}'] += round(time_diff, 2)
+
+    return time_diffs
