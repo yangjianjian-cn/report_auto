@@ -555,7 +555,7 @@ def get_measurement_file_list(fileId: str = None):
 
 def get_measurement_file_list_page(fileId: str = None, start=None, end=None):
     # 构建基础查询语句
-    query_sql = 'SELECT file_name, id, source, special_columns, source,create_time FROM measurement_file WHERE status = %s'
+    query_sql = 'SELECT file_name, id, source, special_columns,DATE_FORMAT(create_time,"%Y-%m-%d %H:%i:%s") as create_time FROM measurement_file WHERE status = %s'
 
     # 如果提供了 fileId，则添加额外的过滤条件
     params = ['0']  # 初始化参数列表
@@ -580,7 +580,7 @@ def get_measurement_file_list_page(fileId: str = None, start=None, end=None):
     measurement_file_list = query_table(db_pool, query=query_sql, params=params)
 
     # 计算总记录数
-    count_sql = 'SELECT COUNT(*) as total FROM measurement_file WHERE status = %s'
+    count_sql = 'SELECT COUNT(1) as total FROM measurement_file WHERE status = %s'
     if fileId:
         count_sql += ' AND id IN ({})'.format(','.join(['%s'] * len(id_list)))
         params_for_count = ['0'] + id_list
