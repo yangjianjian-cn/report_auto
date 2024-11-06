@@ -237,8 +237,6 @@ def query_table(query=None, params=None, conn=None):
         column_names = [desc[0] for desc in cursor.description]
         # 将结果转换为包含字典的列表
         result_dicts = [dict(zip(column_names, row)) for row in results]
-        logging.info(f"result_dicts:{len(result_dicts)}")
-
         return result_dicts
     except Exception as e:
         # 记录异常信息

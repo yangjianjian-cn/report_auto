@@ -26,10 +26,10 @@
     <div class="layui-main">
         <ul class="layui-nav">
             <li class="layui-nav-item ">
-                <a href="/report/1" ,target="_blank">MST测试报告</a>
+                <a href="/report/1" ,target="_blank">MST</a>
             </li>
             <li class="layui-nav-item">
-                <a href="/report/2" ,target="_blank">IOTest测试报告</a>
+                <a href="/report/2" ,target="_blank">IOTes</a>
             </li>
             <span class="layui-nav-bar"></span>
         </ul>
@@ -85,6 +85,7 @@
                 {% endif %}
             </select>
         </span>
+
         <div class="layui-upload-list">
             <table class="layui-table">
                 <colgroup>
@@ -130,7 +131,20 @@
                 </tbody>
             </table>
         </div>
-        <button type="button" class="layui-btn" id="startUpload">Start uploading</button>
+        <div id="measurement_file_db_container">
+            <button type="button" class="layui-btn" id="startUpload">Start uploading</button>
+        </div>
+
+        <!--
+        <div class="sourceTable">
+            Data Source：
+            <div class="layui-inline">
+                <input class="layui-input" name="source" id="sourceReload" autocomplete="off">
+            </div>
+            <button class="layui-btn" data-type="reload">搜索</button>
+        </div>
+        -->
+        <table class="layui-hide" id="measurement_file_db" lay-filter="measurement_file_db"></table>
     </div>
 </div>
 <div class="layui-footer footer footer-demo">
@@ -142,7 +156,94 @@
 <link rel="stylesheet" type="text/css" href="/static/css/webuploader.css">
 <link rel="stylesheet" type="text/css" href="/static/css/bootstrap.min.css"/>
 <script type="text/javascript" src="/static/js/webuploader.min.js"></script>
+<script type="text/html" id="deleteFromDB">
+    <a class="layui-btn layui-btn-primary layui-btn-xs" lay-event="delete">删除</a>
+</script>
+<script>
+    layui.use(['table', 'layer'], function () {
+        const table = layui.table;
+        const layer = layui.layer;
 
+        // 表格渲染
+        table.render({
+            elem: '#measurement_file_db',
+            url: '/temperature/list/page',
+            page: true,
+            request: {
+                pageName: 'pageNum',
+                limitName: 'pageSize'
+            },
+            response: {
+                statusName: 'code',
+                statusCode: 200,
+                msgName: 'msg',
+                countName: 'total',
+                dataName: 'data'
+            },
+            cols: [[
+                {field: 'id', width: 200, title: 'File Number', sort: true},
+                {field: 'file_name', width: 300, title: 'File Name', sort: true},
+                {field: 'source', width: 200, title: 'Data source', sort: true},
+                {field: 'create_time', width: 200, title: 'Create Time', sort: true},
+                {fixed: 'right', width: 150, title: 'Operation', toolbar: '#deleteFromDB'}
+            ]],
+            id: "measurement_file_table_id"
+        });
+
+        // 工具栏事件监听
+        table.on('tool(measurement_file_db)', function (obj) {
+            const data = obj.data;
+            const layEvent = obj.event;
+
+            if (layEvent === 'delete') {
+                handleDelete(data.id, obj);
+            }
+        });
+
+        // 删除文件处理函数
+        function handleDelete(id, obj) {
+            layer.confirm('确定要删除吗？', function (index) {
+                fetch('/temperature/delete_file', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({id})
+                }).then(response => response.json())
+                    .then(responseData => {
+                        if (responseData.success) {
+                            location.reload();
+                        } else {
+                            layer.alert('删除文件失败: ' + responseData.message, {icon: 5});
+                        }
+                    })
+                    .catch(error => {
+                        layer.alert('发生错误，请重试: ' + error.message, {icon: 5});
+                    })
+                    .finally(() => {
+                        layer.close(index);
+                        obj.del();
+                    });
+            });
+        }
+
+        // 搜索功能
+        const active = {
+            reload: function () {
+                const sourceReload = $('#sourceReload');
+                table.reload('measurement_file_table_id', {
+                    page: {curr: 1},
+                    where: {key: {source: sourceReload.val()}}
+                });
+            }
+        };
+
+        $('.sourceTable .layui-btn').on('click', function () {
+            const type = $(this).data('type');
+            active[type] && active[type].call(this);
+        });
+    });
+</script>
 <script type="text/javascript">
     $('#temperature_picker').click(function () {
         const measurement_file_list_selected_value = $('#measurement_file_list_selected').val();
@@ -215,7 +316,7 @@
     uploader.on('uploadSuccess', function (file, response) {
         // 显示提示信息，不自动关闭
         let layer_index = layer.msg('Upload file successful, Data Analytics in progress', {time: 0});
-         const measurement_file_list_selected_value = $('#measurement_file_list_selected').val();
+        const measurement_file_list_selected_value = $('#measurement_file_list_selected').val();
         if (response.status == 'success') {
             let ret_data = {
                 "test_team": "HTM",
@@ -285,34 +386,6 @@
                 layer.close(layer_index);
                 layer.alert(`Failed to convert file: ${error}`, {icon: 5});
             });
-    }
-
-    // 删除文件
-    function delete_file_in_db(fileId) {
-        if (confirm("Are you sure you want to delete this file?")) {
-            let loadingIndex = layer.load(0, {shade: false});
-
-            fetch('/temperature/delete_file', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({id: fileId})
-            })
-                .then(response => response.json())
-                .then(data => {
-                    console.log(data)
-                    if (data.success) {
-                        location.reload();
-                    } else {
-                        layer.alert('Failed to delete file:' + data.message, {icon: 5});
-                    }
-                })
-                .catch(error => {
-                    layer.close(loadingIndex);
-                    layer.alert('An error occurred, please try again:', error);
-                });
-        }
     }
 
     // 开始上传所有文件

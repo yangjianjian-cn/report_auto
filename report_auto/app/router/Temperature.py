@@ -8,7 +8,8 @@ from typing import Dict, List
 
 from asammdf import MDF
 from asammdf.blocks.utils import MdfException
-from flask import request, render_template, jsonify
+from flask import request, jsonify, render_template
+from pandas import DataFrame
 from werkzeug.utils import secure_filename
 
 from app import db_pool, env_input_path
@@ -50,14 +51,41 @@ def temperature_idx():
 @temperature_bp.route('/list', methods=['GET'])
 def temperature_list():
     try:
-        measurement_file_list = get_measurement_file_list(fileId=None)
         measurement_file_source_list = get_measurement_file_source_list()
     except Exception as e:
         logging.error(f'查询异常:{e}')
         return render_template('error.html', failure_msg=f'{e}')
     return render_template('temperature_uploader.html',
-                           measurement_file_list=measurement_file_list,
                            measurement_file_source_list=measurement_file_source_list)
+
+
+@temperature_bp.route('/list/page', methods=['GET'])
+def temperature_list_page():
+    try:
+        # 获取分页参数
+        pageNum = int(request.args.get('pageNum', 1))  # 默认值为 1
+        pageSize = int(request.args.get('pageSize', 10))  # 默认值为 10
+
+        # 计算数据库查询的起始位置和结束位置
+        start = (pageNum - 1) * pageSize
+        end = start + pageSize
+
+        # 调用函数获取分页数据
+        total_count, measurement_file_list = get_measurement_file_list_page(start=start, end=end)
+
+        # 构建响应数据
+        response_data = {
+            "code": 200,
+            "msg": "success",
+            "total": total_count,
+            "data": measurement_file_list
+        }
+
+        return jsonify(response_data)
+
+    except Exception as e:
+        logging.error(f'查询异常: {e}')
+        return render_template('error.html', failure_msg=str(e))
 
 
 def getClientIp():
@@ -220,6 +248,7 @@ def todb():
     # 3.数据保存
 
     # 更新measurement_file，特殊列
+    params: dict = {}
     if 'DS_FILES' == file_source:
         params['special_columns'] = 'timestamps,TECU_t'
     elif 'NG_FILES' == file_source:
@@ -227,9 +256,8 @@ def todb():
         if 'TECU_t' in rename_mapping:
             ng_files_str = ','.join([ng_files_str, 'TECU_t'])  # 使用 join 方法将新列名添加到字符串中
         params['special_columns'] = ng_files_str
-    set_params = params
     where_params = {'id': last_id}
-    update_table(db_pool, table='measurement_file', set_params=set_params, where_params=where_params)
+    update_table(db_pool, table='measurement_file', set_params=params, where_params=where_params)
 
     # 创建表
     table_name = 'chip_temperature'
@@ -268,7 +296,7 @@ def temperature_details():
 
     # 1. 获取测量文件列表
     try:
-        measurement_file_list = get_measurement_file_list(fileId)
+        measurement_file_list = get_measurement_file_list(fileId=fileId)
     except Exception as e:
         return render_template('error.html', failure_msg=f'{e}')
 
@@ -398,7 +426,7 @@ def temperature_overview():
     measurement_source: str = 'DS_FILES'
     try:
         # 获取测量文件列表
-        measurement_file_list = get_measurement_file_list(fileId)
+        measurement_file_list = get_measurement_file_list(fileId=fileId)
     except Exception as e:
         return render_template('error.html', failure_msg=f'{e}')
 
@@ -497,7 +525,7 @@ def delete_file():
 '''
 
 
-def get_measurement_file_list(fileId: str):
+def get_measurement_file_list(fileId: str = None):
     logging.info(">>测量文件列表:")
     # 构建基础查询语句
     query_sql = 'SELECT file_name, id, source,special_columns,source FROM measurement_file WHERE status = %s'
@@ -520,7 +548,51 @@ def get_measurement_file_list(fileId: str):
     return measurement_file_list
 
 
-'''测量文件来源'''
+'''
+测量文件列表(分页)
+'''
+
+
+def get_measurement_file_list_page(fileId: str = None, start=None, end=None):
+    # 构建基础查询语句
+    query_sql = 'SELECT file_name, id, source, special_columns, source,create_time FROM measurement_file WHERE status = %s'
+
+    # 如果提供了 fileId，则添加额外的过滤条件
+    params = ['0']  # 初始化参数列表
+    if fileId:
+        # 将 fileId 字符串分割成列表
+        id_list = [int(id.strip()) for id in fileId.split(',')]
+        # 添加 IN 子句到查询语句
+        query_sql += ' AND id IN ({})'.format(','.join(['%s'] * len(id_list)))
+        # 将 id 列表添加到参数列表
+        params.extend(id_list)
+
+    # 添加排序子句
+    query_sql += ' ORDER BY id DESC'
+
+    # 如果提供了分页参数，则添加 LIMIT 和 OFFSET 子句
+    if start is not None and end is not None:
+        query_sql += ' LIMIT %s OFFSET %s'
+        params.append(end - start)  # 每页数据量
+        params.append(start)  # 起始位置
+
+    # 执行查询
+    measurement_file_list = query_table(db_pool, query=query_sql, params=params)
+
+    # 计算总记录数
+    count_sql = 'SELECT COUNT(*) as total FROM measurement_file WHERE status = %s'
+    if fileId:
+        count_sql += ' AND id IN ({})'.format(','.join(['%s'] * len(id_list)))
+        params_for_count = ['0'] + id_list
+    else:
+        params_for_count = ['0']
+
+    total_count_df: DataFrame = query_table(db_pool, query=count_sql, params=params_for_count)
+    total_count = total_count_df[0].get("total")
+    return total_count, measurement_file_list
+
+
+'''字典表:测量文件来源'''
 
 
 def get_measurement_file_source_list():
@@ -530,13 +602,6 @@ def get_measurement_file_source_list():
     # 执行查询
     measurement_file_list = query_table(db_pool, query=query_sql, params=params)
     return measurement_file_list
-
-
-# 定义排序依据
-def get_key(item):
-    start_time: str = item.split('~')[0]  # 分割时间区间，获取起始时间
-    start_time: str = start_time.strip()
-    return int(start_time)  # 转换为整数以便排序
 
 
 # 定义一个函数来处理列名
