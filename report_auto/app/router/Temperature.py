@@ -556,7 +556,7 @@ def get_measurement_file_list(fileId: str = None):
 def get_measurement_file_list_page(fileId: str = None, start=None, end=None):
     # 构建基础查询语句
     query_sql = '''
-        SELECT file_name, id, source, special_columns,DATE_FORMAT(create_time,"%Y-%m-%d %H:%i:%s") as create_time 
+        SELECT file_name, id, source, special_columns,create_time
         FROM measurement_file 
         WHERE status = %s
     '''
