@@ -35,14 +35,14 @@
 
     <table class="custom-background_table02">
         <tr>
-            <td colspan="10" style="text-align: right;">
+            <td colspan="5" style="text-align: left;">
                 <div class="inline-flex">
-                    <p class="type-label" style="margin-right: 10px;">
-                        <strong>test project:
+                    <p class="type-label" style="margin-left: 10px;">
+                        <strong> test project:
                             <span style="color: blue; "> {{ test_project_type_name }} </span>
                         </strong>
                     </p>
-
+                    <span>&nbsp;&nbsp;</span>
                     <p id="select1-p" class="type-label" style="margin-right: 10px;"><span
                             style="color: red; ">*</span><strong>test scenario:</strong>
                     </p>
@@ -61,6 +61,11 @@
                     </select>
                 </div>
             </td>
+            <td colspan="5" align="right">
+                <button type="button" class="layui-btn" id="report_generation">report generation</button>
+                <button type="button" class="layui-btn layui-btn-normal" id="report_download">download the report
+                </button>
+            </td>
         </tr>
         <tr>
             <td colspan="10">
@@ -72,9 +77,18 @@
     </table>
 
     <div id="uploader">
-        <div class="queueList">
-            <div id="dndArea" class="placeholder">
-                <div id="filePicker"></div>
+        <div class="queueList chart_container ">
+            <div id="report_pro_text" class="form-control" style="height: 350px; width:50%; overflow-y: auto;">
+                <!-- 文本将被动态添加到这里 -->
+            </div>
+            <div id="dndArea" class="placeholder" style="height: 350px; width:50%">
+                <!--<div id="filePicker"></div>-->
+                <div id="customFilePicker"
+                     style="width: 100px; height: 40px; background-color: #007bff; color: white; text-align: center; line-height: 40px; cursor: pointer;">
+                    选择文件
+                </div>
+                <input id="filePicker" type="file" webkitdirectory mozdirectory msdirectory odirectory directory
+                       multiple style="display:none;"/>
                 <p>或将文件拖到这里，单次最多可选50个</p>
             </div>
         </div>
@@ -86,21 +100,23 @@
             <div class="info"></div>
             <div class="btns">
                 <div id="filePicker2"></div>
-                <div class="uploadBtn">开始上传</div>
+                <div class="uploadBtn">&nbsp;&nbsp;Start uploading&nbsp;&nbsp;</div>
             </div>
         </div>
     </div>
-    <!--
+
     <div class="chart_container">
         <div class="chart" id="chart1"></div>
         <div class="chart" id="chart3"></div>
     </div>
-    -->
 </div>
 </body>
 <script type="text/javascript" src="/static/js/selectcheckbox.js"></script>
-<script type="text/javascript" src="/static/js/echarts.min.js"></script>
+<script>
+    var uploadedFileName = [];
+</script>
 <script type="text/javascript" src="/static/js/biz/io_test_uploader.js?v=1"></script>
 <script type="text/javascript" src="/static/js/index.js?v=1"></script>
-<script type="text/javascript" src="/static/js/Piechart.js?v=1"></script>
+<script type="text/javascript" src="/static/js/echarts.min.js"></script>
+<script type="text/javascript" src="/static/js/IOTestPiechart.js?v=1"></script>
 </html>

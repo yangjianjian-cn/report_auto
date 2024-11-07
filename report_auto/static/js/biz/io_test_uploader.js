@@ -4,8 +4,7 @@
         var $wrap = $('#uploader'),
 
             // 图片容器
-            $queue = $('<ul class="filelist"></ul>')
-                .appendTo($wrap.find('.queueList')),
+            $queue = $('<ul class="filelist"></ul>').appendTo($wrap.find('.queueList')),
 
             // 状态栏，包括进度和控制按钮
             $statusBar = $wrap.find('.statusBar'),
@@ -18,6 +17,8 @@
 
             // 没选择文件之前的内容。
             $placeHolder = $wrap.find('.placeholder'),
+
+            $progress = $statusBar.find('.progress').hide(),
 
             // 添加的文件数量
             fileCount = 0,
@@ -37,23 +38,10 @@
 
             // 所有文件的进度信息，key为file id
             percentages = {},
-            // 判断浏览器是否支持图片的base64
-            isSupportBase64 = (function () {
-                var data = new Image();
-                var support = true;
-                data.onload = data.onerror = function () {
-                    if (this.width != 1 || this.height != 1) {
-                        support = false;
-                    }
-                }
-                data.src = "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==";
-                return support;
-            })(),
 
             // 检测是否已经安装flash，检测flash的版本
             flashVersion = (function () {
                 var version;
-
                 try {
                     version = navigator.plugins['Shockwave Flash'];
                     version = version.description;
@@ -146,8 +134,6 @@
             chunked: false, //此处禁用了分块
             chunkSize: 512 * 1024,
             server: '/report/upload',
-            // runtimeOrder: 'flash',
-
             accept: {
                 title: 'Measurement files',
                 extensions: 'dat'
@@ -157,53 +143,99 @@
             disableGlobalDnd: true,
             fileNumLimit: 50,
             fileSizeLimit: 200 * 1024 * 1024,    // 200 M
-            fileSingleSizeLimit: 50 * 1024 * 1024    // 50 M
+            fileSingleSizeLimit: 50 * 1024 * 1024,    // 50 M
+            directories: true
         });
+        // uploader初始化...
+        uploader.onReady = function () {
+            window.uploader = uploader;
+        };
 
-        // 拖拽时不接受 js, txt 文件。
-        uploader.on('dndAccept', function (items) {
-            var denied = false,
-                len = items.length,
-                i = 0,
-                // 修改js类型
-                unAllowed = 'text/plain;application/javascript ';
-
-            for (; i < len; i++) {
-                // 如果在列表里面
-                if (~unAllowed.indexOf(items[i].type)) {
-                    denied = true;
-                    break;
-                }
+    // document.getElementById('customFilePicker').addEventListener('click', function () {
+        document.getElementById('filePicker').addEventListener('change', function (event) {
+            var files = event.target.files;
+            for (var i = 0; i < files.length; i++) {
+                uploader.addFile(files[i]);
             }
-
-            return !denied;
         });
-
-        uploader.on('dialogOpen', function () {
+    // });
+        // 文件选择器的 change 事件
+        document.getElementById('customFilePicker').addEventListener('click', function () {
+            document.getElementById('filePicker').click();
         });
-
-        uploader.on('fileQueued', function (file) {
-            let test_team = $('#test_project_type_val').val();
+        // 加入Queued队列前
+        uploader.onBeforeFileQueued = function (file) {
             let test_scenario = $('#select1').val();
             let test_area = $('#select2').val();
             if (test_scenario == '' || test_area == '') {
                 layer.alert('Please select a test scenario or test_area', {icon: 3})
                 return false;
             }
-            uploader.options.formData['test_team'] = test_team;
-            uploader.options.formData['test_scenario'] = test_scenario;
-            uploader.options.formData['test_area'] = test_area;
+            return true;
+        };
+        // 加入Queued队列
+        uploader.onFileQueued = function (file) {
+            fileCount++;
+            fileSize += file.size;
+
+            if (fileCount === 1) {
+                $placeHolder.addClass('element-invisible');
+                $statusBar.show();
+            }
+
+            addFile(file);
+            setState('ready');
+            updateTotalProgress();
+        };
+        // 该批次全部加入Queued队列
+        uploader.onFilesQueued = function (file) {
+        };
+        // 移除Queued队列
+        uploader.onFileDequeued = function (file) {
+            fileCount--;
+            fileSize -= file.size;
+
+            if (!fileCount) {
+                setState('pedding');
+            }
+
+            removeFile(file);
+            updateTotalProgress();
+
+        };
+
+        uploader.on('dndAccept', function (items) {
+            const allowedExtensions = ['.dat'];
+            const acceptedItems = [];
+            const rejectedItems = [];
+
+            items.forEach(item => {
+                const fileName = item.name.toLowerCase();
+                const extension = fileName.slice(fileName.lastIndexOf('.') || Infinity);
+
+                if (allowedExtensions.includes(extension)) {
+                    acceptedItems.push(item);
+                } else {
+                    rejectedItems.push(item);
+                }
+            });
+
+            if (rejectedItems.length > 0) {
+                //'以下文件因扩展名不正确而被拒绝:', rejectedItems.map(item => item.name));
+                layer.alert(`有 ${rejectedItems.length} 个文件未被接受，请确保只拖放 .dat 文件。`, {icon: 3});
+            }
+
+            return acceptedItems.length === items.length;
+        });
+        uploader.on('dialogOpen', function () {
         });
 
         // 添加“添加文件”的按钮，
         uploader.addButton({
             id: '#filePicker2',
-            label: '继续添加'
+            label: '&nbsp;&nbsp;&nbsp;&nbsp;Keep adding&nbsp;&nbsp;&nbsp;&nbsp;'
         });
 
-        uploader.on('ready', function () {
-            window.uploader = uploader;
-        });
 
         // 当有文件添加进来时执行，负责view的创建
         function addFile(file) {
@@ -268,7 +300,6 @@
 
                 // 成功
                 if (cur === 'error' || cur === 'invalid') {
-                    console.log(file.statusText);
                     showError(file.statusText);
                     percentages[file.id][1] = 1;
                 } else if (cur === 'interrupt') {
@@ -455,7 +486,7 @@
                 case 'finish':
                     stats = uploader.getStats();
                     if (stats.successNum) {
-                        alert('上传成功');
+                        //alert('上传成功');
                     } else {
                         // 没有成功的图片，重设
                         state = 'done';
@@ -467,6 +498,20 @@
             updateStatus();
         }
 
+        // 文件开始上传
+        uploader.onUploadStart = function (file) {
+        };
+        // 文件上传请求发送之前
+        uploader.onUploadBeforeSend = function (object, data, headers) {
+            let test_team = $('#test_project_type_val').val();
+            let test_scenario = $('#select1').val();
+            let test_area = $('#select2').val();
+
+            data.test_team = test_team;
+            data.test_scenario = test_scenario;
+            data.test_area = test_area;
+        };
+        // 文件上传中
         uploader.onUploadProgress = function (file, percentage) {
             var $li = $('#' + file.id),
                 $percent = $li.find('.progress span');
@@ -475,42 +520,25 @@
             percentages[file.id][1] = percentage;
             updateTotalProgress();
         };
-
-        uploader.onFileQueued = function (file) {
-            fileCount++;
-            fileSize += file.size;
-
-            if (fileCount === 1) {
-                $placeHolder.addClass('element-invisible');
-                $statusBar.show();
-            }
-
-            addFile(file);
-            setState('ready');
-            updateTotalProgress();
-        };
-
-        uploader.onFileDequeued = function (file) {
-            fileCount--;
-            fileSize -= file.size;
-
-            if (!fileCount) {
-                setState('pedding');
-            }
-
-            removeFile(file);
-            updateTotalProgress();
-
+        uploader.onUploadSuccess = function (file, response) {
+            uploadedFileName.push(file.name)
+            console.log(response)
         };
 
         uploader.on('all', function (type) {
-            var stats;
+            console.log(type)
             switch (type) {
                 case 'uploadFinished':
+                    // 所有文件上传完成
                     setState('confirm');
                     break;
 
+                case 'uploadAccept':
+                    // 文件上传请求被服务器接受
+                    break;
+
                 case 'startUpload':
+                    // 手动启动文件上传
                     setState('uploading');
                     break;
 
@@ -526,17 +554,9 @@
         };
 
         $upload.on('click', function () {
-            let test_scenario = $('#select1').val();
-            let test_area = $('#select2').val();
-            if (test_scenario == '' || test_area == '') {
-                layer.alert('Please select a test scenario or test_area', {icon: 3})
-                return false;
-            }
-
             if ($(this).hasClass('disabled')) {
                 return false;
             }
-
             if (state === 'ready') {
                 uploader.upload();
             } else if (state === 'paused') {

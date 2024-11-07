@@ -44,8 +44,8 @@ def validate_filename(filename: str, test_team: str) -> str:
 
     if 'MST_Test' == test_team:
         valid_filenames.update(['app_pl_br_1', 'brk_04', 'brk_05', 'ngs_06', 'clth_05', 'clth_06'])
-    elif 'IO_Test' == test_team:
-        valid_filenames.update(['level1', 'level2', 'level3', 'level4', 'level2-4'])
+    # elif 'IO_Test' == test_team:
+    #     valid_filenames.update(['level1', 'level2', 'level3', 'level4', 'level2-4'])
 
     if len(valid_filenames) > 0:
         base_file_name = get_filename_without_extension(filename).lower()

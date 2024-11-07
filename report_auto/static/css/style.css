@@ -102,7 +102,7 @@ select {
 
 .chart_container {
     display: flex;
-    justify-content: space-between;
+    /*justify-content: space-between;*/
 }
 
 .chart {

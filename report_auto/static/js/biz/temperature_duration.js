@@ -15,13 +15,13 @@ let option = {
     },
     title: [
         {
-            text: 'DS Ambient temperature duration',
+            text: 'ECU TECU_t  temperature duration',
             subtext: 'Total (minutes) ' + totalMinutes_tecut,
             left: '20%',
             textAlign: 'center'
         },
         {
-            text: 'NG Ambient temperature duration',
+            text: 'ECU Ambient temperature duration',
             subtext: 'Total (minutes) ' + total_minutes_tc1th9,
             right: '2%',
             textAlign: 'left'

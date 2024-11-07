@@ -555,8 +555,11 @@ def get_measurement_file_list(fileId: str = None):
 
 def get_measurement_file_list_page(fileId: str = None, start=None, end=None):
     # 构建基础查询语句
-    query_sql = 'SELECT file_name, id, source, special_columns,DATE_FORMAT(create_time,"%Y-%m-%d %H:%i:%s") as create_time FROM measurement_file WHERE status = %s'
-
+    query_sql = '''
+        SELECT file_name, id, source, special_columns,DATE_FORMAT(create_time,"%Y-%m-%d %H:%i:%s") as create_time 
+        FROM measurement_file 
+        WHERE status = %s
+    '''
     # 如果提供了 fileId，则添加额外的过滤条件
     params = ['0']  # 初始化参数列表
     if fileId:
