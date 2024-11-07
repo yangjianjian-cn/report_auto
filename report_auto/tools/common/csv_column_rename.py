@@ -75,21 +75,6 @@ def retIODF(test_area: str) -> List[str]:
     return columns_to_include
 
 
-def retHTM() -> List[str]:
-    selected_columns_dc1 = ['DC1_Th1', 'DC1_Th2', 'DC1_Th3', 'DC1_Th4', 'DC1_Th5', 'DC1_Th6', 'DC1_Th7',
-                            'DC1_Th8', 'TECU_t']
-
-    selected_columns_tc1 = ['TC1_Th1', 'TC1_Th2', 'TC1_Th3', 'TC1_Th4', 'TC1_Th5', 'TC1_Th6', 'TC1_Th7', 'TC1_Th8',
-                            'TC1_Th9', 'TC1_Th10', 'TC1_Th11', 'TC1_Th12', 'TC1_Th13', 'TC1_Th14', 'TC1_Th15',
-                            'TC1_Th16','TECU_t']
-
-    selected_columns_tc2 = ['TC2_Th1', 'TC2_Th2', 'TC2_Th3', 'TC2_Th4', 'TC2_Th5', 'TC2_Th6', 'TC2_Th7', 'TC2_Th8',
-                            'TC2_Th9', 'TC2_Th10', 'TC2_Th11', 'TC2_Th12', 'TC2_Th13','TECU_t']
-
-    selected_columns_tecu =['TECU_t']
-    return selected_columns_dc1,selected_columns_tc1,selected_columns_tc2,selected_columns_tecu
-
-
 def find_columns_with_dfc_err_type(draw_fault_detection_df: DataFrame, dfc_err_type: str) -> str:
     # 获取所有以'DFES_numDFC_'开头的列名
     dfc_columns = [col for col in draw_fault_detection_df.columns if col.startswith('DFES_numDFC_')]

@@ -1,7 +1,7 @@
 __coding__ = "utf-8"
 
 import logging
-from typing import Mapping, Dict
+from typing import Mapping, Dict, List
 
 import pandas as pd
 from pandas import DataFrame
@@ -342,10 +342,6 @@ def update_table(table: str, set_params: Mapping[str, any], where_params: Mappin
         return False, str(e)
     finally:
         cursor.close()
-
-
-import logging
-from typing import List
 
 
 @db_pool.with_connection

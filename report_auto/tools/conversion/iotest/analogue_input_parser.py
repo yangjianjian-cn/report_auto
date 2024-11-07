@@ -7,7 +7,9 @@ from pathlib import Path
 from app import db_pool
 from constant.TestCaseType import TestCaseType
 from pojo.MSTReqPOJO import ReqPOJO
-from tools.conversion.iotest.levels_analysis import simple_electrical_test, error_detection
+from tools.conversion.iotest.analogue_input import IOTestDataInDB
+from tools.conversion.iotest.levels_analysis import simple_electrical_test, error_detection, \
+    error_debouncing_error_healing, substitute_value_reaction_test
 from tools.report.xlsm_report_generation import analogue_input_report
 from tools.utils.DBOperator import query_table
 from tools.utils.xlsm_utils import find_first_empty_row_after_string
@@ -34,20 +36,8 @@ def analogue_input(req_data: ReqPOJO) -> str:
     logging.info(f"Test Area: {test_area}")
 
     # 该引脚测试报告输出模板
-    query = '''
-        SELECT pin_no, hw_pin, short_name, long_name, device_encapsulation, checked_values,
-               preparation_1, measurements_1, checked_errors, preparation_2, measurements_2,
-               debouncing_healing, preparation_3, measurements_3, error_substitute, preparation_4,
-               measurements_4, detail_id
-        FROM io_test_checklist WHERE detail_id = (
-        SELECT detail_id
-        FROM tool_dictionary  td
-        JOIN tool_dictionary_detail tdd on td.dict_id = tdd.dict_id
-        WHERE td.dict_value = %s and td.dict_type = 'signal_type'
-        and tdd.item_value =  %s )
-    '''
-    params = (test_scenario, test_area)
-    result_dicts = query_table(db_pool, query=query, params=params)
+    ioTestDataInDB = IOTestDataInDB()
+    result_dicts = ioTestDataInDB.get_io_test_data(test_area,test_scenario)
     logging.info(f"result_dicts:{result_dicts}")
 
     # 输出文件
@@ -70,12 +60,11 @@ def analogue_input(req_data: ReqPOJO) -> str:
             level2 = error_detection(file_path, result_dicts)
             logging.info(f"level2:{level2}")
         elif "level3" in file_name:
-            # level3 = error_debouncing_error_healing(file_path, result_dicts)
+            level3 = error_debouncing_error_healing(file_path, result_dicts)
             pass
         elif "level4" in file_name:
-            # level4 = substitute_value_reaction_test(file_path, result_dicts)
+            level4 = substitute_value_reaction_test(file_path, result_dicts)
             pass
-
 
 # ########## 校验level2
 # req_data.template_name = TestCaseType.IOTest_Man_Tmplt.name

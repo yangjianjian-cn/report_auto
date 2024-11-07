@@ -150,28 +150,9 @@
         uploader.onReady = function () {
             window.uploader = uploader;
         };
-
-    // document.getElementById('customFilePicker').addEventListener('click', function () {
-        document.getElementById('filePicker').addEventListener('change', function (event) {
-            var files = event.target.files;
-            for (var i = 0; i < files.length; i++) {
-                uploader.addFile(files[i]);
-            }
-        });
-    // });
-        // 文件选择器的 change 事件
-        document.getElementById('customFilePicker').addEventListener('click', function () {
-            document.getElementById('filePicker').click();
-        });
         // 加入Queued队列前
         uploader.onBeforeFileQueued = function (file) {
-            let test_scenario = $('#select1').val();
-            let test_area = $('#select2').val();
-            if (test_scenario == '' || test_area == '') {
-                layer.alert('Please select a test scenario or test_area', {icon: 3})
-                return false;
-            }
-            return true;
+
         };
         // 加入Queued队列
         uploader.onFileQueued = function (file) {
@@ -186,6 +167,9 @@
             addFile(file);
             setState('ready');
             updateTotalProgress();
+
+            console.log(fileCount);
+
         };
         // 该批次全部加入Queued队列
         uploader.onFilesQueued = function (file) {
@@ -485,6 +469,8 @@
                     break;
                 case 'finish':
                     stats = uploader.getStats();
+                    console.log(state);
+                    console.log(stats);
                     if (stats.successNum) {
                         //alert('上传成功');
                     } else {
@@ -550,7 +536,8 @@
         });
 
         uploader.onError = function (code) {
-            alert('Eroor: ' + code);
+            // alert('Eroor: ' + code);
+            console.log('Error: ' + code)
         };
 
         $upload.on('click', function () {
@@ -579,3 +566,22 @@
     });
 
 })(jQuery);
+
+
+document.getElementById('filePicker').addEventListener('change', function (event) {
+    var files = event.target.files;
+    for (var i = 0; i < files.length; i++) {
+        uploader.addFile(files[i]);
+    }
+});
+
+// 文件选择器的 change 事件
+document.getElementById('customFilePicker').addEventListener('click', function () {
+    let test_scenario = $('#select1').val();
+    let test_area = $('#select2').val();
+    if (test_scenario == '' || test_area == '') {
+        layer.alert('Please select a test scenario or test_area', {icon: 3})
+        return false;
+    }
+    document.getElementById('filePicker').click();
+});

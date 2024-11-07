@@ -90,7 +90,7 @@ def report_download():
     fileName = request.args.get('fileName')
     test_team = request.args.get('test_team')
 
-    output_path = env_output_path
+    output_path:str = env_output_path
     output_path = os.path.join(output_path, get_client_ip(request))
 
     merge_path = env_template_path
@@ -153,7 +153,7 @@ def generate_report():
     test_area = data['test_area']
     client_ip = get_client_ip(request)
 
-    # u_files = data['u_files']
+    u_files = data['u_files']
 
     # 2. dat文件目录
     dat_path = env_input_path
@@ -198,7 +198,7 @@ def generate_report():
             test_scenario=test_scenario,
             test_area=test_area,
             template_path=env_template_path
-            # ,u_files=u_files
+            ,u_files=u_files
         )
         ret_sucess_msg, ret_err_msg = dat_csv_docx(req_data)
     except Exception as e:

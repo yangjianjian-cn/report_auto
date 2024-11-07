@@ -8,6 +8,7 @@ from pojo.IOTestCounter import load_from_io_json, IOTestCounter
 from pojo.MSTCounter import load_from_mst_json, MSTCounter
 from pojo.MSTReqPOJO import ReqPOJO
 from tools.common.csv_column_rename import reMstDF, retIODF
+from tools.conversion.iotest.analogue_input import IOTestDataInDB
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 
@@ -44,10 +45,9 @@ def dat_csv_conversion(dat_file: str, req_data: ReqPOJO) -> str:
         output_file_name, csv_file = create_file_path(dat_file, "csv", req_data.csv_path, "csv")
 
         # MDF数据转换为DataFrame
-        mdf = MDF(filepath)
-
         if 'MST_Test' == req_data.test_team:
             # MST测量数据
+            mdf = MDF(filepath)
             df = mdf.to_dataframe()
 
             column_names = df.columns.tolist()
@@ -55,22 +55,32 @@ def dat_csv_conversion(dat_file: str, req_data: ReqPOJO) -> str:
             df.rename(columns=alias_column_names, inplace=True)
 
             df = reMstDF(df, output_file_name)
+            with open(csv_file, 'w', newline='') as f:
+                df.to_csv(f, index=True)
 
         elif 'IO_Test' == req_data.test_team and 'analogue_input' == req_data.test_scenario:
             # IO Test测量数据
+            mdf = MDF(filepath)
             df = mdf.to_dataframe()
 
             column_names = df.columns.tolist()
+            logging.info(f"column_names:{column_names}")
+
             alias_column_names = {item: item.split('\\')[0] for item in column_names}
             df.rename(columns=alias_column_names, inplace=True)
+            logging.info(f"alias_column_names:{alias_column_names}")
 
-            columns_to_include = retIODF(req_data.test_area)
+            ioTestDataInDB = IOTestDataInDB()
+            result_dicts: dict = ioTestDataInDB.get_io_test_data()
+            columns_to_include = ioTestDataInDB.csv_needed_columns(result_dicts)
             df = df[columns_to_include]
+
+            with open(csv_file, 'w', newline='') as f:
+                df.to_csv(f, index=True)
 
         elif "HTM" == req_data.test_team:
             pass
-        with open(csv_file, 'w', newline='') as f:
-            df.to_csv(f, index=True)
+
         return csv_file
     except FileNotFoundError:
         return f"err:File not found: {filepath}"
