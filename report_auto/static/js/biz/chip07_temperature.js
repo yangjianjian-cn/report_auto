@@ -36,7 +36,7 @@ var chipOption07 = {
     legend: {
         type: 'scroll',
         orient: 'vertical',
-        left: 450,
+        left: 420,
         top: 30,
         bottom: 5,
         show: true,
@@ -72,6 +72,11 @@ var chipOption07 = {
         name: 'Time',
         axisLabel: {
             formatter: '{value} s'
+        },
+        startValue: 0,
+        interval: 10,
+        axisTick: {
+            show: true
         }
     },
     yAxis: {

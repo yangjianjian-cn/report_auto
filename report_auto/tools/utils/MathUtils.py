@@ -84,3 +84,10 @@ def difference_chip(num1: float, num2: float) -> int:
         num2 = 0
     r_num = (num1 - num2)
     return int(r_num)
+#
+#
+# print('>>>>>>bit2>>>>>>')
+# print('40:%s',getBit2(40),"111:%s",getBit2(111),"252:%s",getBit2(252),"251:%s",getBit2(251),"168:%s",getBit2(168),"139:%s",getBit2(139))
+#
+# print('>>>>>>bit4>>>>>>')
+# print('40:%s',getBit4(40),"111:%s",getBit4(111),"252:%s",getBit4(252),"251:%s",getBit4(251),"168:%s",getBit4(168),"139:%s",getBit4(139))

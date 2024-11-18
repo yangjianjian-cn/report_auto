@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>HTM REPORT</title>
+    <title>HTM</title>
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
     <meta name="renderer" content="webkit">
     <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
@@ -23,15 +23,14 @@
 <div class="layui-header header header-docs">
     <div class="layui-main">
         <ul class="layui-nav">
-            <!--
-           <li class="layui-nav-item ">
-               <a href="">其它页</a>
-           </li>
-           <li class="layui-nav-item layui-this">
-               <a href="javascript:;">报表区</a>
-           </li>
-            -->
-            <span class="layui-nav-bar"></span></ul>
+            <li class="layui-nav-item ">
+                <a href="/report/1" ,target="_blank">MST</a>
+            </li>
+            <li class="layui-nav-item">
+                <a href="/report/2" ,target="_blank">IOTest</a>
+            </li>
+            <span class="layui-nav-bar"></span>
+        </ul>
     </div>
 </div>
 
@@ -116,45 +115,56 @@
         <input type="hidden" id="temperature_time_tc2_7" value='{{ temperature_time_tc2_7|tojson }}'>
 
         <input type="hidden" id="init_selected_files" value='{{ init_selected_files|safe }}'>
+        <input type="hidden" id="measurement_source" value='{{ measurement_source|safe }}'>
+
     </div>
+</div>
+<div class="layui-footer footer footer-demo">
+    <p>Copyright &copy; 2024</p>
+    <p id="LAY-footer-info"><span style="color: #007bff"></span></p>
+    <p><span></span></p>
 </div>
 </body>
 <script type="text/javascript" src="/static/js/biz/file_list_multi_select_details.js?v=2"></script>
-
 <script type="text/javascript" src="/static/js/echarts.min.js"></script>
 <script>
+    j_measurement_source = document.getElementById('measurement_source').value;
+    j_measurement_source_text = 'TECU_T'
+    if ('NG_FILES'== j_measurement_source)
+        j_measurement_source_text = 'NGECU'
+
     c_tooltip = {
-        showDelay: 0,
-        formatter: function (params) {
-            if (params.value.length > 1) {
-                return (
-                    params.seriesName +
-                    ' :<br/>' +
-                    params.value[0] +
-                    '°C ' +
-                    params.value[1] +
-                    '°C '
-                );
-            } else {
-                return (
-                    params.seriesName +
-                    ' :<br/>' +
-                    params.name +
-                    ' : ' +
-                    params.value +
-                    '°C '
-                );
-            }
-        },
-        axisPointer: {
-            show: true,
-            type: 'cross',
-            lineStyle: {
-                type: 'dashed',
-                width: 1
+            showDelay: 0,
+            formatter: function (params) {
+                if (params.value.length > 1) {
+                    return (
+                        params.seriesName +
+                        ' :<br/>' +
+                        params.value[0] +
+                        '°C ' +
+                        params.value[1] +
+                        '°C '
+                    );
+                } else {
+                    return (
+                        params.seriesName +
+                        ' :<br/>' +
+                        params.name +
+                        ' : ' +
+                        params.value +
+                        '°C '
+                    );
+                }
+            },
+            axisPointer: {
+                show: true,
+                type: 'cross',
+                lineStyle: {
+                    type: 'dashed',
+                    width: 1
+                }
             }
         }
-    }
     c_toolbox = {
         feature: {
             dataZoom: {}
@@ -176,7 +186,7 @@
     c_xAxis = {
         type: 'value',
         scale: true,
-        name: 'TECU_T',
+        name: j_measurement_source_text,
         axisLabel: {
             formatter: '{value}°C'
         },
@@ -189,8 +199,8 @@
         scale: true,
         splitNumber: 5,
         name: 'Temperature',
-        axisLabel: {
-            formatter: '{value}°C'
+        formatter: function (value) {
+            return value.toFixed(1) + '°C';
         }
     }
 </script>
@@ -198,7 +208,7 @@
 <script type="text/javascript" src="/static/js/biz/chip02_temperature.js?v=1"></script>
 <script type="text/javascript" src="/static/js/biz/chip03_temperature.js?v=1"></script>
 
-<script type="text/javascript" src="/static/js/biz/chip05_temperature.js?v=2"></script>
-<script type="text/javascript" src="/static/js/biz/chip06_temperature.js?v=2"></script>
-<script type="text/javascript" src="/static/js/biz/chip07_temperature.js?v=2"></script>
+<script type="text/javascript" src="/static/js/biz/chip05_temperature.js?v=1"></script>
+<script type="text/javascript" src="/static/js/biz/chip06_temperature.js?v=1"></script>
+<script type="text/javascript" src="/static/js/biz/chip07_temperature.js?v=1"></script>
 </html>

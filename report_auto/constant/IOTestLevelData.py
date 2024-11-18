@@ -56,3 +56,5 @@ i_a_app1_level4_data = substitute_value_reaction(
     measurements="APP_uRaw1",
 )
 i_a_app1_level4_attribute =['level4', 'error_substitute', 'preparation', 'stimulation', 'measurements']  # 'result'
+
+print(getattr(i_a_app1_level2_data, i_a_app1_level2_attribute[1]))

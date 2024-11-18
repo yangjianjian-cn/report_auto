@@ -38,7 +38,7 @@ def brake_override_accelerator(req_data: ReqPOJO) -> list:
 
 
 def r_fault_detection(end_time, begin_time, initial_state_df, err_msg, replacements):
-    end_time = end_time + 5 if end_time is not None else begin_time + 5
+    end_time = end_time if end_time is not None else begin_time + 5
     draw_fault_detection_df = initial_state_df[
         (initial_state_df['timestamps'] >= begin_time) & (initial_state_df['timestamps'] <= end_time)]
     return err_msg, draw_fault_detection_df, replacements
@@ -167,14 +167,15 @@ def fault_detection(initial_state_df: DataFrame):
     # fault detection succeed，计算end_time
     condition12 = fault_detection_df_8[signals_dfes[0]] == FAULT_TYPE_MAPPING.get('brake_override_accelerator')
     fault_detection_df_12 = fault_detection_df_8[condition12]
+    begin_time = fault_detection_df_12['timestamps'].iloc[1]
     end_time = fault_detection_df_12['timestamps'].iloc[-1]
     total_time_spent = end_time - begin_time
     replacements = brake_override_accelerator_replacements(brk_st='√', app_bplabrk='√', app_runflt='√', app_r='√',
                                                            result='√', ispass='√', total_time_spent=total_time_spent)
-    return r_fault_detection(end_time, begin_time, fault_detection_df_8, err_msg, replacements)
+    return r_fault_detection(end_time, begin_time - 5 , fault_detection_df_8, err_msg, replacements)
 
 
-def draw_img(draw_fault_detection_df: DataFrame, req_data: ReqPOJO, replacements: map):
+def draw_img(draw_fault_detection_df: DataFrame, req_data: ReqPOJO, replacements: dict):
     signals = ['Brk_st', 'APP_bPlaBrk', 'APP_rUnFlt', 'APP_r','VehV_v','Epm_nEng','CEngDsT_t','Tra_numGear']
     output_name = Path(req_data.csv_path).stem
     req_data.doc_output_name = output_name

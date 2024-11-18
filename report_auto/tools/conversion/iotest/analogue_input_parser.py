@@ -2,13 +2,15 @@ __coding__ = "utf-8"
 
 import logging
 import os
+from pathlib import Path
 
-import pandas as pd
-
-from constant.TestCaseType import TestCaseType
 from pojo.MSTReqPOJO import ReqPOJO
-from tools.report.xlsm_report_generation import analogue_input_report
-from tools.utils.MathUtils import truncate_to_one_decimal_place, getBit4, getBit2
+from tools.conversion.iotest.analogue_input import IOTestDataInDB
+from tools.conversion.iotest.analysis_tocsv import write_analysis_tocsv
+from tools.conversion.iotest.levels_analysis import simple_electrical_test, high_error_debouncing_error_healing, \
+    low_error_debouncing_error_healing, low_substitute_value_reaction_test, high_substitute_value_reaction_test, \
+    high_error_detection, low_error_detection
+from tools.utils.xlsm_utils import find_first_empty_row_after_string
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 
@@ -19,103 +21,110 @@ outputPath：/outputpath/测试团队/测试区域
 
 
 def analogue_input(req_data: ReqPOJO) -> str:
-    logging.info(f"csv_path:{req_data.csv_path}")
-    logging.info(f"output_path:{req_data.output_path}")
-    level1, level2, level3, level4 = 'n/a', 'n/a', 'n/a', 'n/a'
+    logging.info("report generation: tools.conversion.iotest.analogue_input_parser.analogue_input")
 
-    # 使用 os.walk() 遍历目录及其子目录
-    all_files = []
-    for root, dirs, files in os.walk(req_data.csv_path):
-        for file in files:
-            all_files.append(os.path.join(root, file))
+    csv_path = req_data.csv_path
+    output_path = req_data.output_path
 
-    # 打印结果以验证
-    for dat_file in all_files:
-        if 'Level1' in dat_file:
-            df_selected = pd.read_csv(dat_file, encoding='utf8')
+    test_scenario: str = req_data.test_scenario
+    test_area = req_data.test_area
+    test_area_dataLabel = req_data.test_area_dataLabel
 
-            # ########## 校验level1是否通过
-            # 填充 NaN 值为 0
-            df_selected['APP_uRaw1unLim'] = df_selected['APP_uRaw1unLim'].fillna(0)
-            # 选择 'APP_uRaw1unLim'列，并对每个元素执行除以 1000 取整的操作
-            result_set = set(df_selected['APP_uRaw1unLim'].apply(truncate_to_one_decimal_place))
-            # 过滤掉 0 和 5
-            filtered_set = {value for value in result_set if value not in [0, 5]}
-            element_count = len(filtered_set)
-            if element_count > 0:
-                # level1符合条件
-                level1 = 'passed'
-        if 'Level2-4' in dat_file:
-            df_selected = pd.read_csv(dat_file, encoding='utf8')
+    logging.info(f"CSV Path: {csv_path}")
+    logging.info(f"Output Path: {output_path}")
+    logging.info(f"Test Scenario: {test_scenario}")
+    logging.info(f"Test Area: {test_area}")
+    logging.info(f"Test Area DataLabel: {test_area_dataLabel}")
 
-            def check_row(row):
-                if row['APP_uRaw1unLim'] > row['APP_uRaw1SRCHigh_C']:  # 电压 > 上限电压
-                    return 'passed' if getBit4(row['DFC_st.DFC_SRCHighAPP1']) == '1' else 'failed'
-                elif row['APP_uRaw1unLim'] < row['APP_uRaw1SRCLow_C']:  # 电压 < 下限电压
-                    return 'passed' if getBit4(row['DFC_st.DFC_SRCLowAPP1']) == '1' else 'failed'
+    # 1.引脚测试报告输出模板
+    ioTestDataInDB = IOTestDataInDB()
+    result_dicts = ioTestDataInDB.get_io_test_data(test_area=test_area, test_scenario=test_scenario,
+                                                   test_area_dataLabel=test_area_dataLabel)
+    logging.info(f"result_dicts:{result_dicts}")
 
-            df_selected['Level2'] = df_selected.apply(check_row, axis=1)
-            passed_count = (df_selected['Level2'] == 'passed').sum()
-            if passed_count > 0:
-                level2 = 'passed'
+    # 2.分析测量文件
+    level1: set[str] = set()
+    level2: set[str] = set()
+    level3: set[str] = set()
+    level4: set[str] = set()
+
+    for file_path in Path(csv_path).glob('**/*.csv'):
+        logging.info(f"measurement files:{file_path}")
+        file_name = file_path.name.lower()
+
+        if "analogue_input" == req_data.test_scenario:
+            if "level1" in file_name:
+                level1_str: str = simple_electrical_test(file_path, result_dicts)
+                level1.add(level1_str)
+                logging.info(f"level1:{level1}")
+
+            elif "level2_high" in file_name:
+                high_level2_str: str = high_error_detection(file_path, result_dicts)
+                level2.add(high_level2_str)
+                logging.info(f"level2_high:{high_level2_str}")
+
+            elif "level2_low" in file_name:
+                low_level2_str: str = low_error_detection(file_path, result_dicts)
+                level2.add(low_level2_str)
+                logging.info(f"level2_low:{low_level2_str}")
+
+            elif "level3_high" in file_name:
+                high_deb_level3, high_ok_level3 = high_error_debouncing_error_healing(file_path, result_dicts)
+                if high_deb_level3 != "":
+                    level3.add(high_deb_level3)
+                if high_ok_level3 != "":
+                    level3.add(high_ok_level3)
+                logging.info(f"level3_high:{high_deb_level3},{high_ok_level3}")
+
+            elif "level3_low" in file_name:
+                low_deb_level3, low_ok_level3 = low_error_debouncing_error_healing(file_path, result_dicts)
+                if low_deb_level3 != "":
+                    level3.add(low_deb_level3)
+                if low_ok_level3 != "":
+                    level3.add(low_ok_level3)
+                logging.info(f"level3_low:{low_deb_level3},{low_ok_level3}")
+
+            elif "level4_high" in file_name:
+                high_level4 = high_substitute_value_reaction_test(file_path, result_dicts)
+                level4.add(high_level4)
+                logging.info(f"level4_high:{high_level4}")
+
+            elif "level4_low" in file_name:
+                low_level4 = low_substitute_value_reaction_test(file_path, result_dicts)
+                level4.add(low_level4)
+                logging.info(f"level4_low:{low_level4}")
+
             else:
-                level2 = 'failed'
+                high_deb_level3, high_ok_level3 = high_error_debouncing_error_healing(file_path, result_dicts)
+                low_deb_level3, low_ok_level3 = low_error_debouncing_error_healing(file_path, result_dicts)
+                level3.add(high_deb_level3)
+                level3.add(high_ok_level3)
+                level3.add(low_deb_level3)
+                level3.add(low_ok_level3)
 
-            # 电压超过上限-触发故障
-            bit4_last_row_timestamps = 0
-            filtered_df = df_selected[(df_selected['APP_uRaw1unLim'] > df_selected['APP_uRaw1SRCHigh_C'])]
-            if len(filtered_df) != 0:
-                # bit2= 1 激活，故障触发
-                filtered_df_bit2 = filtered_df[(filtered_df['DFC_st.DFC_SRCHighAPP1'].apply(getBit2) == '1')]
-                if len(filtered_df_bit2) != 0:
-                    # 最后激活时间
-                    bit2_last_row_timestamps = filtered_df_bit2.iloc[-1]['timestamps']
-                    logging.info(f"故障激活时间:{bit2_last_row_timestamps}")
-                    # 故障发生了
-                    filtered_df_bit4 = filtered_df[(filtered_df['timestamps'] > bit2_last_row_timestamps) & (
-                            filtered_df['DFC_st.DFC_SRCHighAPP1'].apply(getBit4) == '1')]
-                    if filtered_df_bit4.empty:
-                        level3 = 'failed'
-                    else:
-                        # 最后故障时间
-                        level3 = 'passed'
-                        bit4_last_row_timestamps = filtered_df_bit4.iloc[-1]['timestamps']
-                        logging.info(f"故障结束时间:{bit4_last_row_timestamps}")
+                high_level4 = high_substitute_value_reaction_test(file_path, result_dicts)
+                low_level4 = low_substitute_value_reaction_test(file_path, result_dicts)
+                level4.add(high_level4)
+                level4.add(low_level4)
+        elif "digital_input" == req_data.test_scenario:
+            pass
+        elif "PWM_input" == req_data.test_scenario:
+            pass
+    # 3.输出文件
+    output_file = os.path.join(output_path, "xlsm", "IOTest_Main_Tmplt.xlsm")
+    logging.info(f"输出文件:{output_file}")
 
-            # 电压超过上限-故障恢复
-            filtered_df = df_selected[(df_selected['timestamps'] > bit4_last_row_timestamps)]
-            if len(filtered_df) != 0:
-                # 故障恢复激活中
-                filtered_df_bit2 = filtered_df[(filtered_df['DFC_st.DFC_SRCHighAPP1'].apply(getBit2) == '1')]
-                if len(filtered_df_bit2) != 0:
-                    # 故障恢复-激活-结束时间
-                    bit2_last_row_timestamps = filtered_df_bit2.iloc[-1]['timestamps']
-                    logging.info(f"故障恢复时间:{bit2_last_row_timestamps}")
+    insert_rownum = 0
+    if os.path.exists(output_file):
+        test_scenario = test_scenario.replace("_", " ")
+        insert_rownum = find_first_empty_row_after_string(output_file, test_scenario)
+    logging.info(f"insert_rownum:{insert_rownum}")
 
-                    filtered_df_bit4 = filtered_df[filtered_df['timestamps'] > bit2_last_row_timestamps]
-                    if len(filtered_df_bit4) != 0:
-                        filtered_df_bit4 = filtered_df_bit4.head(1)
-                        if getBit4(filtered_df_bit4['DFC_st.DFC_SRCHighAPP1']) == '0':
-                            level3 = 'passed'
-                        else:
-                            level3 = 'failed'
-
-            # raw值超限时，检查目标值是否被default值替代
-            filtered_df = df_selected[df_selected['APP_uRaw1unLim'] > df_selected['APP_uRaw1SRCHigh_C']]
-            filtered_df = filtered_df[filtered_df['DFC_st.DFC_SRCHighAPP1'].apply(getBit4) == '1']
-            if len(filtered_df) != 0:
-                # 检查 'APP_uRaw1' 和 'APP_uRaw1Def_C' 是否完全相等
-                are_equal = (filtered_df['APP_uRaw1'] == filtered_df['APP_uRaw1Def_C']).all()
-            if are_equal:
-                level4 = "passed"
-            else:
-                level4 = "failed"
-
-    extracted_parts = [path.split('\\')[-1].split('.')[0] for path in all_files]
-    # 将提取的部分连接成一个字符串，以逗号分隔
-    extracted_parts_str = ', '.join(extracted_parts)
-
-    # ########## 校验level2是否通过
-    req_data.template_name = TestCaseType.IOTest_Man_Tmplt.name
-    xlsm_path = analogue_input_report(req_data, level1, level2, level3, level4,extracted_parts_str)
-    return xlsm_path
+    # 4.分析结果、引脚模板、合成输出文件
+    levels = {
+        "level1": level1,
+        "level2": level2,
+        "level3": level3,
+        "level4": level4,
+    }
+    write_analysis_tocsv(output_file, insert_rownum, levels, result_dicts)

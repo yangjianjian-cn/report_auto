@@ -1,90 +1,45 @@
-// 获取 total_minutes 的值
-let totalMinutes = document.getElementById('total-minutes').value;
-
-// 获取 time_diffs 的值，并解析为 JSON 对象
-//  [{'40 ~ 45': 0.77, 'idx': 0}, {'45 ~ 50': 62.38, 'idx': 1}, {'50 ~ 55': 5.5600000000000005, 'idx': 2}, {'55 ~ 60': 4.24, 'idx': 3}, {'60 ~ 65': 22.67, 'idx': 4}, {'65 ~ 70': 11.52, 'idx': 5}]
-let timeDiffsJson = document.getElementById('time-diffs').value;
-let timeDiffs = JSON.parse(timeDiffsJson);
-
-// 定义颜色数组
-const t_colors = ['#0000FF', '#00FF00', '#FFFF00', '#FF0000'];
-
-// 使用 reduce 方法转换数据(柱形图)
-// {
-//     "40 ~ 45": 0.77,
-//     "45 ~ 50": 62.38,
-//     "50 ~ 55": 5.5600000000000005,
-//     "55 ~ 60": 4.24,
-//     "60 ~ 65": 22.67,
-//     "65 ~ 70": 11.52
-// }
-const convertedData = timeDiffs.reduce((acc, curr) => {
-    // 遍历当前对象的每个属性
-    for (let key in curr) {
-        if (curr.hasOwnProperty(key) && key !== 'idx') {
-            acc[key] = curr[key];
-        }
-    }
-    return acc;
-}, {});
-
-// 找到 idx 的最小值和最大值
-const idxValues = timeDiffs.map(item => item.idx);
-const minIdx = Math.min(...idxValues);
-const maxIdx = Math.max(...idxValues);
-
-let dom = document.getElementById('temperature_duration');
-let myChart = echarts.init(dom, null, {
+let myChart = echarts.init(document.getElementById('temperature_duration'), null, {
     renderer: 'canvas',
     useDirtyRect: false
 });
-let option;
 
-option = {
+let option = {
     tooltip: {},
     toolbox: {
         show: true,
         feature: {
             saveAsImage: {}
-        }
+        },
+        right: '0%',
+        top: 1
     },
     title: [
         {
-            text: 'TECU_T temperature duration',
-            subtext: 'Total (minutes) ' + totalMinutes,
-            left: '25%',
+            text: 'ECU TECU_t  temperature duration',
+            subtext: 'Total (minutes) ' + totalMinutes_tecut,
+            left: '20%',
             textAlign: 'center'
         },
         {
-            text: 'TECU_T temperature duration',
-            subtext:
-                'Total (minutes)' + totalMinutes,
-            left: '75%',
-            textAlign: 'center'
+            text: 'ECU Ambient temperature duration',
+            subtext: 'Total (minutes) ' + total_minutes_tc1th9,
+            right: '2%',
+            textAlign: 'left'
         }
     ],
     grid: [
         {
-            top: 50,
+            top: '15%',
             width: '40%',
             height: '60%',
-            bottom: '45%',
-            left: 10,
-            containLabel: true
-        },
-        {
-            top: 50,
-            width: '50%',
-            height: '60%',
-            bottom: 0,
-            left: 10,
+            left: '1%',
             containLabel: true
         }
     ],
     xAxis: [
         {
             type: 'value',
-            max: totalMinutes,
+            max: totalMinutes_tecut,
             splitLine: {
                 show: false
             }
@@ -93,7 +48,7 @@ option = {
     yAxis: [
         {
             type: 'category',
-            data: Object.keys(convertedData),
+            data: Object.keys(timeDiffs_tecut),
             axisLabel: {
                 interval: 0,
                 rotate: 30
@@ -103,16 +58,6 @@ option = {
             }
         }
     ],
-    // visualMap: {
-    //     show: true,
-    //     top: 50,
-    //     right: 10,
-    //     min: minIdx, // 最小idx
-    //     max: maxIdx, // 最大idx
-    //     inRange: {
-    //         color: t_colors // 蓝色到红色渐变
-    //     }
-    // },
     series: [
         {
             type: 'bar',
@@ -122,28 +67,51 @@ option = {
                 position: 'right',
                 show: true
             },
-            data: Object.keys(convertedData).map(function (key) {
-                return convertedData[key];
+            data: Object.keys(timeDiffs_tecut).map(function (key) {
+                return timeDiffs_tecut[key];
             })
         },
         {
             type: 'pie',
             radius: [0, '40%'],
-            center: ['75%', '40%'],
+            center: ['60%', '50%'],
             emphasis: {
                 focus: 'self'
             },
-            data: Object.keys(convertedData).map((key, index) => {
-                const idx = timeDiffs.find(item => Object.keys(item).includes(key)).idx;
-                console.log(idx)
+            label: {
+                formatter: '{b}: ({d}%) '
+            },
+            labelLayout:{
+                draggable:true
+            },
+            data: Object.keys(timeDiffs_tecut).map((key) => {
                 return {
                     name: key,
-                    value: convertedData[key]
+                    value: timeDiffs_tecut[key]
+                };
+            })
+        },
+        {
+            type: 'pie',
+            radius: [0, '40%'],
+            center: ['85%', '50%'],
+            emphasis: {
+                focus: 'self'
+            },
+            label: {
+                formatter: '{b}: ({d}%) '
+            },
+            labelLayout:{
+                draggable:true
+            },
+            data: Object.keys(time_diffs_tc1th9).map((key) => {
+                return {
+                    name: key,
+                    value: time_diffs_tc1th9[key]
                 };
             })
         }
     ]
 };
-if (option && typeof option === 'object') {
-    myChart.setOption(option);
-}
+
+myChart.setOption(option);

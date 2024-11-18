@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en" style="height: 100%">
+<head>
+    <meta charset="UTF-8">
+    <title>Test Report</title>
+
+    <link rel="stylesheet" type="text/css" href="/static/css/webuploader.css">
+    <link rel="stylesheet" type="text/css" href="/static/css/bootstrap.min.css">
+    <link rel="stylesheet" type="text/css" href="/static/css/style.css?v=1">
+    <link rel="stylesheet" type="text/css" href="/static/css/io_test_uploader.css">
+    <link rel="stylesheet" type="text/css" href="/static/layer/theme/default/layer.css">
+    <link rel="stylesheet" type="text/css" href="/static/layer/theme/default/layui.css">
+
+    <script type="text/javascript" src="/static/js/jquery.min.js"></script>
+    <script type="text/javascript" src="/static/layer/layer.js"></script>
+    <script type="text/javascript" src="/static/layer/layui.js"></script>
+    <script type="text/javascript" src="/static/js/webuploader.min.js"></script>
+</head>
+<body style="height: 100%;">
+<div class="container-custom">
+    <table class="custom-background">
+        <tr>
+            <td colspan="3">
+                <div class="image-container">
+                    <!--  style="width: 40%" -->
+                    <img src="{{ url_for('static', filename='images/dev_ops.png') }}" class="image" alt="dev_ops"
+                         style="float: right;"/>
+                    <!-- style="width: 34%" -->
+                    <img src="{{ url_for('static', filename='images/system_software.png') }}" class="image"
+                         alt="system_software" style="float: right;">
+                </div>
+            </td>
+        </tr>
+    </table>
+    <table class="custom-background_table02">
+        <tr>
+            <td colspan="5" style="text-align: left;">
+                <div class="inline-flex">
+                    <p class="type-label" style="margin-left: 10px;">
+                        <strong> test project:
+                            <span style="color: blue; "> {{ test_project_type_name }} </span>
+                        </strong>
+                    </p>
+                    <span>&nbsp;&nbsp;</span>
+                    <p id="select1-p" class="type-label" style="margin-right: 10px;"><span
+                            style="color: red; ">*</span><strong>test scenario:</strong>
+                    </p>
+                    <select id="select1" name="inputType" onchange="updateSelectCheck2()"
+                            style="margin-right: 10px;width: 200px;">
+                        <option value="">--Please select--</option>
+                        {% for one_dict_type in tool_dictionary_dict_list %}
+                            <option value="{{ one_dict_type.dict_value }}">{{ one_dict_type.dict_name }}</option>
+                        {% endfor %}
+                    </select>
+
+                    <select id="select2" name="inputType" style="width: 250px;" >
+                        <option value="" data-label="">--Please select--</option>
+                    </select>
+                </div>
+            </td>
+            <td colspan="5" align="right">
+                <button type="button" class="layui-btn" id="report_generation">report generation</button>
+                <button type="button" class="layui-btn layui-btn-normal" id="report_download">download the report
+                </button>
+            </td>
+        </tr>
+        <tr>
+            <td colspan="10">
+                <input type="hidden" id="test_project_type_id" value="{{ test_project_type_id }}"/>
+                <input type="hidden" id="test_project_type_name" value="{{ test_project_type_name }}"/>
+                <input type="hidden" id="test_project_type_val" value="{{ test_project_type_val }}"/>
+            </td>
+        </tr>
+    </table>
+    <div id="uploader">
+        <div class="queueList chart_container ">
+            <div id="report_pro_text" class="form-control" style="height: 350px; width:50%; overflow-y: auto;">
+                <!-- 文本将被动态添加到这里 -->
+            </div>
+            <div id="dndArea" class="placeholder" style="height: 350px; width:50%">
+                <!--<div id="filePicker"></div>-->
+                <div id="customFilePicker"
+                     style="width: 100px; height: 40px; background-color: #007bff; color: white; text-align: center; line-height: 40px; cursor: pointer;margin-left:43%;margin-top:2px;margin-bottom:2px;">
+                    选择文件
+                </div>
+                <input id="filePicker" type="file" webkitdirectory mozdirectory msdirectory odirectory directory
+                       multiple style="display:none;"/>
+                <p>或将文件拖到这里，单次最多可选50个</p>
+            </div>
+        </div>
+        <div class="statusBar" style="display:none;">
+            <div class="progress">
+                <span class="text">0%</span>
+                <span class="percentage"></span>
+            </div>
+            <div class="info"></div>
+            <div class="btns">
+                <div id="filePicker2"></div>
+                <div class="uploadBtn">&nbsp;&nbsp;Start uploading&nbsp;&nbsp;</div>
+            </div>
+        </div>
+    </div>
+</div>
+</body>
+<script>
+    var uploadedFileName = [];
+</script>
+<script type="text/javascript" src="/static/js/biz/io_test_uploader.js"></script>
+<script type="text/javascript" src="/static/js/selectcheckbox.js"></script>
+<script type="text/javascript" src="/static/js/index.js"></script>
+<!--
+<script type="text/javascript" src="/static/js/echarts.min.js"></script>
+<script type="text/javascript" src="/static/js/IOTestPiechart.js?v=1"></script>
+-->
+</html>

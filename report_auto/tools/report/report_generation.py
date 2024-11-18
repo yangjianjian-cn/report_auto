@@ -117,7 +117,7 @@ def draw_img_in_boa_doc(fault_detection_df: pd.DataFrame, img_output_path: str, 
             for signal in large_y_axis_signals:
                 ax2.plot(fault_detection_df['timestamps'], fault_detection_df[signal], label=signal, linestyle='--')
             ax2.set_ylabel('Signal Values(R)', color='red')
-            ax2.set_ylim(100, max_large_value)  # 动态设置第二个Y轴的范围
+            ax2.set_ylim(100, max_large_value + 100)  # 动态设置第二个Y轴的范围
             ax2.yaxis.set_major_locator(plt.MultipleLocator(100))  # 设置第二个Y轴的刻度间隔为100
             ax2.tick_params(axis='y', labelcolor='red')
 

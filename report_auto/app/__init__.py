@@ -3,44 +3,26 @@ __coding__ = "utf-8"
 import os
 
 from dotenv import load_dotenv
-from flask import Flask
 
-from config.ChipNamesConfig import ChipNamesConfig
-from tools.utils.ConnectionUtils import ConnectionPool
+load_dotenv()
+env_input_path = os.getenv('input_path')
+env_output_path = os.getenv('output_path')
+env_template_path = os.getenv('template_path')
 
+from tools.utils.ConnectionUtils import DatabasePool
 
-def create_app():
-    main = Flask(__name__, template_folder='../templates', static_folder='../static')
-    # 加载 .env 文件
-    load_dotenv()
-    # 从环境变量中读取配置
-    main.config['input_path'] = os.getenv('input_path')
-    main.config['output_path'] = os.getenv('output_path')
-    main.config['template_path'] = os.getenv('template_path')
-    # 111.231.0.147:ba:3307:1qazxsw2:measurement:5
-    main.config['jdbc_mysql'] = os.getenv('jdbc_mysql')
-    return main
+# jdbc_mysql=10.0.4.14:ba:3306:1qazxsw2:measurement
+# jdbc_mysql=sh-cynosdbmysql-grp-rykty3lm.sql.tencentcdb.com:ba:26338:1qazxsw2:measurement
 
-
-main = create_app()
-
-# Database connection configuration
-# 111.231.0.147:ba:3307:1qazxsw2:measurement
-# mysql_config = {
-#     'host': 'sh-cynosdbmysql-grp-rykty3lm.sql.tencentcdb.com',
-#     'user': 'ba',
-#     'port': 26338,
-#     'password': '1qazxsw2',
-#     'database': 'measurement'
-# }
+# 创建全局数据库连接池实例
+jdbc_mysql: str = os.getenv('jdbc_mysql')
+jdbc_mysql_arr = jdbc_mysql.split(":")
 mysql_config = {
-    'host': '10.0.4.14',
-    'user': 'ba',
-    'port': 3306,
-    'password': '1qazxsw2',
-    'database': 'measurement'
+    'host': jdbc_mysql_arr[0],
+    'user': jdbc_mysql_arr[1],
+    'port': int(jdbc_mysql_arr[2]),
+    'password': jdbc_mysql_arr[3],
+    'database': jdbc_mysql_arr[4],
+    'charset': 'utf8mb4'
 }
-connectionPool = ConnectionPool(config=mysql_config, max_connections=30)
-connectionPool.init_pool()
-
-chipNamesConfig = ChipNamesConfig()
+db_pool = DatabasePool(max_connections=20, min_cached=6, max_cached=10, max_shared=0, **mysql_config)

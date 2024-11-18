@@ -7,7 +7,8 @@ from asammdf import MDF
 from pojo.IOTestCounter import load_from_io_json, IOTestCounter
 from pojo.MSTCounter import load_from_mst_json, MSTCounter
 from pojo.MSTReqPOJO import ReqPOJO
-from tools.common.csv_column_rename import reMstDF, retIODF
+from tools.common.csv_column_rename import reMstDF
+from tools.conversion.iotest.analogue_input import IOTestDataInDB
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 
@@ -44,10 +45,9 @@ def dat_csv_conversion(dat_file: str, req_data: ReqPOJO) -> str:
         output_file_name, csv_file = create_file_path(dat_file, "csv", req_data.csv_path, "csv")
 
         # MDF数据转换为DataFrame
-        mdf = MDF(filepath)
-
         if 'MST_Test' == req_data.test_team:
             # MST测量数据
+            mdf = MDF(filepath)
             df = mdf.to_dataframe()
 
             column_names = df.columns.tolist()
@@ -55,22 +55,39 @@ def dat_csv_conversion(dat_file: str, req_data: ReqPOJO) -> str:
             df.rename(columns=alias_column_names, inplace=True)
 
             df = reMstDF(df, output_file_name)
+            with open(csv_file, 'w', newline='') as f:
+                df.to_csv(f, index=True)
 
         elif 'IO_Test' == req_data.test_team and 'analogue_input' == req_data.test_scenario:
             # IO Test测量数据
+            mdf = MDF(filepath)
             df = mdf.to_dataframe()
 
-            column_names = df.columns.tolist()
-            alias_column_names = {item: item.split('\\')[0] for item in column_names}
+            alias_column_names = {item: item.split('\\')[0] for item in df.columns.tolist()}
             df.rename(columns=alias_column_names, inplace=True)
 
-            columns_to_include = retIODF(req_data.test_area)
-            df = df[columns_to_include]
+            ioTestDataInDB = IOTestDataInDB()
+            result_dicts: dict = ioTestDataInDB.get_io_test_data(test_area=req_data.test_area,test_scenario=req_data.test_scenario,test_area_dataLabel=req_data.test_area_dataLabel)
+            db_columns_list:list = ioTestDataInDB.csv_needed_columns(result_dicts)
+            logging.info(f"columns_to_include_list:{db_columns_list}")
+
+            file_column_list:list = df.columns.tolist()
+            logging.info(f"file_column_list:{file_column_list}")
+
+            # 将 db_columns_list 转换为小写并存储在一个集合中
+            db_columns_lower = {col.lower() for col in db_columns_list}
+            # 保留 file_column_list 中在 db_columns_list 中存在的元素，并保持原始顺序
+            columns_list = [col for col in file_column_list if col.lower() in db_columns_lower]
+            logging.info(f"columns_list:{columns_list}")
+
+            df = df[columns_list]
+
+            with open(csv_file, 'w', newline='') as f:
+                df.to_csv(f, index=True)
 
         elif "HTM" == req_data.test_team:
             pass
-        with open(csv_file, 'w', newline='') as f:
-            df.to_csv(f, index=True)
+
         return csv_file
     except FileNotFoundError:
         return f"err:File not found: {filepath}"
@@ -94,18 +111,21 @@ def counter_report(template_path: str):
 
     # mst报告统计器
     mst_file_path = os.path.join(counter_path, 'mst_report_counter.json')
-    mst_counter = load_from_mst_json(mst_file_path)
-    # 如果文件内容为空或无法解析，创建默认对象
-    if mst_counter is None:
+    if not os.path.exists(mst_file_path):
         mst_counter = MSTCounter()
-    mst_dict = mst_counter.__dict__
+        mst_dict = mst_counter.__dict__
+    else:
+        mst_counter = load_from_mst_json(mst_file_path)
+        mst_dict = mst_counter.__dict__
 
     # io报告统计器
     io_file_path = os.path.join(counter_path, 'io_report_counter.json')
-    io_counter = load_from_io_json(io_file_path)
-    # 如果文件内容为空或无法解析，创建默认对象
-    if io_counter is None:
+    if not os.path.exists(io_file_path):
         io_counter = IOTestCounter()
-    io_dict = io_counter.__dict__
+        io_dict = io_counter.__dict__
+    else:
+        io_counter = load_from_io_json(io_file_path)
+        io_dict = io_counter.__dict__
+
     merged_dict = {**mst_dict, **io_dict}
     return merged_dict

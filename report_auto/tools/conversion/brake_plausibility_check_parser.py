@@ -10,6 +10,7 @@ from constant.faultType import FAULT_TYPE_MAPPING
 from constant.replacements import main_brake_plausibility_check_replacements
 from pojo.MSTReqPOJO import ReqPOJO
 from tools.common.csv_column_rename import err_type_contains_strings, find_columns_with_dfc_err_type
+from tools.common.report_common import ret_fault_detection
 from tools.report.report_generation import replace_variables_in_doc
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
@@ -22,7 +23,7 @@ def brake_plausibility_check(req_data: ReqPOJO, brkStMn: bool, brkStRed: bool, t
     err_msg, replacements, draw_fault_detection_df = initial_state(df_selected)
     if len(err_msg) > 0:
         # 初始化失败
-        draw_graph(draw_fault_detection_df, tplt_type, req_data, replacements)
+        draw_graph(draw_fault_detection_df, req_data, replacements)
         return err_msg
 
     # 设备初始化成功，故障检测
@@ -30,21 +31,13 @@ def brake_plausibility_check(req_data: ReqPOJO, brkStMn: bool, brkStRed: bool, t
                                                                      tplt_type)
     if len(err_msg) > 0:
         # 检测出现异常
-        draw_graph(draw_fault_detection_df, tplt_type, req_data, replacements)
+        draw_graph(draw_fault_detection_df, req_data, replacements)
         return err_msg
 
     # 检测通过
-    output_path = draw_graph(draw_fault_detection_df, tplt_type, req_data, replacements)
+    output_path = draw_graph(draw_fault_detection_df, req_data, replacements)
     err_msg.append(f"succeed:{output_path}")
     return err_msg
-
-
-def ret_fault_detection(begin_time, end_time, err_msg: list, replacements: map, df: DataFrame):
-    end_time = end_time + 5 if end_time is not None else begin_time + 5
-    condition8 = df['timestamps'] >= begin_time
-    condition9 = df['timestamps'] <= end_time
-    draw_fault_detection_df = df[condition8 & condition9]
-    return err_msg, replacements, draw_fault_detection_df
 
 
 def initial_state(df_selected: DataFrame):
@@ -62,7 +55,7 @@ def initial_state(df_selected: DataFrame):
         err_msg.append('initial state Tra_numGear =0 failure ')
         end_time = begin_time + 5
         replacements = main_brake_plausibility_check_replacements(is_fail="√")
-        return ret_fault_detection(begin_time, end_time, err_msg, replacements, df_selected)
+        return ret_fault_detection(end_time, begin_time, replacements, err_msg, df_selected)
 
     # Epm_nEng
     begin_time = initial_state_df_1['timestamps'].iloc[0]
@@ -75,7 +68,7 @@ def initial_state(df_selected: DataFrame):
         end_time = begin_time + 5
         err_msg.append('initial state Epm_nEng ∈ [600,800] failure')
         replacements = main_brake_plausibility_check_replacements(is_fail="√")
-        return ret_fault_detection(begin_time, end_time, err_msg, replacements, initial_state_df_1)
+        return ret_fault_detection(end_time, begin_time, replacements, err_msg, initial_state_df_1)
     return err_msg, replacements, initial_state_df_2
 
 
@@ -91,28 +84,29 @@ def fault_detection(initial_state_df: DataFrame, brkStMn: bool, brkStRed: bool, 
     if len(fault_detection_df_4) == 0:
         err_msg.append(f'fault detection Brk_stMn={brkStMn} failure')
         replacements = main_brake_plausibility_check_replacements(brk_stmn="❌", is_fail="√")
-        return ret_fault_detection(begin_time - 2, begin_time + 5, err_msg, replacements, initial_state_df)
+        return ret_fault_detection(begin_time + 5, begin_time - 2, replacements, err_msg, initial_state_df)
 
     # 5. Brk_stRed
-    begin_time = fault_detection_df_4['timestamps'].iloc[0]
+    # begin_time = fault_detection_df_4['timestamps'].iloc[0]
     condition5_1 = fault_detection_df_4['timestamps'] >= begin_time
     condition5_2 = fault_detection_df_4['Brk_stRed'] == brkStRed
     fault_detection_df_5 = fault_detection_df_4[condition5_1 & condition5_2]
     if len(fault_detection_df_5) == 0:
         err_msg.append(f'fault detection Brk_stRed={brkStRed} failure')
         replacements = main_brake_plausibility_check_replacements(brk_stmn="❌", is_fail="√")
-        return ret_fault_detection(begin_time - 2, begin_time + 5, err_msg, replacements, fault_detection_df_4)
+        return ret_fault_detection(begin_time + 5, begin_time - 2, replacements, err_msg, fault_detection_df_4)
 
     # 6. DFC_BrkPlausChk, 故障标记了
-    begin_time = fault_detection_df_5['timestamps'].iloc[0]
+    # begin_time = fault_detection_df_5['timestamps'].iloc[0]
     signals_dfes = find_columns_with_dfc_err_type(fault_detection_df_5, FAULT_TYPE_MAPPING.get(tplt_type))
     if len(signals_dfes) == 0:
         err_msg.append(f'fault detection DFC_BrkPlausChk is setted  failure')
         replacements = main_brake_plausibility_check_replacements(brk_stmn="√", dfc_brkplauschk='❌', is_fail="√")
-        return ret_fault_detection(begin_time - 2, begin_time + 5, err_msg, replacements, fault_detection_df_5)
+        return ret_fault_detection(begin_time + 5, begin_time - 2, replacements, err_msg, fault_detection_df_5)
 
     condition6 = fault_detection_df_5[signals_dfes[0]] == FAULT_TYPE_MAPPING.get('main_brake_plausibility_check')
     fault_detection_df_6 = fault_detection_df_5[condition6]
+    # begin_time = fault_detection_df_6['timestamps'].iloc[0]
 
     # 6.1 Brk_st
     condition7 = fault_detection_df_6['Brk_st'] == 1
@@ -121,7 +115,7 @@ def fault_detection(initial_state_df: DataFrame, brkStMn: bool, brkStRed: bool, 
         err_msg.append(f'fault detection Brk_st=1 failure')
         replacements = main_brake_plausibility_check_replacements(brk_stmn="√", dfc_brkplauschk='√', brk_st='❌',
                                                                   is_fail="√")
-        return ret_fault_detection(begin_time - 2, begin_time + 5, err_msg, replacements, fault_detection_df_6)
+        return ret_fault_detection(begin_time + 5, begin_time - 2, replacements, err_msg, fault_detection_df_6)
 
     # DFC_BrkNpl*
     is_contains = err_type_contains_strings(fault_detection_df_6, 'DFC_BrkNpl')
@@ -130,16 +124,16 @@ def fault_detection(initial_state_df: DataFrame, brkStMn: bool, brkStRed: bool, 
         replacements = main_brake_plausibility_check_replacements(brk_stmn="√", dfc_brkplauschk='√', brk_st='√',
                                                                   is_dfc_brknpl='❌',
                                                                   is_fail="√")
-        return ret_fault_detection(begin_time - 2 , begin_time  + 5, err_msg, replacements, fault_detection_df_6)
+        return ret_fault_detection(begin_time + 5, begin_time - 2, replacements, err_msg, fault_detection_df_6)
 
     # Everything is OK.
     replacements = main_brake_plausibility_check_replacements(brk_stmn="√", dfc_brkplauschk='√', brk_st='√',
-                                                              is_dfc_brkplauschk='√',is_dfc_brknpl='√', is_pass='√')
+                                                              is_dfc_brkplauschk='√', is_dfc_brknpl='√', is_pass='√')
     end_time = fault_detection_df_6['timestamps'].iloc[-1]
-    return ret_fault_detection(begin_time, end_time, err_msg, replacements, fault_detection_df_6)
+    return ret_fault_detection(end_time, begin_time,replacements, err_msg,  fault_detection_df_5)
 
 
-def draw_graph(draw_fault_detection_df: DataFrame, tplt_type: str, req_data: ReqPOJO, replacements: map):
+def draw_graph(draw_fault_detection_df: DataFrame, req_data: ReqPOJO, replacements: map):
     # 特征列
     signals = ['Tra_numGear', 'Epm_nEng', 'Brk_stMn', 'Brk_stRed', 'Brk_st']
 
