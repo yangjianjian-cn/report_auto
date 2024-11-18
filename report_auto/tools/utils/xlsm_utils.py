@@ -21,6 +21,7 @@ def find_first_empty_row_after_string(filename, search_string):
         if start_row is not None:
             break
 
+    current_row = start_row
     if start_row is not None:
         print(f'"{search_string}" found at row {start_row}')
 
@@ -34,8 +35,7 @@ def find_first_empty_row_after_string(filename, search_string):
             has_content = any(cell.value is not None for cell in cells_in_row)
 
             if not has_content:
-                print(
-                    f'First completely empty row (in the first 10 columns) after "{search_string}" is row {current_row}')
+                print(f'First completely empty row (in the first 10 columns) after "{search_string}" is row {current_row}')
                 break
 
             # 移动到下一行
@@ -43,8 +43,7 @@ def find_first_empty_row_after_string(filename, search_string):
     else:
         print(f'"{search_string}" not found in the worksheet')
 
-    return start_row
-
+    return current_row
 
 # 示例调用
 # filename = r'C:\Users\Administrator\Downloads\template\IOTest_Man_Tmplt.xlsm'

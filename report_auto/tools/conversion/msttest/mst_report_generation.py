@@ -10,6 +10,7 @@ from constant.TestCaseType import TestCaseType
 from pojo.MSTReqPOJO import ReqPOJO
 from tools.conversion.brake_override_accelerator_parser import brake_override_accelerator
 from tools.conversion.main_brake_plausibility_check_parser import main_brake_plausibility_check
+from tools.conversion.mst_header_page import replace_mst_header_page_docx
 from tools.conversion.neutral_gear_sensor_plausibility_parser import neutral_gear_sensor_plausibility
 from tools.conversion.plausibility_check_of_clth_stuck_bottom_parser import plausibility_check_of_clth_stuck_bottom
 from tools.conversion.plausibility_check_of_clth_stuck_top_parser import plausibility_check_of_clth_stuck_top
@@ -58,3 +59,7 @@ def mst_report(req_data: ReqPOJO) -> str:
 
     logging.info(f"报告生成结束: {doc_output_path}")
     return doc_output_path
+
+
+def mst_header_page_docx(config_data: ReqPOJO, request_data: dict) -> str:
+    return replace_mst_header_page_docx(config_data, request_data)

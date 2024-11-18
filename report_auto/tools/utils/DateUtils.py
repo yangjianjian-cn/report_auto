@@ -21,6 +21,16 @@ def get_current_date_yyyyMMdd():
     return formatted_date
 
 
+def get_current_date():
+    # 获取当前日期
+    current_date = datetime.date.today()
+
+    # 格式化日期为 YYYYMMDD 的形式
+    formatted_date = current_date.strftime('%Y.%m.%d')
+
+    return formatted_date
+
+
 def get_current_datetime_yyyyMMddHHmmssSSS():
     # 获取当前日期和时间
     current_datetime = datetime.datetime.now()

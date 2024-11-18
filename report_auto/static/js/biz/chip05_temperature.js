@@ -74,7 +74,9 @@ chipOption05 = {
         name: 'Time',
         axisLabel: {
             formatter: '{value} s'
-        }
+        },
+        startValue: 0,
+        interval: 10
     },
     yAxis: {
         type: 'value',

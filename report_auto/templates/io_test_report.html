@@ -32,7 +32,6 @@
             </td>
         </tr>
     </table>
-
     <table class="custom-background_table02">
         <tr>
             <td colspan="5" style="text-align: left;">
@@ -47,17 +46,15 @@
                             style="color: red; ">*</span><strong>test scenario:</strong>
                     </p>
                     <select id="select1" name="inputType" onchange="updateSelectCheck2()"
-                            style="margin-right: 10px;width: 100px;">
+                            style="margin-right: 10px;width: 200px;">
                         <option value="">--Please select--</option>
-                        <option value="analogue_input">AnalogueInput</option>
-                        <option value="digital_input">DigitalInput</option>
-                        <option value="pwm_input">PWM_input</option>
-                        <option value="digital_output">DigitalOutput</option>
-                        <option value="pwm_output">PWM_output</option>
+                        {% for one_dict_type in tool_dictionary_dict_list %}
+                            <option value="{{ one_dict_type.dict_value }}">{{ one_dict_type.dict_name }}</option>
+                        {% endfor %}
                     </select>
 
-                    <select id="select2" name="inputType" style="width: 100px;">
-                        <option value="">--Please select--</option>
+                    <select id="select2" name="inputType" style="width: 250px;" >
+                        <option value="" data-label="">--Please select--</option>
                     </select>
                 </div>
             </td>
@@ -75,7 +72,6 @@
             </td>
         </tr>
     </table>
-
     <div id="uploader">
         <div class="queueList chart_container ">
             <div id="report_pro_text" class="form-control" style="height: 350px; width:50%; overflow-y: auto;">
@@ -104,19 +100,16 @@
             </div>
         </div>
     </div>
-
-    <div class="chart_container">
-        <div class="chart" id="chart1"></div>
-        <div class="chart" id="chart3"></div>
-    </div>
 </div>
 </body>
-<script type="text/javascript" src="/static/js/selectcheckbox.js"></script>
 <script>
     var uploadedFileName = [];
 </script>
-<script type="text/javascript" src="/static/js/biz/io_test_uploader.js?v=1"></script>
-<script type="text/javascript" src="/static/js/index.js?v=1"></script>
+<script type="text/javascript" src="/static/js/biz/io_test_uploader.js"></script>
+<script type="text/javascript" src="/static/js/selectcheckbox.js"></script>
+<script type="text/javascript" src="/static/js/index.js"></script>
+<!--
 <script type="text/javascript" src="/static/js/echarts.min.js"></script>
 <script type="text/javascript" src="/static/js/IOTestPiechart.js?v=1"></script>
+-->
 </html>

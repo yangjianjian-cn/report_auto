@@ -78,6 +78,12 @@ let option = {
             emphasis: {
                 focus: 'self'
             },
+            label: {
+                formatter: '{b}: ({d}%) '
+            },
+            labelLayout:{
+                draggable:true
+            },
             data: Object.keys(timeDiffs_tecut).map((key) => {
                 return {
                     name: key,
@@ -91,6 +97,12 @@ let option = {
             center: ['85%', '50%'],
             emphasis: {
                 focus: 'self'
+            },
+            label: {
+                formatter: '{b}: ({d}%) '
+            },
+            labelLayout:{
+                draggable:true
             },
             data: Object.keys(time_diffs_tc1th9).map((key) => {
                 return {

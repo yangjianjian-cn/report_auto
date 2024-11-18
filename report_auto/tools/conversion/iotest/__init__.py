@@ -1,13 +1,30 @@
 __coding__ = "utf-8"
+level1: set[str] = {"failed"}
+level2: set[str] = set()
+level3: set[str] = set()
+level4: set[str] = set()
 
-from pathlib import Path
+level_map: map = {
+    "level1": "passed",
+    "level2": "passed",
+    "level3": "passed",
+    "level4": "passed",
+}
 
-# 指定要遍历的目录路径
-csv_path = Path(r'C:\Users\Administrator\Downloads\output\127001\IO_Test\analogue_input\I_A_APP1\csv')
+levels = {
+    "level1": {"failed"},
+    "level2": set(),
+    "level3": set(),
+    "level4": set(),
+}
 
-# 遍历目录
-for file_path in csv_path.glob('**/*'):
-    if file_path.is_file():
-        # 打印每个文件的完整路径
-        # print(file_path)
-        pass
+for level, status_set in levels.items():
+    if "failed" in status_set:
+        level_map[level] = "failed"
+
+level_map: map = {
+    "level1": "passed",
+    "level2": "passed",
+    "level3": "passed",
+    "level4": "passed",
+}

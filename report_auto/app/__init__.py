@@ -26,7 +26,3 @@ mysql_config = {
     'charset': 'utf8mb4'
 }
 db_pool = DatabasePool(max_connections=20, min_cached=6, max_cached=10, max_shared=0, **mysql_config)
-
-# from config.ChipNamesConfig import ChipNamesConfig
-#
-# chipNamesConfig = ChipNamesConfig()

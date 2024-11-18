@@ -6,9 +6,8 @@ from pojo.MSTCounter import load_from_mst_json, MSTCounter, save_to_mst_json
 from pojo.MSTReqPOJO import ReqPOJO
 from tools.common.dat_csv_common import dat_csv_conversion
 from tools.conversion.iotest.analogue_input_parser import analogue_input
-from tools.conversion.msttest.mst_report_generation import mst_report
+from tools.conversion.msttest.mst_report_generation import mst_report, mst_header_page_docx
 from tools.utils.CustomException import CustomException
-from tools.utils.DateUtils import get_current_datetime_yyyyMMddHHmmssSSS
 from tools.utils.FileUtils import get_filename_without_extension, merge_docs
 
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
@@ -16,10 +15,14 @@ logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(name)s - %(leve
 
 def docx_merge(output_path: str, merge_path: str, file_name: str):
     # 构建完整的 ZIP 文件路径
-    merge_file_name = 'mst_auto_report_' + get_current_datetime_yyyyMMddHHmmssSSS() + '.docx'
+    merge_file_name = 'RBCD_L1_ECUMST_Test_Case_V03.docx'
     merge_docx_path = os.path.join(merge_path, merge_file_name)
 
     docx_file_paths = []
+    header_file_path: str = os.path.join(output_path, 'mst_header.docx')
+    if os.path.exists(header_file_path):
+        docx_file_paths.append(header_file_path)
+
     # 遍历目录及其子目录
     for root, dirs, files in os.walk(output_path):
         for file in files:
@@ -57,7 +60,7 @@ def dat_csv_docx(req_data: ReqPOJO):
                 # 成功转换csv
                 csvPathList.append(receive_msg)
                 logging.info(f"转换完成:{receive_msg}")
-    # 2.生成报告
+    # 2.MST生成报告
     success_messages = []
     error_messages = []
     if 'MST_Test' == req_data.test_team:
@@ -86,20 +89,21 @@ def dat_csv_docx(req_data: ReqPOJO):
         html_error = join_with_br(error_messages)
         return html_success, html_error
 
-    # 3.IOTest 生成测试报告
-    if 'IO_Test' == req_data.test_team:
+    # 3.IOTest生成报告
+    elif 'IO_Test' == req_data.test_team:
         try:
             output_path = analogue_input(req_data)
-            success_messages.append(output_path)
-            success_messages.append("<br/>")
             updateCounter(req_data)
+            success_messages.clear()
+            success_messages.append('Successfully: %s, %s' % (req_data.test_area, req_data.test_area_dataLabel))
         except Exception as e:
-            raise CustomException(f"report generation exception:{e}")
-        return success_messages, error_messages
+            error_messages.clear()
+            success_messages.append('UnSuccessfully: {}, {}, {}'.format(req_data.test_area, req_data.test_area_dataLabel, str(e)))
+            logging.error(f"report generation exception:{str(e)}")
 
-    if 'HTM' == req_data.test_team:
-        # HTM不再这里处理
-        pass
+        html_success = join_with_br(success_messages)
+        html_error = join_with_br(error_messages)
+        return html_success, html_error
 
     return success_messages, error_messages
 
@@ -145,3 +149,12 @@ def updateCounter(req_data: ReqPOJO):
         io_counter.update_attribute(test_scenario)
 
         save_to_io_json(counter_io_file, io_counter)
+
+
+"""
+MST测试报告首页
+"""
+
+
+def mst_header_page(config_data: ReqPOJO, request_data: dict) -> str:
+    return mst_header_page_docx(config_data, request_data)

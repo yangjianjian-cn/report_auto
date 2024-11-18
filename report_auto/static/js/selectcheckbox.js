@@ -1,27 +1,37 @@
 function updateSelectCheck2() {
-    var select1 = document.getElementById("select1");
-    var select2 = document.getElementById("select2");
+    const select1 = document.getElementById("select1");
+    const select2 = document.getElementById("select2");
 
     // 清空select2
     while (select2.firstChild) {
         select2.removeChild(select2.firstChild);
     }
 
-    if (select1.value === "analogue_input") {
-        var options = ['I_A_APP1', 'I_A_APP2', 'I_A_BPS', 'I_A_BTS', 'I_A_CTS', 'I_A_OPS', 'I_A_OTS', 'I_A_RAILPS', 'I_A_RmtAPP1', 'I_A_RmtAPP2', 'I_A_TL'];
-        options.forEach(function (optionValue) {
-            var option = document.createElement("option");
-            option.value = optionValue;
-            option.textContent = optionValue;
-            select2.appendChild(option);
-        });
-    } else if (select1.value === "digital_input") {
-        var options = ['I_S_VSLIM', 'I_S_T15', 'I_S_T50', 'I_S_WFLS'];
-        options.forEach(function (optionValue) {
-            var option = document.createElement("option");
-            option.value = optionValue;
-            option.textContent = optionValue;
-            select2.appendChild(option);
-        });
-    }
+    const dict_value = select1.value;
+    const jsonData = {"dict_value": dict_value}
+    $.ajax({
+        url: '/report/2/dict_type/items',  // 替换为你的服务器端点
+        type: 'POST',
+        contentType: 'application/json',  // 设置请求头
+        data: JSON.stringify(jsonData),  // 发送的数据
+        success: function (response) {
+            // 遍历response并填充select2
+            response.forEach(item => {
+                let item_val = item.item_value;
+                let item_text = item.item_label;
+                let slt_option = document.createElement("option");
+
+                slt_option.value = item_text
+                slt_option.text = '【' + item_val + '】 ' + item_text
+                slt_option.setAttribute("data-label", item_val)
+                select2.appendChild(slt_option);
+            });
+        },
+        error: function (error) {
+            layer.alert('Query failed! error message:' + JSON.stringify(error.error), {
+                icon: 5,
+                title: 'Query results'
+            });
+        }
+    });
 }

@@ -108,8 +108,6 @@ def fault_detection(initial_state_df: DataFrame):
     if len(fault_detection_df_6) == 0:
         err_msg.append('Fault detection:Brk_stMn=True failed')
         replacements = brake_override_accelerator_replacements(isfail='√')
-        return ret_fault_detection(end_time, begin_time, replacements, err_msg, fault_detection_df_6)
-
         return r_fault_detection(begin_time + 5, begin_time, initial_state_df, err_msg, replacements)
 
     # Brk_stRed
@@ -177,7 +175,7 @@ def fault_detection(initial_state_df: DataFrame):
     return r_fault_detection(end_time, begin_time - 5 , fault_detection_df_8, err_msg, replacements)
 
 
-def draw_img(draw_fault_detection_df: DataFrame, req_data: ReqPOJO, replacements: map):
+def draw_img(draw_fault_detection_df: DataFrame, req_data: ReqPOJO, replacements: dict):
     signals = ['Brk_st', 'APP_bPlaBrk', 'APP_rUnFlt', 'APP_r','VehV_v','Epm_nEng','CEngDsT_t','Tra_numGear']
     output_name = Path(req_data.csv_path).stem
     req_data.doc_output_name = output_name

@@ -42,7 +42,6 @@ def monitor_pool_status(interval=10):
 def temperature_idx():
     return render_template('temperature.html')
 
-
 '''
 测量文件列表
 '''

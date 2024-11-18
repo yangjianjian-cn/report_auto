@@ -140,8 +140,6 @@ def batch_insert_data(table_name: str, params: Dict, df: pd.DataFrame, batch_siz
         insert_query = f"""
             INSERT INTO {table_name} ({insert_clauses})
             VALUES ({insert_placeholders})
-            ON DUPLICATE KEY UPDATE 
-            {update_clauses}
         """
         logging.info(f'insert_query_sql: {insert_query}')
 

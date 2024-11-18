@@ -7,7 +7,7 @@ from asammdf import MDF
 from pojo.IOTestCounter import load_from_io_json, IOTestCounter
 from pojo.MSTCounter import load_from_mst_json, MSTCounter
 from pojo.MSTReqPOJO import ReqPOJO
-from tools.common.csv_column_rename import reMstDF, retIODF
+from tools.common.csv_column_rename import reMstDF
 from tools.conversion.iotest.analogue_input import IOTestDataInDB
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
@@ -63,17 +63,24 @@ def dat_csv_conversion(dat_file: str, req_data: ReqPOJO) -> str:
             mdf = MDF(filepath)
             df = mdf.to_dataframe()
 
-            column_names = df.columns.tolist()
-            logging.info(f"column_names:{column_names}")
-
-            alias_column_names = {item: item.split('\\')[0] for item in column_names}
+            alias_column_names = {item: item.split('\\')[0] for item in df.columns.tolist()}
             df.rename(columns=alias_column_names, inplace=True)
-            logging.info(f"alias_column_names:{alias_column_names}")
 
             ioTestDataInDB = IOTestDataInDB()
-            result_dicts: dict = ioTestDataInDB.get_io_test_data()
-            columns_to_include = ioTestDataInDB.csv_needed_columns(result_dicts)
-            df = df[columns_to_include]
+            result_dicts: dict = ioTestDataInDB.get_io_test_data(test_area=req_data.test_area,test_scenario=req_data.test_scenario,test_area_dataLabel=req_data.test_area_dataLabel)
+            db_columns_list:list = ioTestDataInDB.csv_needed_columns(result_dicts)
+            logging.info(f"columns_to_include_list:{db_columns_list}")
+
+            file_column_list:list = df.columns.tolist()
+            logging.info(f"file_column_list:{file_column_list}")
+
+            # 将 db_columns_list 转换为小写并存储在一个集合中
+            db_columns_lower = {col.lower() for col in db_columns_list}
+            # 保留 file_column_list 中在 db_columns_list 中存在的元素，并保持原始顺序
+            columns_list = [col for col in file_column_list if col.lower() in db_columns_lower]
+            logging.info(f"columns_list:{columns_list}")
+
+            df = df[columns_list]
 
             with open(csv_file, 'w', newline='') as f:
                 df.to_csv(f, index=True)

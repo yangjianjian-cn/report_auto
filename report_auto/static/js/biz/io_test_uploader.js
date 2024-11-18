@@ -1,5 +1,4 @@
 (function ($) {
-    // 当domReady的时候开始初始化
     $(function () {
         var $wrap = $('#uploader'),
 
@@ -141,8 +140,8 @@
 
             // 禁掉全局的拖拽功能。这样不会出现图片拖进页面的时候，把图片打开。
             disableGlobalDnd: true,
-            fileNumLimit: 50,
-            fileSizeLimit: 200 * 1024 * 1024,    // 200 M
+            fileNumLimit: 0,
+            fileSizeLimit: 0,    // 200 M = 200 * 1024 * 1024
             fileSingleSizeLimit: 50 * 1024 * 1024,    // 50 M
             directories: true
         });
@@ -167,9 +166,6 @@
             addFile(file);
             setState('ready');
             updateTotalProgress();
-
-            console.log(fileCount);
-
         };
         // 该批次全部加入Queued队列
         uploader.onFilesQueued = function (file) {
@@ -185,13 +181,14 @@
 
             removeFile(file);
             updateTotalProgress();
-
         };
 
         uploader.on('dndAccept', function (items) {
             const allowedExtensions = ['.dat'];
             const acceptedItems = [];
             const rejectedItems = [];
+
+            console.log(items)
 
             items.forEach(item => {
                 const fileName = item.name.toLowerCase();
@@ -220,7 +217,6 @@
             label: '&nbsp;&nbsp;&nbsp;&nbsp;Keep adding&nbsp;&nbsp;&nbsp;&nbsp;'
         });
 
-
         // 当有文件添加进来时执行，负责view的创建
         function addFile(file) {
             var $li = $('<li id="' + file.id + '">' +
@@ -241,14 +237,17 @@
                     switch (code) {
                         case 'exceed_size':
                             text = '文件大小超出';
+                            layer.alert(text, {icon: 3});
                             break;
 
                         case 'interrupt':
                             text = '上传暂停';
+                            layer.alert(text, {icon: 3});
                             break;
 
                         default:
                             text = '上传失败，请重试';
+                            layer.alert(text, {icon: 3});
                             break;
                     }
 
@@ -281,7 +280,6 @@
                     $li.off('mouseenter mouseleave');
                     $btns.remove();
                 }
-
                 // 成功
                 if (cur === 'error' || cur === 'invalid') {
                     showError(file.statusText);
@@ -339,25 +337,7 @@
                     });
                 } else {
                     $wrap.css('filter', 'progid:DXImageTransform.Microsoft.BasicImage(rotation=' + (~~((file.rotation / 90) % 4 + 4) % 4) + ')');
-                    // use jquery animate to rotation
-                    // $({
-                    //     rotation: rotation
-                    // }).animate({
-                    //     rotation: file.rotation
-                    // }, {
-                    //     easing: 'linear',
-                    //     step: function( now ) {
-                    //         now = now * Math.PI / 180;
-
-                    //         var cos = Math.cos( now ),
-                    //             sin = Math.sin( now );
-
-                    //         $wrap.css( 'filter', "progid:DXImageTransform.Microsoft.Matrix(M11=" + cos + ",M12=" + (-sin) + ",M21=" + sin + ",M22=" + cos + ",SizingMethod='auto expand')");
-                    //     }
-                    // });
                 }
-
-
             });
 
             $li.appendTo($queue);
@@ -395,8 +375,7 @@
             var text = '', stats;
 
             if (state === 'ready') {
-                text = '选中' + fileCount + '个文件，共' +
-                    WebUploader.formatSize(fileSize) + '。';
+                text = '选中' + fileCount + '个文件，共' + WebUploader.formatSize(fileSize) + '。';
             } else if (state === 'confirm') {
                 stats = uploader.getStats();
                 if (stats.uploadFailNum) {
@@ -459,7 +438,7 @@
                 case 'confirm':
                     $progress.hide();
                     $('#filePicker2').removeClass('element-invisible');
-                    $upload.text('开始上传');
+                    $upload.text('  Start uploading   ');
 
                     stats = uploader.getStats();
                     if (stats.successNum && !stats.uploadFailNum) {
@@ -469,8 +448,6 @@
                     break;
                 case 'finish':
                     stats = uploader.getStats();
-                    console.log(state);
-                    console.log(stats);
                     if (stats.successNum) {
                         //alert('上传成功');
                     } else {
@@ -491,11 +468,14 @@
         uploader.onUploadBeforeSend = function (object, data, headers) {
             let test_team = $('#test_project_type_val').val();
             let test_scenario = $('#select1').val();
+
             let test_area = $('#select2').val();
+            let selecteDataLabel = $('#select2').find('option:selected').attr('data-label');
 
             data.test_team = test_team;
             data.test_scenario = test_scenario;
             data.test_area = test_area;
+            data.test_area_dataLabel = selecteDataLabel;
         };
         // 文件上传中
         uploader.onUploadProgress = function (file, percentage) {
@@ -512,7 +492,6 @@
         };
 
         uploader.on('all', function (type) {
-            console.log(type)
             switch (type) {
                 case 'uploadFinished':
                     // 所有文件上传完成
@@ -536,8 +515,19 @@
         });
 
         uploader.onError = function (code) {
-            // alert('Eroor: ' + code);
-            console.log('Error: ' + code)
+            let text = code;
+            switch (code) {
+                case "F_DUPLICATE":
+                    text = "重复上传"
+                    layer.alert(text, {icon: 0});
+                    break;
+                case "Q_EXCEED_NUM_LIMIT":
+                    text = "超过允许上传的文件个数"
+                    layer.alert(text, {icon: 0});
+                    break;
+                default:
+                    console.log('Error: ' + text)
+            }
         };
 
         $upload.on('click', function () {
@@ -558,11 +548,27 @@
         });
 
         $info.on('click', '.ignore', function () {
-            alert('todo');
+            console.log('todo');
         });
 
         $upload.addClass('state-' + state);
         updateTotalProgress();
+
+        $('#select2').on('change', function () {
+            fileCount = 0;
+            fileSize = 0;
+            $queue.hide();
+            $placeHolder.removeClass('element-invisible');
+            $statusBar.addClass('element-invisible');
+
+            if (!fileCount) {
+                setState('pedding');
+            }
+            updateTotalProgress();
+
+            const $filelist = $('.filelist');
+            $filelist.empty();
+        });
     });
 
 })(jQuery);
