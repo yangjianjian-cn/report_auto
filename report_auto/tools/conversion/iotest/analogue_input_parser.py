@@ -9,7 +9,8 @@ from tools.conversion.iotest.analogue_input import IOTestDataInDB
 from tools.conversion.iotest.analysis_tocsv import write_analysis_tocsv
 from tools.conversion.iotest.levels_analysis import simple_electrical_test, high_error_debouncing_error_healing, \
     low_error_debouncing_error_healing, low_substitute_value_reaction_test, high_substitute_value_reaction_test, \
-    high_error_detection, low_error_detection
+    high_error_detection, low_error_detection, digital_simple_electrical_test, pwm_simple_electrical_test, \
+    digital_output_simple_electrical_test, digital_output_error_detection, digital_output_debouncing_error_healing
 from tools.utils.xlsm_utils import find_first_empty_row_after_string
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
@@ -21,7 +22,7 @@ outputPath：/outputpath/测试团队/测试区域
 
 
 def analogue_input(req_data: ReqPOJO) -> str:
-    logging.info("report generation: tools.conversion.iotest.analogue_input_parser.analogue_input")
+    logging.info(">>>>>>>>>>report generation: tools.conversion.iotest.analogue_input_parser.analogue_input")
 
     csv_path = req_data.csv_path
     output_path = req_data.output_path
@@ -107,9 +108,27 @@ def analogue_input(req_data: ReqPOJO) -> str:
                 level4.add(high_level4)
                 level4.add(low_level4)
         elif "digital_input" == req_data.test_scenario:
-            pass
+            level1_str: str = digital_simple_electrical_test(file_path, result_dicts)
+            level1.add(level1_str)
         elif "PWM_input" == req_data.test_scenario:
-            pass
+            level1_str: set = pwm_simple_electrical_test(file_path, result_dicts)
+            # duty_cycle_list: list = pwm_input_png_fetch_dutyCycle(req_data.dat_path)
+            level1.add(level1_str)
+        elif "digital_output" == req_data.test_scenario:
+            if "level1" in file_name:
+                level1_str: str = digital_output_simple_electrical_test(file_path, result_dicts)
+                level1.add(level1_str)
+                logging.info(f"level1:{level1}")
+
+            elif "level2_high" in file_name:
+                high_level2_str: str = digital_output_error_detection(file_path, result_dicts)
+                level2.add(high_level2_str)
+                logging.info(f"level2_high:{high_level2_str}")
+
+            elif "level3_high" in file_name:
+                high_deb_level3, high_ok_level3 = digital_output_debouncing_error_healing(file_path, result_dicts)
+                logging.info(f"level3_high:{high_deb_level3},{high_ok_level3}")
+
     # 3.输出文件
     output_file = os.path.join(output_path, "xlsm", "IOTest_Main_Tmplt.xlsm")
     logging.info(f"输出文件:{output_file}")

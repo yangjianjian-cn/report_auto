@@ -10,17 +10,17 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(level
 
 def check_row(row, result_dicts, is_high):
     measurements_1 = result_dicts[0].get("measurements_1")
-    logging.info("实时电压:%s",measurements_1)
+    logging.info("实时电压:%s", measurements_1)
 
     preparation_2_str = result_dicts[0].get("preparation_2")
     preparation_2_list = preparation_2_str.splitlines()
     preparation_2_value = preparation_2_list[0 if is_high else 1]
-    logging.info("电压阈值:%s",preparation_2_value)
+    logging.info("电压阈值:%s", preparation_2_value)
 
     measurements_2_str = result_dicts[0].get("measurements_2")
     measurements_2_list = measurements_2_str.splitlines()
     measurements_2_value = measurements_2_list[0 if is_high else 1]
-    logging.info("观测状态:%s",measurements_2_value)
+    logging.info("观测状态:%s", measurements_2_value)
 
     comparison = (row[measurements_1] > row[preparation_2_value]) if is_high else (
             row[measurements_1] < row[preparation_2_value])
@@ -29,6 +29,75 @@ def check_row(row, result_dicts, is_high):
         return 'passed' if getBit4(row[measurements_2_value]) == '1' else 'failed'
     else:
         return 'not applicable'  # 当条件不满足时，返回一个特定的消息或值
+
+
+# 数字输出-level1
+def digital_output_simple_electrical_test(csv_file: str, result_dicts: List[dict]) -> str:
+    # 1.数据采集
+    df_selected = pd.read_csv(csv_file, encoding='utf8')
+
+    # 2.数据清洗
+    # 填充 NaN 值为 0
+    uRaw = result_dicts[0].get("measurements_1")
+    logging.info(f"实时电压:{uRaw}")
+
+    df_selected[uRaw] = df_selected[uRaw].fillna(0)
+    result_set = set(df_selected[uRaw])
+    if result_set == {0, 1}:
+        level1 = 'passed'
+    else:
+        level1 = 'failed'
+    return level1
+
+
+# 数字输出-level2
+def digital_output_error_detection(csv_file: str, result_dicts: List[dict]) -> str:
+    pass
+
+
+# 数字输出-level3
+def digital_output_debouncing_error_healing(csv_file: str, result_dicts: List[dict]) -> str:
+    pass
+
+
+# pwm输入-level1
+def pwm_simple_electrical_test(csv_file: str, result_dicts: List[dict]) -> str:
+    # 1.数据采集
+    df_selected = pd.read_csv(csv_file, encoding='utf8')
+
+    # 2.数据清洗
+    # 填充 NaN 值为 0
+    uRaw = result_dicts[0].get("measurements_1")
+    logging.info(f"实时电压:{uRaw}")
+
+    # 四舍五入到最近的整数
+    rounded_values = set(df_selected[uRaw].round().astype(int))
+    if len(rounded_values) > 0:
+        level1 = 'passed'
+    else:
+        level1 = 'failed'
+    return level1
+
+
+# 数字输入-level1
+def digital_simple_electrical_test(csv_file: str, result_dicts: List[dict]) -> str:
+    # 1.数据采集
+    df_selected = pd.read_csv(csv_file, encoding='utf8')
+
+    # 2.数据清洗
+    # 填充 NaN 值为 0
+    uRaw = result_dicts[0].get("measurements_1")
+    logging.info(f"实时电压:{uRaw}")
+
+    df_selected[uRaw] = df_selected[uRaw].fillna(0)
+    result_set = set(df_selected[uRaw])
+    element_count = len(result_set)
+
+    if element_count > 0:
+        level1 = 'passed'
+    else:
+        level1 = 'failed'
+    return level1
 
 
 # level1测试
