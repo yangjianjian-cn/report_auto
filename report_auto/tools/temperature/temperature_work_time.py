@@ -18,7 +18,7 @@ from collections import defaultdict
 from concurrent.futures import ThreadPoolExecutor
 
 
-def process_file(file_ids: list, measurement_source: str, all_special_columns_str: str):
+def process_file(file_ids: list, measurement_source: str, grouped_special_columns: dict):
     # 构建参数列表
     placeholders = ",".join(map(str, file_ids))
     try:
@@ -27,7 +27,9 @@ def process_file(file_ids: list, measurement_source: str, all_special_columns_st
         cur_time_diffs_tc1th9 = defaultdict(float)
 
         logging.info(f"file_id:{placeholders}")
-        if 'TECU_t' in all_special_columns_str:
+
+        # ECU TECU_t  temperature duration
+        if 'TECU_t' in grouped_special_columns:
             query_sql = f"""
                   SELECT TECU_group AS TECU_T, ROUND( (MAX(timestamps) - MIN(timestamps)) /60,2)  AS timestamps
                     FROM
@@ -42,28 +44,37 @@ def process_file(file_ids: list, measurement_source: str, all_special_columns_st
             results_df: DataFrame = query_table_by_sql(db_pool, query_sql=query_sql)
             results_df = results_df.dropna(axis=1, how='all')  # 剔除所有值都为 None 的列
             logging.info(f"TECU_T:{len(results_df)}")
+
             if 'TECU_T' in results_df.columns:
                 cur_time_diffs_tecut = results_df.set_index('TECU_T')['timestamps'].to_dict()
                 logging.info(f"TECU_t温度时长:{cur_time_diffs_tecut}")
 
-        if 'TC1_Th9' in all_special_columns_str and 'NG_FILES' == measurement_source:
-            query_sql = f"""
-                SELECT TC1_Th9_group AS TC1_Th9, ROUND( (MAX(timestamps) - MIN(timestamps)) /60,2)  AS timestamps
-                FROM
-                    ( SELECT
-                        CONCAT(FLOOR((TC1_Th9 + 40) / 5) * 5 - 40, '-', FLOOR((TC1_Th9 + 40) / 5) * 5 - 35) AS TC1_Th9_group,timestamps
-                        FROM chip_temperature
-                        WHERE file_id = {placeholders} 
-                    )TMP
-                GROUP BY TC1_Th9_group
-                ORDER BY TC1_Th9
-            """
-            results_df: DataFrame = query_table_by_sql(db_pool, query_sql=query_sql)
-            results_df = results_df.dropna(axis=1, how='all')  # 剔除所有值都为 None 的列
-            logging.info(f"TECU_T:{len(results_df)}")
-            if 'TC1_Th9' in results_df.columns:
-                cur_time_diffs_tc1th9 = results_df.set_index('TC1_Th9')['timestamps'].to_dict()
-                logging.info(f"TC1_Th9温度时长:{cur_time_diffs_tc1th9}")
+        # ECU Ambient temperature (X3)
+        if "X3" in grouped_special_columns:
+            X3_list: list = grouped_special_columns["X3"]
+            for x3 in X3_list:
+                query_sql = f"""
+                        SELECT X3_group AS X3, ROUND( (MAX(timestamps) - MIN(timestamps)) / 60, 2) AS timestamps
+                        FROM
+                            ( SELECT
+                                CONCAT(FLOOR(({x3} + 40) / 5) * 5 - 40, '-', FLOOR(({x3} + 40) / 5) * 5 - 35) AS X3_group, timestamps
+                                FROM chip_temperature
+                                WHERE file_id = {placeholders}
+                            ) TMP
+                        GROUP BY X3
+                        ORDER BY X3
+                    """
+
+                results_df: DataFrame = query_table_by_sql(db_pool, query_sql=query_sql)
+                results_df = results_df.dropna(axis=1, how='all')  # 剔除所有值都为 None 的列
+                if 'X3' in results_df.columns:
+                    cur_time_diffs_tc1th9_1 = results_df.set_index('X3')['timestamps'].to_dict()
+                    # 手动合并并累加重复键的值
+                    for key, value in cur_time_diffs_tc1th9_1.items():
+                        cur_time_diffs_tc1th9[key] += value
+                    logging.info(f"X3温度时长:{cur_time_diffs_tc1th9}")
+
+        # ECU Internal Ambient temperature(X2)
 
     except Exception as e:
         logging.error(f"An error occurred: {e}")
@@ -74,11 +85,11 @@ def process_file(file_ids: list, measurement_source: str, all_special_columns_st
 
 
 def temperature_duration(file_ids_int: list = None, max_workers=None, measurement_source=None,
-                         all_special_columns_str=None):
+                         grouped_special_columns: dict = None):
     # 使用 ThreadPoolExecutor 并行处理每个文件
     with ThreadPoolExecutor(max_workers=max_workers) as executor:
         results = list(
-            executor.map(lambda fids: process_file([fids], measurement_source, all_special_columns_str), file_ids_int))
+            executor.map(lambda fids: process_file([fids], measurement_source, grouped_special_columns), file_ids_int))
     # 合并所有文件的结果
     combined_time_diffs_tecut = defaultdict(float)
     combined_time_diffs_tc1th9 = defaultdict(float)
@@ -110,15 +121,16 @@ def modify_records(records):
     return modified_records
 
 
-def temperature_chip(selected_columns: list, file_ids_int: list, measurement_source: str, kv_chip_dict: dict):
+def temperature_chip(selected_columns: list, file_ids_int: list, measurement_source: str, kv_chip_dict: dict) -> Dict[str, List]:
     file_ids_str_for_query = ', '.join(map(str, file_ids_int))
-
-    result_dicts = query_table_sampling(db_pool, columns=selected_columns,
+    selected_columns_str = ', '.join(map(str, selected_columns))
+    result_dicts = query_table_sampling(db_pool, columns=selected_columns_str,
                                         file_ids_str_for_query=file_ids_str_for_query,
                                         measurement_source=measurement_source)
     if result_dicts is None or len(result_dicts) < 1:
         # 返回一个空的 temperature_time 字典
-        return {col: [] for col in selected_columns}
+        new_temperature_time = {col: [] for col in selected_columns}
+        return new_temperature_time
 
     result_dicts = modify_records(result_dicts)
 
@@ -161,7 +173,7 @@ def create_data_structure(temperature_time_dc: DataFrame, sensors_list: list, me
                           num_processes=None):
     tecu_temperatures = temperature_time_dc.get('TECU_t', [])
     if 'NG_FILES' == measurement_source:
-        tecu_temperatures = temperature_time_dc.get('ECU_25(X3)', [])
+        tecu_temperatures = temperature_time_dc.get('X3', [])
 
     with multiprocessing.Pool(processes=num_processes) as pool:
         results = pool.starmap(process_sensor,
@@ -187,7 +199,7 @@ def relative_difference(selected_ids: list[int], measurement_source: str) -> lis
     logging.debug(f"result_map:{result_map}")
 
     # 芯片字典
-    chip_dict_list = chip_dict(measurement_source=measurement_source)
+    chip_dict_list = chip_dict_1(selected_ids=selected_ids)
     for chip in chip_dict_list:
         measured_variable = chip['measured_variable']
         if measured_variable in result_map:
@@ -200,14 +212,37 @@ def relative_difference(selected_ids: list[int], measurement_source: str) -> lis
     return chip_dict_list
 
 
-def chip_dict(measurement_source: str) -> dict:
+def chip_dict_1(selected_ids: list[int]) -> dict:
+    logging.info("获取芯片字典列表:")
+
+    # 构建SQL查询语句
+    # 使用参数化查询防止SQL注入
+    placeholders = ', '.join(['%s'] * len(selected_ids))  # 根据selected_ids的数量生成占位符
+    query_sql = f"""
+        SELECT distinct measured_variable, chip_name, max_allowed_value 
+        FROM chip_dict 
+        WHERE measured_file_name IN ({placeholders})
+    """
+
+    # 参数列表
+    params = tuple(selected_ids)
+
+    # 调用query_table函数执行查询
+    result_dicts = query_table(db_pool, query=query_sql, params=params)
+    logging.info(f"result_dicts:{result_dicts}")
+    return result_dicts
+
+
+def chip_dict(measurement_source: str, measured_file_name: str) -> dict:
     logging.info("获取芯片字典列表:")
     # 使用参数化查询防止SQL注入
     query_sql = """
         SELECT measured_variable, chip_name, max_allowed_value 
         FROM chip_dict 
-        WHERE status = %s AND source = %s
+        WHERE status = %s AND source = %s 
     """
+    if measured_file_name:
+        query_sql = query_sql + " AND measured_file_name=%s "
     # 构建参数列表
     params = ('1', measurement_source)
 
@@ -223,7 +258,7 @@ def max_query(selected_ids: list) -> DataFrame:
     column_list: list = results_df['Field'].tolist()
 
     # 去掉指定的列
-    filtered_column_list = list(filter(lambda x: x not in ['id', 'file_id', 'source'], column_list))
+    filtered_column_list = list(filter(lambda x: x not in ['id', 'file_id', 'source', 'timestamps'], column_list))
     logging.info(f"filtered_column_list:{filtered_column_list}")
 
     # 动态生成 SQL 查询

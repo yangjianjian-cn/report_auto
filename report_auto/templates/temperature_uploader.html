@@ -134,16 +134,6 @@
         <div id="measurement_file_db_container">
             <button type="button" class="layui-btn" id="startUpload">Start uploading</button>
         </div>
-
-        <!--
-        <div class="sourceTable">
-            Data Source：
-            <div class="layui-inline">
-                <input class="layui-input" name="source" id="sourceReload" autocomplete="off">
-            </div>
-            <button class="layui-btn" data-type="reload">搜索</button>
-        </div>
-        -->
         <table class="layui-hide" id="measurement_file_db" lay-filter="measurement_file_db"></table>
     </div>
 </div>
@@ -181,22 +171,50 @@
                 dataName: 'data'
             },
             cols: [[
-                {field: 'id', width: 200, title: 'File Number', sort: true},
-                {field: 'file_name', width: 300, title: 'File Name', sort: true},
-                {field: 'source', width: 200, title: 'Data source', sort: true},
+                {field: 'id', width: 150, title: 'File Number', sort: true},
+                {
+                    field: 'file_name',
+                    width: 300,
+                    title: 'File Name',
+                    sort: true,
+                    event: 'set_emaphore_componentName',
+                    style: 'cursor: pointer;color:blue'
+                },
+                {field: 'source', width: 150, title: 'Data source', sort: true},
                 {field: 'create_time', width: 200, title: 'Create Time', sort: true},
                 {fixed: 'right', width: 150, title: 'Operation', toolbar: '#deleteFromDB'}
             ]],
             id: "measurement_file_table_id"
         });
 
-        // 工具栏事件监听
+        // 事件监听
         table.on('tool(measurement_file_db)', function (obj) {
             const data = obj.data;
             const layEvent = obj.event;
 
             if (layEvent === 'delete') {
                 handleDelete(data.id, obj);
+            }
+
+            if (layEvent === 'set_emaphore_componentName') {
+                const j_measurement_file_name = data.file_name
+                const j_measurement_file_id = data.id
+                layer.open({
+                    type: 2,
+                    title: 'semaphore and name mapping (' + j_measurement_file_name + ')',
+                    shadeClose: false,
+                    shade: 0,
+                    anim: 5,
+                    maxmin: true, //开启最大化最小化按钮
+                    area: ['893px', '600px'],
+                    content: '/temperature/configuration?file_id=' + j_measurement_file_id,
+                    success: function (layero, index) {
+
+                    },
+                    end: function () {
+
+                    }
+                });
             }
         });
 
@@ -226,22 +244,6 @@
                     });
             });
         }
-
-        // 搜索功能
-        const active = {
-            reload: function () {
-                const sourceReload = $('#sourceReload');
-                table.reload('measurement_file_table_id', {
-                    page: {curr: 1},
-                    where: {key: {source: sourceReload.val()}}
-                });
-            }
-        };
-
-        $('.sourceTable .layui-btn').on('click', function () {
-            const type = $(this).data('type');
-            active[type] && active[type].call(this);
-        });
     });
 </script>
 <script type="text/javascript">
