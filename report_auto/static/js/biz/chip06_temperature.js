@@ -12,7 +12,6 @@ Object.keys(temperatureTime6).forEach(key => {
         series6.push({
             name: key,
             type: 'line',
-            stack: 'Total',
             data: temperatureTime6[key]
         });
     }
