@@ -17,14 +17,9 @@ let option = {
         {
             text: 'ECU TECU_t  temperature duration',
             subtext: 'Total (minutes) ' + totalMinutes_tecut,
-            left: '20%',
-            textAlign: 'center'
-        },
-        {
-            text: 'ECU Ambient temperature duration',
-            subtext: 'Total (minutes) ' + total_minutes_tc1th9,
-            right: '2%',
-            textAlign: 'left'
+            left: '50%',
+            textAlign: 'center',
+            align: 'center'
         }
     ],
     grid: [
@@ -74,40 +69,21 @@ let option = {
         {
             type: 'pie',
             radius: [0, '40%'],
-            center: ['60%', '50%'],
+            center: ['75%', '50%'],
             emphasis: {
                 focus: 'self'
             },
+            selectedMode: 'single',
             label: {
                 formatter: '{b}: ({d}%) '
             },
-            labelLayout:{
-                draggable:true
+            labelLayout: {
+                draggable: true
             },
             data: Object.keys(timeDiffs_tecut).map((key) => {
                 return {
                     name: key,
                     value: timeDiffs_tecut[key]
-                };
-            })
-        },
-        {
-            type: 'pie',
-            radius: [0, '40%'],
-            center: ['85%', '50%'],
-            emphasis: {
-                focus: 'self'
-            },
-            label: {
-                formatter: '{b}: ({d}%) '
-            },
-            labelLayout:{
-                draggable:true
-            },
-            data: Object.keys(time_diffs_tc1th9).map((key) => {
-                return {
-                    name: key,
-                    value: time_diffs_tc1th9[key]
                 };
             })
         }

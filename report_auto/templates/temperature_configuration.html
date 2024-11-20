@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>semaphore and name configuration</title>
+    <meta charset="utf-8">
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <meta name="renderer" content="webkit">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="format-detection" content="telephone=no">
+
+    <link rel="stylesheet" type="text/css" href="/static/layer/theme/default/layui.css">
+    <script type="text/javascript" src="/static/js/jquery.min.js"></script>
+    <script type="text/javascript" src="/static/layer/layui.js"></script>
+
+</head>
+<body>
+<input id="j_measurement_file_id" type="hidden" value="{{ measurement_file_id }}"/>
+<table id="temperature_configuration" lay-filter="temperature_configuration"></table>
+<script>
+    layui.use(['table', 'util'], function () {
+        const table = layui.table;
+        const util = layui.util;
+        const measurement_file_id = $("#j_measurement_file_id").val();
+
+        table.render({
+            elem: '#temperature_configuration',
+            url: '/temperature/configuration_data',
+            editTrigger: 'dblclick',
+            cellMinWidth: 20, //全局定义常规单元格的最小宽度，layui 2.2.1 新增
+            page: false,
+            where: {
+                measurement_file_name: measurement_file_id
+            },
+            response: {
+                statusName: 'code',
+                statusCode: 200,
+                msgName: 'msg',
+                dataName: 'data'
+            },
+            cols: [[
+                {type: 'checkbox'},
+                {field: 'id', title: 'id', sort: true},
+                {field: 'chip_name', title: 'Electronic component name', edit: 'text', minWidth: 150},
+                {field: 'measured_variable', title: 'measured variable', sort: true, edit: 'text'},
+                {field: 'max_allowed_value', title: 'max_allowed_value', edit: 'text'},
+            ]]
+        })
+
+        // 单元格编辑后的事件
+        table.on('edit(temperature_configuration)', function (obj) {
+            var value = obj.value //得到修改后的值
+                , data = obj.data //得到所在行所有键值
+                , field = obj.field; //得到字段
+            layer.msg('[ID: ' + data.id + '] ' + field + ' 字段更改值为：' + util.escape(value));
+        });
+    });
+</script>
+
+</body>
+</html>

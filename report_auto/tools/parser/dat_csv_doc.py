@@ -52,6 +52,7 @@ def dat_csv_docx(req_data: ReqPOJO):
     for file in all_files:
         # dat、mf4 转 csv
         if file.endswith(".dat") and file in u_files:
+            # dat文件转csv
             receive_msg = dat_csv_conversion(file, req_data)
             if receive_msg.startswith("err:"):
                 # 转换异常
@@ -98,7 +99,8 @@ def dat_csv_docx(req_data: ReqPOJO):
             success_messages.append('Successfully: %s, %s' % (req_data.test_area, req_data.test_area_dataLabel))
         except Exception as e:
             error_messages.clear()
-            success_messages.append('UnSuccessfully: {}, {}, {}'.format(req_data.test_area, req_data.test_area_dataLabel, str(e)))
+            success_messages.append(
+                'UnSuccessfully: {}, {}, {}'.format(req_data.test_area, req_data.test_area_dataLabel, str(e)))
             logging.error(f"report generation exception:{str(e)}")
 
         html_success = join_with_br(success_messages)

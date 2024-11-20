@@ -1,9 +1,9 @@
-let myChart10 = echarts.init(document.getElementById('chip_temperature10'), null, {
+let myChart11 = echarts.init(document.getElementById('chip_temperature11'), null, {
     renderer: 'canvas',
     useDirtyRect: false
 });
 
-let option10 = {
+let option11 = {
     tooltip: {},
     toolbox: {
         show: true,
@@ -15,9 +15,9 @@ let option10 = {
     },
     title: [
         {
-            text: 'ECU Ambient temperature',
+            text: 'ECU Internal Ambient temperature',
             subtext: 'Total (minutes) ' + total_minutes_tc1th9,
-            left: '2%',
+            right: '5%',
             textAlign: 'left'
         }
     ],
@@ -26,7 +26,7 @@ let option10 = {
             top: '15%',
             width: '40%',
             height: '60%',
-            left: '1%',
+            right: '1%',
             containLabel: true
         }
     ],
@@ -34,7 +34,7 @@ let option10 = {
         {
             type: 'pie',
             radius: [0, '40%'],
-            center: ['30%', '50%'],
+            center: ['52%', '50%'],
             emphasis: {
                 focus: 'self'
             },
@@ -54,4 +54,4 @@ let option10 = {
     ]
 };
 
-myChart10.setOption(option10);
+myChart11.setOption(option11);

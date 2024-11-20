@@ -58,7 +58,7 @@ def dat_csv_conversion(dat_file: str, req_data: ReqPOJO) -> str:
             with open(csv_file, 'w', newline='') as f:
                 df.to_csv(f, index=True)
 
-        elif 'IO_Test' == req_data.test_team and 'analogue_input' == req_data.test_scenario:
+        elif 'IO_Test' == req_data.test_team:
             # IO Test测量数据
             mdf = MDF(filepath)
             df = mdf.to_dataframe()

@@ -79,8 +79,15 @@
         </div>
 
         <div class="chart_container">
+            <div class="chart" id="chip_temperature10"></div>
+            <div class="chart" id="chip_temperature11"></div>
+        </div>
+
+        <div class="chart_container">
             <div class="chart" id="chip_temperature09"></div>
         </div>
+
+
     </div>
 </div>
 <div class="layui-footer footer footer-demo">
@@ -105,5 +112,7 @@
     const max_temperature = {{ max_temperature | tojson }};
     const relative_difference_temperature = {{ relative_difference_temperature | tojson }};
 </script>
-<script type="text/javascript" src="/static/js/biz/chip09_temperature.js?v=1"></script>
+<script type="text/javascript" src="/static/js/biz/chip09_temperature.js"></script>
+<script type="text/javascript" src="/static/js/biz/chip10_temperature.js"></script>
+<script type="text/javascript" src="/static/js/biz/chip11_temperature.js"></script>
 </html>

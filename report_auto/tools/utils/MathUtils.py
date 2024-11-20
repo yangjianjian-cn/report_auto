@@ -71,7 +71,7 @@ def relative_difference_chip(num1: float, num2: float) -> int:
 
     r_num = (num1 - num2) / num1
     r_num_percentage = round(r_num * 100, 2)
-    return int(r_num_percentage)
+    return abs(int(r_num_percentage))
 
 
 '''
