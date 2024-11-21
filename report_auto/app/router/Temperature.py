@@ -19,8 +19,8 @@ from app.router import temperature_bp
 from app.service.TemperatureService import temperature_configuration_datas
 from tools.temperature.temperature_work_time import relative_difference, chip_dict_1
 from tools.temperature.temperature_work_time import temperature_duration, temperature_chip, create_data_structure
-from tools.utils.DBOperator import create_table, batch_insert_data, insert_data, query_table, delete_from_tables, \
-    alter_table_add_columns, update_table
+from tools.utils.DBOperator import create_table, batch_insert_data, query_table, delete_from_tables, \
+    alter_table_add_columns, update_table, insert_data
 from tools.utils.DateUtils import getCurDateTime
 from tools.utils.FileUtils import extract_prefix
 from tools.utils.HtmlGenerator import generate_select_options
@@ -47,15 +47,21 @@ def temperature_idx():
 
 
 # ################################################################测量文件列表页#######################################
-@temperature_bp.route('/list', methods=['GET'])
-def temperature_list():
+@temperature_bp.route('/upload', methods=['GET'])
+def temperature_upload():
     try:
+        # 燃料类型
         measurement_file_source_list = get_measurement_file_source_list()
     except Exception as e:
         logging.error(f'查询异常:{e}')
         return render_template('error.html', failure_msg=f'{e}')
     return render_template('temperature_uploader.html',
                            measurement_file_source_list=measurement_file_source_list)
+
+
+@temperature_bp.route('/list', methods=['GET'])
+def temperature_list():
+    return render_template('temperature_list.html')
 
 
 @temperature_bp.route('/list/page', methods=['GET'])
@@ -183,12 +189,12 @@ def todb():
     params: dict = {"file_name": fileName, "create_time": getCurDateTime(), 'source': file_source}
 
     # 0.保存测量文件元信息
-    ret_msg, last_id = insert_data(db_pool, table_name=table_name, params=params)
-    if ret_msg != 'success':
-        return jsonify({'generate_report_failed': ret_msg})
-    logging.info(f"文件元信息索引:{last_id}")
+    # ret_msg, last_id = insert_data(db_pool, table_name=table_name, params=params)
+    # if ret_msg != 'success':
+    #     return jsonify({'generate_report_failed': ret_msg})
+    # logging.info(f"文件元信息索引:{last_id}")
 
-    # ret_msg, last_id = '',95
+    ret_msg, last_id = '', 102
     # 1.采集测量数据
     mdf = MDF(measure_file_path)
     query = "select measured_variable, chip_name from chip_dict where measured_file_name = %s "
@@ -199,7 +205,6 @@ def todb():
     logging.info(f"[信号量]已配置:{selected_columns}")
 
     channels_db_keys = mdf.channels_db.keys()
-
     logging.info(f"[信号量]待采集:{channels_db_keys}")
 
     existing_columns = list(set(col for col in selected_columns if col in channels_db_keys))
@@ -367,9 +372,10 @@ def temperature_details():
         tc1_measured_variables_list = list(set(tc1_measured_variables_list))
         logging.info(f"TC1_组件信号量:{tc1_measured_variables_list}")
 
-        temperature_time_tc1:Dict[str, List] = temperature_chip(selected_columns=tc1_measured_variables_list,
-                                                file_ids_int=selected_ids, measurement_source=measurement_source,
-                                                kv_chip_dict=kv_chip_dict)
+        temperature_time_tc1: Dict[str, List] = temperature_chip(selected_columns=tc1_measured_variables_list,
+                                                                 file_ids_int=selected_ids,
+                                                                 measurement_source=measurement_source,
+                                                                 kv_chip_dict=kv_chip_dict)
         selected_columns_tc1 = [key for key in temperature_time_tc1 if key != 'timestamps']
 
         data_structure_tc1 = create_data_structure(temperature_time_tc1, selected_columns_tc1, measurement_source,

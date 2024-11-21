@@ -35,7 +35,6 @@
         </ul>
     </div>
 </div>
-
 <div class="layui-container" style="width: 99%">
     <div class="layui-panel site-menu" style="width: 18%; display: inline-block">
         <ul class="layui-menu layui-menu-lg site-docs-menu">
@@ -45,9 +44,17 @@
                 <ul>
                     <li class="layui-menu-item-checked2">
                         <div class="layui-menu-body-title">
-                            <a href="/temperature/list">
-                                <span>测量数据</span>
+                            <a href="/temperature/upload">
+                                <span>数据采集</span>
                                 <span class="layui-font-12 layui-font-gray">Temperature Uploader</span>
+                            </a>
+                        </div>
+                    </li>
+                    <li>
+                        <div class="layui-menu-body-title">
+                            <a href="/temperature/list">
+                                <span>文件列表</span>
+                                <span class="layui-font-12 layui-font-gray">File list</span>
                             </a>
                         </div>
                     </li>
@@ -72,20 +79,103 @@
         </ul>
     </div>
     <div class="site-content" style="width: 80%; display: inline-block">
+        <button class="layui-btn">Project Data:</button>
+        <br>
+        <div class="layui-form">
+            <div class="layui-form-item">
+                <!--Fuel Type-->
+                <div class="layui-inline">
+                    <label class="layui-form-label" style="width: 150px;">Fuel Type:</label>
+                    <div class="layui-input-inline">
+                        <select name="Fuel_Type_Select" id="measurement_file_list_selected">
+                            <option value="">--Please Select--</option>
+                            {% if measurement_file_source_list is not none and measurement_file_source_list|length > 0 %}
+                                {% for source_file in measurement_file_source_list %}
+                                    <option value="{{ source_file.dict_value }}">{{ source_file.dict_name }}</option>
+                                {% endfor %}
+                            {% endif %}
+                        </select>
+                    </div>
+                </div>
+
+                <!--Project Name-->
+                <div class="layui-inline">
+                    <label class="layui-form-label" style="width: 250px;">Project Name:</label>
+                    <div class="layui-input-inline">
+                        <input type="text" name="username" lay-verify="title" autocomplete="off"
+                               placeholder="Please Input Project Name"
+                               class="layui-input"/>
+                    </div>
+                </div>
+            </div>
+            <div class="layui-form-item">
+                <!--ECU HW-->
+                <div class="layui-inline">
+                    <label class="layui-form-label" style="width: 150px;">ECU HW:</label>
+                    <div class="layui-input-inline">
+                        <input type="text" name="username" lay-verify="title" autocomplete="off"
+                               placeholder="Please Input ECU HW"
+                               class="layui-input"/>
+                    </div>
+                </div>
+
+                <!--OEM-->
+                <div class="layui-inline">
+                    <label class="layui-form-label" style="width: 250px;">OEM:</label>
+                    <div class="layui-input-inline">
+                        <input type="text" name="username" lay-verify="title" autocomplete="off"
+                               placeholder="Please Input OEM"
+                               class="layui-input"/>
+                    </div>
+                </div>
+            </div>
+
+            <div class="layui-form-item">
+                <!--Vehicle(Model,...)-->
+                <div class="layui-inline">
+
+                    <label class="layui-form-label" style="width: 150px;">Vehicle(Model,...):</label>
+                    <div class="layui-input-inline">
+                        <input type="text" name="username" lay-verify="title" autocomplete="off"
+                               placeholder="Please Input Vehicle(Model,...)"
+                               class="layui-input"/>
+                    </div>
+                </div>
+                <!--Vehicle identification number-->
+                <div class="layui-inline">
+                    <label class="layui-form-label" style="width: 250px;">Vehicle identification number:</label>
+                    <div class="layui-input-inline">
+                        <input type="text" name="username" lay-verify="title" autocomplete="off"
+                               placeholder="Please Input Vehicle identification number"
+                               class="layui-input"/>
+                    </div>
+                </div>
+            </div>
+
+            <div class="layui-form-item">
+                <!--Vehicle(Model,...)-->
+                <div class="layui-inline">
+                    <label class="layui-form-label" style="width: 150px;">SAP Number:</label>
+                    <div class="layui-input-inline">
+                        <input type="text" name="username" lay-verify="title" autocomplete="off"
+                               placeholder="Please Input SAP Number"
+                               class="layui-input"/>
+                    </div>
+                </div>
+                <!--Vehicle identification number-->
+                <div class="layui-inline">
+                    <label class="layui-form-label" style="width: 250px;">Software:</label>
+                    <div class="layui-input-inline">
+                        <input type="text" name="username" lay-verify="title" autocomplete="off"
+                               placeholder="Please Input Software"
+                               class="layui-input"/>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <div id="temperature_picker">Select file(dat、mf4)</div>
         <span style="color: #01aaed">(You can select one file at a time or multiple files at a time)</span>
-        <span>
-            <!-- Note the missing multiple attribute! -->
-            <select id="measurement_file_list_selected">
-                <option value="">All data sources</option>
-                {% if measurement_file_source_list is not none and measurement_file_source_list|length > 0 %}
-                    {% for source_file in measurement_file_source_list %}
-                        <option value="{{ source_file.dict_value }}">{{ source_file.dict_name }}</option>
-                    {% endfor %}
-                {% endif %}
-            </select>
-        </span>
-
         <div class="layui-upload-list">
             <table class="layui-table">
                 <colgroup>
@@ -131,10 +221,10 @@
                 </tbody>
             </table>
         </div>
+
         <div id="measurement_file_db_container">
             <button type="button" class="layui-btn" id="startUpload">Start uploading</button>
         </div>
-        <table class="layui-hide" id="measurement_file_db" lay-filter="measurement_file_db"></table>
     </div>
 </div>
 <div class="layui-footer footer footer-demo">
@@ -149,108 +239,11 @@
 <script type="text/html" id="deleteFromDB">
     <a class="layui-btn layui-btn-primary layui-btn-xs" lay-event="delete">DELETE</a>
 </script>
-<script>
-    layui.use(['table', 'layer'], function () {
-        const table = layui.table;
-        const layer = layui.layer;
-
-        // 表格渲染
-        table.render({
-            elem: '#measurement_file_db',
-            url: '/temperature/list/page',
-            page: true,
-            request: {
-                pageName: 'pageNum',
-                limitName: 'pageSize'
-            },
-            response: {
-                statusName: 'code',
-                statusCode: 200,
-                msgName: 'msg',
-                countName: 'total',
-                dataName: 'data'
-            },
-            cols: [[
-                {field: 'id', width: 150, title: 'File Number', sort: true},
-                {
-                    field: 'file_name',
-                    width: 300,
-                    title: 'File Name',
-                    sort: true,
-                    event: 'set_emaphore_componentName',
-                    style: 'cursor: pointer;color:blue'
-                },
-                {field: 'source', width: 150, title: 'Data source', sort: true},
-                {field: 'create_time', width: 200, title: 'Create Time', sort: true},
-                {fixed: 'right', width: 150, title: 'Operation', toolbar: '#deleteFromDB'}
-            ]],
-            id: "measurement_file_table_id"
-        });
-
-        // 事件监听
-        table.on('tool(measurement_file_db)', function (obj) {
-            const data = obj.data;
-            const layEvent = obj.event;
-
-            if (layEvent === 'delete') {
-                handleDelete(data.id, obj);
-            }
-
-            if (layEvent === 'set_emaphore_componentName') {
-                const j_measurement_file_name = data.file_name
-                const j_measurement_file_id = data.id
-                layer.open({
-                    type: 2,
-                    title: 'semaphore and name mapping (' + j_measurement_file_name + ')',
-                    shadeClose: false,
-                    shade: 0,
-                    anim: 5,
-                    maxmin: true, //开启最大化最小化按钮
-                    area: ['893px', '600px'],
-                    content: '/temperature/configuration?file_id=' + j_measurement_file_id,
-                    success: function (layero, index) {
-
-                    },
-                    end: function () {
-
-                    }
-                });
-            }
-        });
-
-        // 删除文件处理函数
-        function handleDelete(id, obj) {
-            layer.confirm('Are you sure you want to delete it?', function (index) {
-                fetch('/temperature/delete_file', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({id})
-                }).then(response => response.json())
-                    .then(responseData => {
-                        if (responseData.success) {
-                            location.reload();
-                        } else {
-                            layer.alert('Failed to delete file: ' + responseData.message, {icon: 5});
-                        }
-                    })
-                    .catch(error => {
-                        layer.alert('An error occurred, please try again: ' + error.message, {icon: 5});
-                    })
-                    .finally(() => {
-                        layer.close(index);
-                        obj.del();
-                    });
-            });
-        }
-    });
-</script>
 <script type="text/javascript">
     $('#temperature_picker').click(function () {
         const measurement_file_list_selected_value = $('#measurement_file_list_selected').val();
         if (measurement_file_list_selected_value == '') {
-            layer.alert('Please select a file source', {icon: 3})
+            layer.alert('Please select Fuel Type', {icon: 3})
             return false;
         }
     })

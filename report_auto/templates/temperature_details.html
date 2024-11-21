@@ -43,9 +43,17 @@
                 <ul>
                     <li>
                         <div class="layui-menu-body-title">
-                            <a href="/temperature/list">
-                                <span>测量数据</span>
+                            <a href="/temperature/upload">
+                                <span>数据采集</span>
                                 <span class="layui-font-12 layui-font-gray">Temperature Uploader</span>
+                            </a>
+                        </div>
+                    </li>
+                    <li>
+                        <div class="layui-menu-body-title">
+                            <a href="/temperature/list">
+                                <span>文件列表</span>
+                                <span class="layui-font-12 layui-font-gray">File list</span>
                             </a>
                         </div>
                     </li>
@@ -130,41 +138,41 @@
 <script>
     j_measurement_source = document.getElementById('measurement_source').value;
     j_measurement_source_text = 'TECU_T'
-    if ('NG_FILES'== j_measurement_source)
+    if ('NG_FILES' == j_measurement_source)
         j_measurement_source_text = 'X3'
 
     c_tooltip = {
-            showDelay: 0,
-            formatter: function (params) {
-                if (params.value.length > 1) {
-                    return (
-                        params.seriesName +
-                        ' :<br/>' +
-                        params.value[0] +
-                        '°C ' +
-                        params.value[1] +
-                        '°C '
-                    );
-                } else {
-                    return (
-                        params.seriesName +
-                        ' :<br/>' +
-                        params.name +
-                        ' : ' +
-                        params.value +
-                        '°C '
-                    );
-                }
-            },
-            axisPointer: {
-                show: true,
-                type: 'cross',
-                lineStyle: {
-                    type: 'dashed',
-                    width: 1
-                }
+        showDelay: 0,
+        formatter: function (params) {
+            if (params.value.length > 1) {
+                return (
+                    params.seriesName +
+                    ' :<br/>' +
+                    params.value[0] +
+                    '°C ' +
+                    params.value[1] +
+                    '°C '
+                );
+            } else {
+                return (
+                    params.seriesName +
+                    ' :<br/>' +
+                    params.name +
+                    ' : ' +
+                    params.value +
+                    '°C '
+                );
+            }
+        },
+        axisPointer: {
+            show: true,
+            type: 'cross',
+            lineStyle: {
+                type: 'dashed',
+                width: 1
             }
         }
+    }
     c_toolbox = {
         feature: {
             dataZoom: {}

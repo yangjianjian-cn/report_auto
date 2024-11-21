@@ -221,7 +221,7 @@ def chip_dict_1(selected_ids: list[int]) -> dict:
     query_sql = f"""
         SELECT distinct measured_variable, chip_name, max_allowed_value 
         FROM chip_dict 
-        WHERE measured_file_name IN ({placeholders})
+        WHERE measured_file_name IN ({placeholders}) AND measured_variable IS NOT NULL 
     """
 
     # 参数列表

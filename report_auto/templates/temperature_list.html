@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>HTM</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <meta name="renderer" content="webkit">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="format-detection" content="telephone=no">
+
+    <link rel="stylesheet" type="text/css" href="/static/layer/theme/default/layui.css">
+    <link rel="stylesheet" type="text/css" href="/static/layer/theme/default/global.css">
+    <link rel="stylesheet" type="text/css" href="/static/layer/theme/default/layer.css">
+    <link rel="stylesheet" type="text/css" href="/static/css/bootstrap.min.css"/>
+    <link rel="stylesheet" type="text/css" href="/static/css/bootstrap-multiselect.css"/>
+    <link rel="stylesheet" type="text/css" href="/static/css/style.css">
+
+    <script type="text/javascript" src="/static/js/jquery.min.js"></script>
+    <script type="text/javascript" src="/static/layer/layer.js"></script>
+    <script type="text/javascript" src="/static/layer/layui.js"></script>
+</head>
+<body>
+<div class="layui-header header header-docs">
+    <div class="layui-main">
+        <ul class="layui-nav">
+            <li class="layui-nav-item ">
+                <a href="/report/1" ,target="_blank">MST</a>
+            </li>
+            <li class="layui-nav-item">
+                <a href="/report/2" ,target="_blank">IOTes</a>
+            </li>
+            <span class="layui-nav-bar"></span>
+        </ul>
+    </div>
+</div>
+<div class="layui-container" style="width: 99%">
+    <div class="layui-panel site-menu" style="width: 18%; display: inline-block">
+        <ul class="layui-menu layui-menu-lg site-docs-menu">
+            <li class="layui-menu-item-group" lay-options="{type: 'group', isAllowSpread: true}">
+                <div class="layui-menu-body-title">Chip Temperature</div>
+                <hr>
+                <ul>
+                    <li class="layui-menu-item-checked2">
+                        <div class="layui-menu-body-title">
+                            <a href="/temperature/upload">
+                                <span>数据采集</span>
+                                <span class="layui-font-12 layui-font-gray">Temperature Uploader</span>
+                            </a>
+                        </div>
+                    </li>
+                    <li>
+                        <div class="layui-menu-body-title">
+                            <a href="/temperature/list">
+                                <span>文件列表</span>
+                                <span class="layui-font-12 layui-font-gray">File list</span>
+                            </a>
+                        </div>
+                    </li>
+                    <li class="">
+                        <div class="layui-menu-body-title">
+                            <a href="/temperature/overview">
+                                <span>数据概述</span>
+                                <span class="layui-font-12 layui-font-gray">Data Overview</span>
+                            </a>
+                        </div>
+                    </li>
+                    <li>
+                        <div class="layui-menu-body-title">
+                            <a href="/temperature/details">
+                                <span>数据详情</span>
+                                <span class="layui-font-12 layui-font-gray">Data Details</span>
+                            </a>
+                        </div>
+                    </li>
+                </ul>
+            </li>
+        </ul>
+    </div>
+    <div class="site-content" style="width: 80%; display: inline-block">
+        <table class="layui-hide" id="measurement_file_db" lay-filter="measurement_file_db"></table>
+    </div>
+</div>
+<div class="layui-footer footer footer-demo">
+    <p>Copyright &copy; 2024</p>
+    <p id="LAY-footer-info"><span style="color: #007bff"></span></p>
+    <p><span></span></p>
+</div>
+</body>
+<link rel="stylesheet" type="text/css" href="/static/css/bootstrap.min.css"/>
+<script type="text/html" id="deleteFromDB">
+    <a class="layui-btn layui-btn-primary layui-btn-xs" lay-event="delete">DELETE</a>
+</script>
+<script>
+    layui.use(['table', 'layer'], function () {
+        const table = layui.table;
+        const layer = layui.layer;
+
+        // 表格渲染
+        table.render({
+            elem: '#measurement_file_db',
+            url: '/temperature/list/page',
+            page: true,
+            request: {
+                pageName: 'pageNum',
+                limitName: 'pageSize'
+            },
+            response: {
+                statusName: 'code',
+                statusCode: 200,
+                msgName: 'msg',
+                countName: 'total',
+                dataName: 'data'
+            },
+            cols: [[
+                {field: 'id', width: 150, title: 'File Number', sort: true},
+                {
+                    field: 'file_name',
+                    width: 300,
+                    title: 'File Name',
+                    sort: true,
+                    event: 'set_emaphore_componentName',
+                    style: 'cursor: pointer;color:blue'
+                },
+                {field: 'source', width: 150, title: 'Data source', sort: true},
+                {field: 'create_time', width: 200, title: 'Create Time', sort: true},
+                {fixed: 'right', width: 150, title: 'Operation', toolbar: '#deleteFromDB'}
+            ]],
+            id: "measurement_file_table_id"
+        });
+
+        // 事件监听
+        table.on('tool(measurement_file_db)', function (obj) {
+            const data = obj.data;
+            const layEvent = obj.event;
+
+            if (layEvent === 'delete') {
+                handleDelete(data.id, obj);
+            }
+
+            if (layEvent === 'set_emaphore_componentName') {
+                const j_measurement_file_name = data.file_name
+                const j_measurement_file_id = data.id
+                layer.open({
+                    type: 2,
+                    title: 'Acquired semaphore: (' + j_measurement_file_name + ')',
+                    shadeClose: false,
+                    shade: 0,
+                    anim: 5,
+                    maxmin: true, //开启最大化最小化按钮
+                    area: ['893px', '600px'],
+                    content: '/temperature/configuration?file_id=' + j_measurement_file_id,
+                    success: function (layero, index) {
+
+                    },
+                    end: function () {
+
+                    }
+                });
+            }
+        });
+
+        // 删除文件处理函数
+        function handleDelete(id, obj) {
+            layer.confirm('Are you sure you want to delete it?', function (index) {
+                fetch('/temperature/delete_file', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({id})
+                }).then(response => response.json())
+                    .then(responseData => {
+                        if (responseData.success) {
+                            location.reload();
+                        } else {
+                            layer.alert('Failed to delete file: ' + responseData.message, {icon: 5});
+                        }
+                    })
+                    .catch(error => {
+                        layer.alert('An error occurred, please try again: ' + error.message, {icon: 5});
+                    })
+                    .finally(() => {
+                        layer.close(index);
+                        obj.del();
+                    });
+            });
+        }
+    });
+</script>
+</html>
