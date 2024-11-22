@@ -58,3 +58,13 @@ def getCurDateTime():
 
     # 返回北京时间
     return beijing_now
+
+
+def get_current_datetime_yyyyMMddHHmmss():
+    # 获取当前日期和时间
+    current_datetime = datetime.datetime.now()
+
+    # 格式化日期时间为 YYYYMMDDHHmmss的形式
+    formatted_datetime = current_datetime.strftime('%Y-%m-%d %H:%M:%S')
+
+    return formatted_datetime

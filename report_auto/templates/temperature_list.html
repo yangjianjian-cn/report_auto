@@ -42,23 +42,23 @@
                 <div class="layui-menu-body-title">Chip Temperature</div>
                 <hr>
                 <ul>
-                    <li class="layui-menu-item-checked2">
-                        <div class="layui-menu-body-title">
-                            <a href="/temperature/upload">
+                    <li>
+                        <div>
+                            <a href="/temperature/index">
                                 <span>数据采集</span>
                                 <span class="layui-font-12 layui-font-gray">Temperature Uploader</span>
                             </a>
                         </div>
                     </li>
-                    <li>
+                    <li class="layui-menu-item-checked2">
                         <div class="layui-menu-body-title">
                             <a href="/temperature/list">
-                                <span>文件列表</span>
-                                <span class="layui-font-12 layui-font-gray">File list</span>
+                                <span>数据分析</span>
+                                <span class="layui-font-12 layui-font-gray">Data Analytics</span>
                             </a>
                         </div>
                     </li>
-                    <li class="">
+                    <li>
                         <div class="layui-menu-body-title">
                             <a href="/temperature/overview">
                                 <span>数据概述</span>
@@ -89,18 +89,33 @@
 </div>
 </body>
 <link rel="stylesheet" type="text/css" href="/static/css/bootstrap.min.css"/>
-<script type="text/html" id="deleteFromDB">
-    <a class="layui-btn layui-btn-primary layui-btn-xs" lay-event="delete">DELETE</a>
+
+<div class="oemReloadTbl">
+    OEM：
+    <div class="layui-inline">
+        <input class="layui-input" name="oem" id="oemReloadIpt" autocomplete="off">
+    </div>
+    <button class="layui-btn" data-type="reload">搜索</button>
+</div>
+
+<script type="text/html" id="fileListBtn">
+    <a class="layui-btn layui-btn-radius layui-btn-xs" lay-event="edit">EDIT</a>
+    <a class="layui-btn layui-btn-radius layui-btn-danger layui-btn-xs" lay-event="delete">DELETE</a>
+    <a class="layui-btn layui-btn-radius layui-btn-warm layui-btn-xs" lay-event="edit">ANALYSIS</a>
 </script>
+
 <script>
     layui.use(['table', 'layer'], function () {
         const table = layui.table;
         const layer = layui.layer;
-
         // 表格渲染
         table.render({
             elem: '#measurement_file_db',
             url: '/temperature/list/page',
+            defaultToolbar: ['filter', 'exports', 'print', {
+                title: 'HELP'
+                , layEvent: 'LAYTABLE_TIPS'
+            }],
             page: true,
             request: {
                 pageName: 'pageNum',
@@ -114,7 +129,7 @@
                 dataName: 'data'
             },
             cols: [[
-                {field: 'id', width: 150, title: 'File Number', sort: true},
+                {fixed: 'left', field: 'id', width: 150, title: 'File Number', sort: true},
                 {
                     field: 'file_name',
                     width: 300,
@@ -123,14 +138,21 @@
                     event: 'set_emaphore_componentName',
                     style: 'cursor: pointer;color:blue'
                 },
-                {field: 'source', width: 150, title: 'Data source', sort: true},
+                {field: 'project_name', width: 300, title: 'Project Name', sort: true},
+                {field: 'fuel_type', width: 300, title: 'Fuel Type', sort: true},
+                {field: 'ecu_hw', width: 300, title: 'ECU HW'},
+                {field: 'oem', width: 300, title: 'OEM'},
+                {field: 'vehicle_model', width: 300, title: 'Vehicle(Model,...)'},
+                {field: 'vehicle_number', width: 300, title: 'Vehicle identification number'},
+                {field: 'sap_number', width: 150, title: 'SAP Number'},
+                {field: 'software', width: 150, title: 'Software'},
                 {field: 'create_time', width: 200, title: 'Create Time', sort: true},
-                {fixed: 'right', width: 150, title: 'Operation', toolbar: '#deleteFromDB'}
+                {fixed: 'right', width: 250, title: 'Operation', toolbar: '#fileListBtn'}
             ]],
             id: "measurement_file_table_id"
         });
 
-        // 事件监听
+        // 单元格工具事件
         table.on('tool(measurement_file_db)', function (obj) {
             const data = obj.data;
             const layEvent = obj.event;
@@ -150,7 +172,7 @@
                     anim: 5,
                     maxmin: true, //开启最大化最小化按钮
                     area: ['893px', '600px'],
-                    content: '/temperature/configuration?file_id=' + j_measurement_file_id,
+                    content: '/temperature/configuration/list?file_id=' + j_measurement_file_id,
                     success: function (layero, index) {
 
                     },
@@ -161,7 +183,7 @@
             }
         });
 
-        // 删除文件处理函数
+        // 删除文件
         function handleDelete(id, obj) {
             layer.confirm('Are you sure you want to delete it?', function (index) {
                 fetch('/temperature/delete_file', {
@@ -187,6 +209,29 @@
                     });
             });
         }
+
+        const $ = layui.$, active = {
+            reload: function () {
+                const j_oemReloadIpt = $('#oemReloadIpt').val();
+
+                //执行重载
+                table.reload('measurement_file_table_id', {
+                    page: {
+                        curr: 1 //重新从第 1 页开始
+                    }
+                    , where: {
+                        key: {
+                            oem: j_oemReloadIpt
+                        }
+                    }
+                });
+            }
+        };
+
+        $('.oemReloadTbl .layui-btn').on('click', function () {
+            const type = $(this).data('type');
+            active[type] ? active[type].call(this) : '';
+        });
     });
 </script>
 </html>

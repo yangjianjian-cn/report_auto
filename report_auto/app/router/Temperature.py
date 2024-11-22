@@ -4,7 +4,6 @@ import json
 import logging
 import os
 import re
-import time
 from collections import defaultdict
 from typing import Dict, List
 
@@ -16,140 +15,44 @@ from werkzeug.utils import secure_filename
 
 from app import db_pool, env_input_path
 from app.router import temperature_bp
-from app.service.TemperatureService import temperature_configuration_datas
+from app.service.TemperatureService import  measurement_file_save, batch_chip_dict_save, \
+    get_tool_dictionary_details, get_chip_dict
 from tools.temperature.temperature_work_time import relative_difference, chip_dict_1
 from tools.temperature.temperature_work_time import temperature_duration, temperature_chip, create_data_structure
 from tools.utils.DBOperator import create_table, batch_insert_data, query_table, delete_from_tables, \
-    alter_table_add_columns, update_table, insert_data
-from tools.utils.DateUtils import getCurDateTime
-from tools.utils.FileUtils import extract_prefix
+    alter_table_add_columns, update_table
+from tools.utils.FileUtils import get_filename_without_extension
 from tools.utils.HtmlGenerator import generate_select_options
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 
 
-@temperature_bp.route('/db_status', methods=['GET'])
-def monitor_pool_status(interval=10):
-    """
-    定期监控连接池状态
-    :param interval: 监控间隔时间（秒）
-    """
-    while True:
-        status = db_pool.get_pool_status()
-        logging.info("Database pool status: %s", status)
-        time.sleep(interval)
-    return {'status': status}
-
-
-@temperature_bp.route('/', methods=['GET'])
-def temperature_idx():
-    return render_template('temperature.html')
-
-
-# ################################################################测量文件列表页#######################################
-@temperature_bp.route('/upload', methods=['GET'])
+# ################################################################数据采集#######################################
+@temperature_bp.route('/index', methods=['GET'])
 def temperature_upload():
     try:
         # 燃料类型
-        measurement_file_source_list = get_measurement_file_source_list()
+        measurement_file_source_list = get_tool_dictionary_details(dict_type='file_source')
+        measurement_file_oem_list = get_tool_dictionary_details(dict_type='OEM_TYPE')
     except Exception as e:
         logging.error(f'查询异常:{e}')
         return render_template('error.html', failure_msg=f'{e}')
     return render_template('temperature_uploader.html',
-                           measurement_file_source_list=measurement_file_source_list)
-
-
-@temperature_bp.route('/list', methods=['GET'])
-def temperature_list():
-    return render_template('temperature_list.html')
-
-
-@temperature_bp.route('/list/page', methods=['GET'])
-def temperature_list_page():
-    try:
-        # 获取分页参数
-        pageNum = int(request.args.get('pageNum', 1))  # 默认值为 1
-        pageSize = int(request.args.get('pageSize', 10))  # 默认值为 10
-
-        # 计算数据库查询的起始位置和结束位置
-        start = (pageNum - 1) * pageSize
-        end = start + pageSize
-
-        # 调用函数获取分页数据
-        total_count, measurement_file_list = get_measurement_file_list_page(start=start, end=end)
-
-        # 构建响应数据
-        response_data = {
-            "code": 200,
-            "msg": "success",
-            "total": total_count,
-            "data": measurement_file_list
-        }
-
-        return jsonify(response_data)
-
-    except Exception as e:
-        logging.error(f'查询异常: {e}')
-        return render_template('error.html', failure_msg=str(e))
-
-
-@temperature_bp.route('/delete_file', methods=['POST'])
-def delete_file():
-    data = request.get_json()
-    file_id = data.get('id')
-
-    try:
-        # 调用数据库模块删除文件
-        primary_table_name = 'measurement_file'
-        primary_param: map = {'id': file_id}
-
-        second_table_name = 'chip_temperature'
-        second_param: map = {'file_id': file_id}
-
-        result, message = delete_from_tables(db_pool, table=primary_table_name,
-                                             param=primary_param)
-        if result:
-            result, message = delete_from_tables(db_pool, table=second_table_name,
-                                                 param=second_param)
-            if result:
-                return jsonify({'success': True, 'message': '文件删除成功'})
-            else:
-                return jsonify({'success': False, 'message': '文件删除失败'})
-        else:
-            return jsonify({'success': False, 'message': '文件删除失败'})
-    except Exception as e:
-        return jsonify({'success': False, 'message': str(e)}), 500
-
-
-@temperature_bp.route('/configuration', methods=['GET'])
-def temperature_configuration():
-    measurement_file_id = request.args.get("file_id")
-    return render_template('temperature_configuration.html', measurement_file_id=measurement_file_id)
-
-
-@temperature_bp.route('/configuration_data', methods=['GET'])
-def temperature_configuration_data():
-    measurement_file_id: str = request.args.get('measurement_file_id')
-    configuration_data_list = temperature_configuration_datas(measurement_file_id)
-    # 构建响应数据
-    response_data = {
-        "code": 200,
-        "msg": "success",
-        "data": configuration_data_list
-    }
-
-    return jsonify(response_data)
+                           measurement_file_source_list=measurement_file_source_list,
+                           measurement_file_oem_list=measurement_file_oem_list)
 
 
 @temperature_bp.route('/upload', methods=['POST'])
 def upload():
     client_ip = getClientIp()
-    # 获取上传文件和相关参数
+
+    # 1.获取上传文件和相关参数
     file = request.files.get('file')
     chunk_index = int(request.form.get('chunk', 0))
     total_chunks = int(request.form.get('chunks', 1))
     file_name = secure_filename(request.form.get('name'))
     test_team = secure_filename(request.form.get('test_team'))
+
     # 记录关键参数的日志
     logging.info(f"Received upload request from IP: {client_ip}")
     logging.info(
@@ -160,6 +63,7 @@ def upload():
     if not os.path.exists(input_path):
         os.makedirs(input_path, exist_ok=True)
 
+    # 2.合并文件
     save_file = ''
     msg = ''
     try:
@@ -175,7 +79,44 @@ def upload():
         logging.error(f'file saved err: {msg}')
         return jsonify({'status': 'failure', 'save_file': '', 'msg': msg})
 
-    return jsonify({'status': 'success', 'save_file': save_file, 'msg': msg})
+    # 3.项目信息保存到数据库
+    params: dict = {
+        "source": request.form.get('fuel_type'),
+        "project_name": request.form.get('project_name'),
+        "ecu_hw": request.form.get('ecu_hw'),
+        "oem": request.form.get('oem'),
+        "vehicle_model": request.form.get('vehicle_model'),
+        "vehicle_number": request.form.get('vehicle_number'),
+        "sap_number": request.form.get('sap_number'),
+        "software": request.form.get('software'),
+        "file_name": get_filename_without_extension(file_name)
+    }
+    operation_code, operation_result = measurement_file_save(params=params)
+
+    if "success" != operation_code:
+        return jsonify({'status': 'failure', 'save_file': '', 'msg': operation_result})
+
+    return jsonify({'status': 'success', 'save_file': save_file, 'msg': operation_result})
+
+
+@temperature_bp.route('/configuration/page', methods=['GET'])
+def temperature_configuration_add_page():
+    s_oem = request.args.get("oem")
+    return render_template('temperature_configuration_add.html', s_oem=s_oem)
+
+
+@temperature_bp.route('/configuration/add', methods=['POST'])
+def temperature_configuration_add():
+    try:
+        s_oem = request.args.get("OEM")
+        # 获取前端传递的数据
+        data = request.get_json()
+        operator_result, operator_msg = batch_chip_dict_save(data, s_oem)
+        # 返回成功响应
+        return jsonify({"success": operator_result, "message": operator_msg})
+    except Exception as e:
+        # 返回错误响应
+        return jsonify({"success": False, "message": str(e)})
 
 
 @temperature_bp.route('/todb', methods=['POST'])
@@ -184,26 +125,20 @@ def todb():
     file_source = data['file_source']
     measure_file_path = data['save_file']
 
-    fileName = extract_prefix(measure_file_path)
-    table_name = 'measurement_file'
-    params: dict = {"file_name": fileName, "create_time": getCurDateTime(), 'source': file_source}
+    last_id: str = data['save_file_id']
+    if '' == last_id:
+        return jsonify({'generate_report_failed': 'File number acquisition exception'})
+    logging.info(f"文件元信息索引:{last_id}")
 
-    # 0.保存测量文件元信息
-    # ret_msg, last_id = insert_data(db_pool, table_name=table_name, params=params)
-    # if ret_msg != 'success':
-    #     return jsonify({'generate_report_failed': ret_msg})
-    # logging.info(f"文件元信息索引:{last_id}")
-
-    ret_msg, last_id = '', 102
     # 1.采集测量数据
-    mdf = MDF(measure_file_path)
-    query = "select measured_variable, chip_name from chip_dict where measured_file_name = %s "
-    params = (last_id)
+    selected_columns_dict: list[dict] = get_chip_dict(last_id)
+    if len(selected_columns_dict) == 0:
+        return jsonify({'generate_report_failed': "unconfigured acquisition volume"})
 
-    selected_columns_dict: list[dict] = query_table(db_pool, query=query, params=params)
     selected_columns = [d['measured_variable'] for d in selected_columns_dict]
     logging.info(f"[信号量]已配置:{selected_columns}")
 
+    mdf = MDF(measure_file_path)
     channels_db_keys = mdf.channels_db.keys()
     logging.info(f"[信号量]待采集:{channels_db_keys}")
 
@@ -289,6 +224,88 @@ def todb():
         return jsonify({'generate_report_failed': {i_ret_msg}})
 
     return jsonify({'generate_report_failed': ''})
+
+
+# ################################################################数据分析#######################################
+@temperature_bp.route('/list', methods=['GET'])
+def temperature_list():
+    return render_template('temperature_list.html')
+
+
+@temperature_bp.route('/list/page', methods=['GET'])
+def temperature_list_page():
+    try:
+        # 获取分页参数
+        pageNum = int(request.args.get('pageNum', 1))  # 默认值为 1
+        pageSize = int(request.args.get('pageSize', 10))  # 默认值为 10
+
+        # 计算数据库查询的起始位置和结束位置
+        start = (pageNum - 1) * pageSize
+        end = start + pageSize
+
+        # 调用函数获取分页数据
+        total_count, measurement_file_list = get_measurement_file_list_page(start=start, end=end)
+
+        # 构建响应数据
+        response_data = {
+            "code": 200,
+            "msg": "success",
+            "total": total_count,
+            "data": measurement_file_list
+        }
+
+        return jsonify(response_data)
+
+    except Exception as e:
+        logging.error(f'查询异常: {e}')
+        return render_template('error.html', failure_msg=str(e))
+
+
+@temperature_bp.route('/delete_file', methods=['POST'])
+def delete_file():
+    data = request.get_json()
+    file_id = data.get('id')
+
+    try:
+        # 调用数据库模块删除文件
+        primary_table_name = 'measurement_file'
+        primary_param: map = {'id': file_id}
+
+        second_table_name = 'chip_temperature'
+        second_param: map = {'file_id': file_id}
+
+        result, message = delete_from_tables(db_pool, table=primary_table_name,
+                                             param=primary_param)
+        if result:
+            result, message = delete_from_tables(db_pool, table=second_table_name,
+                                                 param=second_param)
+            if result:
+                return jsonify({'success': True, 'message': '文件删除成功'})
+            else:
+                return jsonify({'success': False, 'message': '文件删除失败'})
+        else:
+            return jsonify({'success': False, 'message': '文件删除失败'})
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+
+@temperature_bp.route('/configuration/list', methods=['GET'])
+def temperature_configuration():
+    measurement_file_id = request.args.get("file_id")
+    return render_template('temperature_configuration_list.html', measurement_file_id=measurement_file_id)
+
+
+@temperature_bp.route('/configuration_data', methods=['GET'])
+def temperature_configuration_data():
+    measurement_file_id: str = request.args.get('measurement_file_id')
+    configuration_data_list:list[dict] = get_chip_dict(measurement_file_id)
+    # 构建响应数据
+    response_data = {
+        "code": 200,
+        "msg": "success",
+        "data": configuration_data_list
+    }
+    return jsonify(response_data)
 
 
 # ################################################################数据详情页#######################################
@@ -607,55 +624,39 @@ def get_measurement_file_list(fileId: str = None):
 def get_measurement_file_list_page(fileId: str = None, start=None, end=None):
     # 构建基础查询语句
     query_sql = '''
-        SELECT file_name, id, source, DATE_FORMAT(create_time, '%%Y-%%m-%%d %%H:%%i:%%s') AS create_time
+        SELECT file_name, id, source as fuel_type, DATE_FORMAT(create_time, '%%Y-%%m-%%d %%H:%%i:%%s') AS create_time,project_name,ecu_hw,oem,vehicle_model,vehicle_number,sap_number,software
         FROM measurement_file 
-        WHERE status = %s
     '''
     # 如果提供了 fileId，则添加额外的过滤条件
-    params = ['0']  # 初始化参数列表
+    params = []  # 初始化参数列表
     if fileId:
         # 将 fileId 字符串分割成列表
         id_list = [int(id.strip()) for id in fileId.split(',')]
         # 添加 IN 子句到查询语句
-        query_sql += ' AND id IN ({})'.format(','.join(['%s'] * len(id_list)))
+        query_sql += ' WHERE id IN ({})'.format(','.join(['%s'] * len(id_list)))
         # 将 id 列表添加到参数列表
         params.extend(id_list)
-
     # 添加排序子句
     query_sql += ' ORDER BY id DESC'
-
     # 如果提供了分页参数，则添加 LIMIT 和 OFFSET 子句
     if start is not None and end is not None:
         query_sql += ' LIMIT %s OFFSET %s'
         params.append(end - start)  # 每页数据量
         params.append(start)  # 起始位置
-
     # 执行查询
     measurement_file_list = query_table(db_pool, query=query_sql, params=params)
 
     # 计算总记录数
-    count_sql = 'SELECT COUNT(1) as total FROM measurement_file WHERE status = %s'
+    params.clear()
+    count_sql = 'SELECT COUNT(1) as total FROM measurement_file'
     if fileId:
-        count_sql += ' AND id IN ({})'.format(','.join(['%s'] * len(id_list)))
-        params_for_count = ['0'] + id_list
-    else:
-        params_for_count = ['0']
+        count_sql += ' WHERE id IN ({})'.format(','.join(['%s'] * len(id_list)))
+        params.extend(id_list)
 
-    total_count_df: DataFrame = query_table(db_pool, query=count_sql, params=params_for_count)
+    total_count_df: DataFrame = query_table(db_pool, query=count_sql, params=params)
     total_count = total_count_df[0].get("total")
+
     return total_count, measurement_file_list
-
-
-'''字典表:测量文件来源'''
-
-
-def get_measurement_file_source_list():
-    # 构建基础查询语句
-    query_sql = 'select dict_value,dict_name from tool_dictionary where dict_type = %s order by dict_id'
-    params = ['file_source']  # 初始化参数列表
-    # 执行查询
-    measurement_file_list = query_table(db_pool, query=query_sql, params=params)
-    return measurement_file_list
 
 
 # 定义一个函数来处理列名

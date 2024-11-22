@@ -178,6 +178,45 @@ def batch_insert_data(table_name: str, params: Dict, df: pd.DataFrame, batch_siz
     return ret_msg
 
 
+@db_pool.with_connection
+def batch_save(table_name: str, data: list, conn=None) -> tuple:
+    logging.info(f'table_name:{table_name}')
+    logging.info(f'data:{data}')
+
+    # 检查数据是否为空
+    if not data:
+        return (True, None)
+
+    # 获取列名和占位符
+    columns = data[0].keys()
+    placeholders = ', '.join(['%s'] * len(columns))
+    columns_str = ', '.join(columns)
+    insert_sql = f"INSERT INTO {table_name} ({columns_str}) VALUES ({placeholders})"
+    logging.debug(f"insert_sql: {insert_sql}")
+
+    # 默认值
+    last_id = None
+
+    if conn is None:
+        conn = db_pool.get_connection()  # 从装饰器获取的连接
+
+    cursor = conn.cursor()
+    try:
+        # 准备所有行的数据
+        values = [tuple(item.values()) for item in data]
+        cursor.executemany(insert_sql, values)
+        last_id = cursor.lastrowid
+        conn.commit()
+        ret_msg = (True, last_id)
+    except Exception as e:
+        conn.rollback()
+        logging.error(f"An error occurred during batch data insertion: {str(e)}")
+        ret_msg = (False, last_id)
+    finally:
+        cursor.close()
+    return ret_msg
+
+
 """
 检索表中字段
 columns:多个字段以逗号分割

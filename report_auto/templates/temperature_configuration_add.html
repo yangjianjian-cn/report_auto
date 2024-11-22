@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <meta name="renderer" content="webkit">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="format-detection" content="telephone=no">
+    <title>Configuration</title>
+
+    <link rel="stylesheet" type="text/css" href="/static/layer/theme/default/layer.css">
+    <script type="text/javascript" src="/static/js/jquery.min.js"></script>
+    <script type="text/javascript" src="/static/layer/layer.js"></script>
+    <style>
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+        }
+
+        th {
+            background-color: #f2f2f2;
+        }
+    </style>
+</head>
+<body>
+<input type="hidden" id="h_oem_hidden" value="{{ s_oem }}">
+<button id="addRowButton">add row</button>
+<button id="delRowButton">Delete row</button>
+<button id="submitTableButton">Submit</button>
+<table id="measured_variable_table">
+    <thead>
+    <tr>
+        <th></th>
+        <th>measured_variable</th>
+        <th>chip_name</th>
+        <th>max_allowed_value</th>
+        <!--<th>view_variable</th>-->
+    </tr>
+    </thead>
+    <tbody>
+    <!-- 初始数据 -->
+    <tr>
+        <td><input type="checkbox"></td>
+        <td contenteditable="true"></td>
+        <td contenteditable="true"></td>
+        <td contenteditable="true"></td>
+        <!--<td contenteditable="true"></td>-->
+    </tr>
+    </tbody>
+</table>
+<script>
+    // 添加行的函数
+    document.addEventListener('DOMContentLoaded', function () {
+        document.getElementById('addRowButton').addEventListener('click', function () {
+            // 获取表格的 tbody 元素
+            const tbody = document.querySelector('#measured_variable_table tbody');
+
+            // 创建新行
+            const newRow = document.createElement('tr');
+
+            // 创建单元格
+            const checkboxCell = document.createElement('td');
+            const checkboxInput = document.createElement('input');
+            checkboxInput.type = 'checkbox';
+            checkboxCell.appendChild(checkboxInput);
+
+            const variableCell = document.createElement('td');
+            variableCell.textContent = '';
+            variableCell.contentEditable = 'true';
+
+            const chipNameCell = document.createElement('td');
+            chipNameCell.textContent = '';
+            chipNameCell.contentEditable = 'true';
+
+            const maxValueCell = document.createElement('td');
+            maxValueCell.textContent = '';
+            maxValueCell.contentEditable = 'true';
+
+            // const viewVariableCell = document.createElement('td');
+            // viewVariableCell.textContent = '';
+            // viewVariableCell.contentEditable = 'true';
+
+            // 将单元格添加到新行
+            newRow.appendChild(checkboxCell);
+            newRow.appendChild(variableCell);
+            newRow.appendChild(chipNameCell);
+            newRow.appendChild(maxValueCell);
+            // newRow.appendChild(viewVariableCell);
+
+            // 将新行添加到 tbody
+            tbody.appendChild(newRow);
+        });
+    });
+
+    // 删除行的函数
+    document.getElementById('delRowButton').addEventListener('click', function () {
+        const tbody = document.querySelector('#measured_variable_table tbody');
+        const checkedRows = tbody.querySelectorAll('input[type="checkbox"]:checked');
+
+        checkedRows.forEach(function (checkbox) {
+            const row = checkbox.closest('tr');
+            tbody.removeChild(row);
+        });
+    });
+
+    // 提交表格数据的函数
+    document.getElementById('submitTableButton').addEventListener('click', function () {
+        debugger
+        const tbody = document.querySelector('#measured_variable_table tbody');
+        const rows = tbody.querySelectorAll('tr');
+        const data = [];
+
+        rows.forEach(function (row) {
+            const cells = row.querySelectorAll('td');
+            const rowData = {
+                measured_variable: cells[1].textContent.trim(),
+                chip_name: cells[2].textContent.trim(),
+                max_allowed_value: cells[3].textContent.trim()
+                //,view_variable: cells[4].textContent.trim()
+            };
+            data.push(rowData);
+        });
+        const j_oem_hidden = $("#h_oem_hidden").val();
+        // 发送 AJAX 请求
+        fetch('/temperature/configuration/add?OEM=' + encodeURIComponent(j_oem_hidden), {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(data)
+        })
+            .then(response => response.json())
+            .then(result => {
+                if (result.success) {
+                    layer.alert('数据提交成功！', {icon: 3});
+                } else {
+                    layer.alert('数据提交失败：' + result.message, {icon: 3});
+                }
+            })
+            .catch(error => {
+                console.error('请求失败:',);
+                layer.alert('请求失败，请重试:' + error, {icon: 3});
+            });
+    });
+</script>
+</body>
+</html>

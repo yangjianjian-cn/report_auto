@@ -44,7 +44,7 @@
                 <ul>
                     <li class="layui-menu-item-checked2">
                         <div class="layui-menu-body-title">
-                            <a href="/temperature/upload">
+                            <a href="/temperature/index">
                                 <span>数据采集</span>
                                 <span class="layui-font-12 layui-font-gray">Temperature Uploader</span>
                             </a>
@@ -53,8 +53,8 @@
                     <li>
                         <div class="layui-menu-body-title">
                             <a href="/temperature/list">
-                                <span>文件列表</span>
-                                <span class="layui-font-12 layui-font-gray">File list</span>
+                                <span>数据分析</span>
+                                <span class="layui-font-12 layui-font-gray">Data Analytics</span>
                             </a>
                         </div>
                     </li>
@@ -79,14 +79,15 @@
         </ul>
     </div>
     <div class="site-content" style="width: 80%; display: inline-block">
-        <button class="layui-btn">Project Data:</button>
+        <button class="layui-btn">Project Data</button>
         <br>
-        <div class="layui-form">
+
+        <form class="layui-form layui-form-pane" action="">
             <div class="layui-form-item">
                 <!--Fuel Type-->
                 <div class="layui-inline">
                     <label class="layui-form-label" style="width: 150px;">Fuel Type:</label>
-                    <div class="layui-input-inline">
+                    <div class="layui-input-inline" style="width: 250px;">
                         <select name="Fuel_Type_Select" id="measurement_file_list_selected">
                             <option value="">--Please Select--</option>
                             {% if measurement_file_source_list is not none and measurement_file_source_list|length > 0 %}
@@ -101,42 +102,49 @@
                 <!--Project Name-->
                 <div class="layui-inline">
                     <label class="layui-form-label" style="width: 250px;">Project Name:</label>
-                    <div class="layui-input-inline">
-                        <input type="text" name="username" lay-verify="title" autocomplete="off"
+                    <div class="layui-input-inline" style="width: 250px;">
+                        <input type="text" name="project_name" id="project_name" lay-verify="title" autocomplete="on"
                                placeholder="Please Input Project Name"
                                class="layui-input"/>
                     </div>
                 </div>
             </div>
+
             <div class="layui-form-item">
                 <!--ECU HW-->
                 <div class="layui-inline">
                     <label class="layui-form-label" style="width: 150px;">ECU HW:</label>
-                    <div class="layui-input-inline">
-                        <input type="text" name="username" lay-verify="title" autocomplete="off"
+                    <div class="layui-input-inline" style="width: 250px;">
+                        <input type="text" name="ecu_hw" id="ecu_hw" lay-verify="title" autocomplete="on"
                                placeholder="Please Input ECU HW"
                                class="layui-input"/>
                     </div>
                 </div>
-
                 <!--OEM-->
                 <div class="layui-inline">
                     <label class="layui-form-label" style="width: 250px;">OEM:</label>
-                    <div class="layui-input-inline">
-                        <input type="text" name="username" lay-verify="title" autocomplete="off"
-                               placeholder="Please Input OEM"
-                               class="layui-input"/>
+                    <div class="layui-input-inline" style="width: 250px;">
+                        <select name="oem" id="oem">
+                            <option value="">--Please Select--</option>
+                            {% if measurement_file_oem_list is not none and measurement_file_oem_list|length > 0 %}
+                                {% for oem_items in measurement_file_oem_list %}
+                                    <option value="{{ oem_items.dict_value }}">{{ oem_items.dict_name }}</option>
+                                {% endfor %}
+                            {% endif %}
+                        </select>
                     </div>
+                    <button type="button" class="layui-btn layui-btn-primary layui-btn-sm"
+                            onclick="acquisition_volume_configuration();"><i class="layui-icon layui-icon-set"></i>
+                    </button>
                 </div>
             </div>
 
             <div class="layui-form-item">
                 <!--Vehicle(Model,...)-->
                 <div class="layui-inline">
-
                     <label class="layui-form-label" style="width: 150px;">Vehicle(Model,...):</label>
-                    <div class="layui-input-inline">
-                        <input type="text" name="username" lay-verify="title" autocomplete="off"
+                    <div class="layui-input-inline" style="width: 250px;">
+                        <input type="text" name="vehicle_model" id="vehicle_model" lay-verify="title" autocomplete="on"
                                placeholder="Please Input Vehicle(Model,...)"
                                class="layui-input"/>
                     </div>
@@ -144,8 +152,9 @@
                 <!--Vehicle identification number-->
                 <div class="layui-inline">
                     <label class="layui-form-label" style="width: 250px;">Vehicle identification number:</label>
-                    <div class="layui-input-inline">
-                        <input type="text" name="username" lay-verify="title" autocomplete="off"
+                    <div class="layui-input-inline" style="width: 250px;">
+                        <input type="text" name="vehicle_number" id="vehicle_number" lay-verify="title"
+                               autocomplete="on"
                                placeholder="Please Input Vehicle identification number"
                                class="layui-input"/>
                     </div>
@@ -156,8 +165,8 @@
                 <!--Vehicle(Model,...)-->
                 <div class="layui-inline">
                     <label class="layui-form-label" style="width: 150px;">SAP Number:</label>
-                    <div class="layui-input-inline">
-                        <input type="text" name="username" lay-verify="title" autocomplete="off"
+                    <div class="layui-input-inline" style="width: 250px;">
+                        <input type="text" name="sap_number" id="sap_number" lay-verify="title" autocomplete="on"
                                placeholder="Please Input SAP Number"
                                class="layui-input"/>
                     </div>
@@ -165,14 +174,14 @@
                 <!--Vehicle identification number-->
                 <div class="layui-inline">
                     <label class="layui-form-label" style="width: 250px;">Software:</label>
-                    <div class="layui-input-inline">
-                        <input type="text" name="username" lay-verify="title" autocomplete="off"
+                    <div class="layui-input-inline" style="width: 250px;">
+                        <input type="text" name="software" id="software" lay-verify="title" autocomplete="on"
                                placeholder="Please Input Software"
                                class="layui-input"/>
                     </div>
                 </div>
             </div>
-        </div>
+        </form>
 
         <div id="temperature_picker">Select file(dat、mf4)</div>
         <span style="color: #01aaed">(You can select one file at a time or multiple files at a time)</span>
@@ -214,9 +223,11 @@
                         <td colspan="4"><span style="color: red;">database query exception</span></td>
                     </tr>
                 {% else %}
+                    <!--
                     <tr>
                         <td colspan="5">There is no documentation yet.</td>
                     </tr>
+                    -->
                 {% endif %}
                 </tbody>
             </table>
@@ -247,7 +258,6 @@
             return false;
         }
     })
-
     // 初始化 WebUploader
     let uploader = WebUploader.create({
         auto: false, // 不自动上传
@@ -282,7 +292,6 @@
             test_team: "HTM",
             test_scenario: "", // 这里可以根据实际需求动态设置值
             test_area: "",      // 这里可以根据实际需求动态设置值
-            task_id: WebUploader.Base.guid() // 区分不同用户
         },
         multiple: true
     });
@@ -301,7 +310,26 @@
     uploader.on('fileQueued', function (file) {
         addTableRow(file);
     });
+    // 文件上传请求发送之前
+    uploader.onUploadBeforeSend = function (object, data, headers) {
+        const fuel_type = $("#measurement_file_list_selected").val();
+        const project_name = $("#project_name").val();
+        const ecu_hw = $("#ecu_hw").val();
+        const oem = $("#oem").val();
+        const vehicle_model = $("#vehicle_model").val();
+        const vehicle_number = $("#vehicle_number").val();
+        const sap_number = $("#sap_number").val();
+        const software = $("#software").val();
 
+        data.fuel_type = fuel_type;
+        data.project_name = project_name;
+        data.ecu_hw = ecu_hw;
+        data.oem = oem;
+        data.vehicle_model = vehicle_model;
+        data.vehicle_number = vehicle_number;
+        data.sap_number = sap_number;
+        data.software = software;
+    };
     // 文件上传过程中创建进度条实时显示
     uploader.on('uploadProgress', function (file, percentage) {
         $('#progress-' + file.id).css('width', percentage * 100 + '%');
@@ -318,6 +346,7 @@
                 "test_scenario": "",
                 "test_area": "",
                 "save_file": response.save_file,
+                "save_file_id": response.msg,
                 "file_source": measurement_file_list_selected_value
             };
             analysis_and_db(ret_data, layer_index);
@@ -387,5 +416,31 @@
     $('#startUpload').on('click', function () {
         uploader.upload();
     });
+</script>
+<script>
+    function acquisition_volume_configuration() {
+        const oem = $("#oem").val();
+        if ("" == oem) {
+            layer.alert('Please input OEM', {icon: 0})
+            return false;
+        }
+        layer.open({
+            type: 2,
+            title: 'acquisition volume configuration(' + oem + ')',
+            shadeClose: false,
+            shade: 0,
+            anim: 5,
+            maxmin: true, //开启最大化最小化按钮
+            area: ['893px', '600px'],
+            content: '/temperature/configuration/page?oem=' + oem,
+            success: function (layero, index) {
+                console.log(layero);
+                console.log(index);
+            },
+            end: function () {
+                back_page();
+            }
+        });
+    }
 </script>
 </html>
