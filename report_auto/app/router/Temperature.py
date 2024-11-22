@@ -15,7 +15,7 @@ from werkzeug.utils import secure_filename
 
 from app import db_pool, env_input_path
 from app.router import temperature_bp
-from app.service.TemperatureService import  measurement_file_save, batch_chip_dict_save, \
+from app.service.TemperatureService import measurement_file_save, batch_chip_dict_save, \
     get_tool_dictionary_details, get_chip_dict
 from tools.temperature.temperature_work_time import relative_difference, chip_dict_1
 from tools.temperature.temperature_work_time import temperature_duration, temperature_chip, create_data_structure
@@ -102,7 +102,8 @@ def upload():
 @temperature_bp.route('/configuration/page', methods=['GET'])
 def temperature_configuration_add_page():
     s_oem = request.args.get("oem")
-    return render_template('temperature_configuration_add.html', s_oem=s_oem)
+    chip_dict_list: list[dict] = get_chip_dict(s_oem)
+    return render_template('temperature_configuration_add.html', s_oem=s_oem, chip_dict_list=chip_dict_list)
 
 
 @temperature_bp.route('/configuration/add', methods=['POST'])
@@ -298,7 +299,7 @@ def temperature_configuration():
 @temperature_bp.route('/configuration_data', methods=['GET'])
 def temperature_configuration_data():
     measurement_file_id: str = request.args.get('measurement_file_id')
-    configuration_data_list:list[dict] = get_chip_dict(measurement_file_id)
+    configuration_data_list: list[dict] = get_chip_dict(measurement_file_id)
     # 构建响应数据
     response_data = {
         "code": 200,
@@ -526,6 +527,7 @@ def temperature_overview():
                            )
 
 
+# #############################################################内部方法不参与解包和封包#######################################
 # ################################################################不参与拆包解包操作#######################################
 # 获取客户端IP地址
 def getClientIp():

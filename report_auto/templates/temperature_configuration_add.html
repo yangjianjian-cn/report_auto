@@ -46,13 +46,26 @@
     </thead>
     <tbody>
     <!-- 初始数据 -->
-    <tr>
-        <td><input type="checkbox"></td>
-        <td contenteditable="true"></td>
-        <td contenteditable="true"></td>
-        <td contenteditable="true"></td>
-        <!--<td contenteditable="true"></td>-->
-    </tr>
+
+    {% if chip_dict_list is not none and chip_dict_list|length > 0 %}
+       {% for electronic_component in chip_dict_list %}
+            <tr>
+                <td><input type="checkbox"></td>
+                <td contenteditable="true">{{ electronic_component.measured_variable }}</td>
+                <td contenteditable="true">{{ electronic_component.chip_name }}</td>
+                <td contenteditable="true">{{ electronic_component.max_allowed_value }}</td>
+                <!--<td contenteditable="true"></td>-->
+            </tr>
+        {% endfor %}
+    {% elif chip_dict_list is none or chip_dict_list|length == 0%}
+        <tr>
+            <td><input type="checkbox"></td>
+            <td contenteditable="true"></td>
+            <td contenteditable="true"></td>
+            <td contenteditable="true"></td>
+            <!--<td contenteditable="true"></td>-->
+        </tr>
+    {% endif %}
     </tbody>
 </table>
 <script>
