@@ -10,16 +10,16 @@ from typing import Dict, List
 from asammdf import MDF
 from asammdf.blocks.utils import MdfException
 from flask import request, jsonify, render_template
-from pandas import DataFrame
 from werkzeug.utils import secure_filename
 
 from app import db_pool, env_input_path
 from app.router import temperature_bp
 from app.service.TemperatureService import measurement_file_save, batch_chip_dict_save, \
-    get_tool_dictionary_details, get_chip_dict
-from tools.temperature.temperature_work_time import relative_difference, chip_dict_1
+    get_tool_dictionary_details, get_chip_dict, get_measurement_file_list_page, get_measurement_file_list, \
+    chip_dict_in_sql
+from tools.temperature.temperature_work_time import relative_difference
 from tools.temperature.temperature_work_time import temperature_duration, temperature_chip, create_data_structure
-from tools.utils.DBOperator import create_table, batch_insert_data, query_table, delete_from_tables, \
+from tools.utils.DBOperator import create_table, batch_insert_data, delete_from_tables, \
     alter_table_add_columns, update_table
 from tools.utils.FileUtils import get_filename_without_extension
 from tools.utils.HtmlGenerator import generate_select_options
@@ -310,7 +310,6 @@ def temperature_configuration_data():
 
 
 # ################################################################数据详情页#######################################
-
 @temperature_bp.route('/details', methods=['GET'])
 def temperature_details():
     selected_ids = []
@@ -325,7 +324,7 @@ def temperature_details():
     if measurement_file_list is None or len(measurement_file_list) == 0:
         return render_template('error.html', failure_msg='Please upload the file first.')
 
-    # 按键分组
+    # 求相对关系，代表X轴的列，按键分组
     grouped_special_columns = defaultdict(list)
     if fileId:
         selected_ids = [int(id) for id in fileId.split(',')]
@@ -347,11 +346,14 @@ def temperature_details():
         grouped_special_columns[key] = list(set(grouped_special_columns[key]))
 
     measurement_source = measurement_file_list[0].get('source')
+    oem = measurement_file_list[0].get("oem")
+
     logging.info(f"特殊信号量:{grouped_special_columns}")
     logging.info(f"文件来源:{measurement_source}")
+    logging.info(f"项目:{oem}")
 
     # 2. 获取芯片字典列表
-    r_chip_dict: list[dict] = chip_dict_1(selected_ids)
+    r_chip_dict: list[dict] = chip_dict_in_sql(selected_ids=selected_ids, project_type=oem)
     kv_chip_dict: dict = {item['measured_variable']: item['chip_name'] for item in r_chip_dict}
     measured_variables_list: list[str] = [item['measured_variable'] for item in r_chip_dict]
     logging.info(f"芯片字典-NG全部信号量:{measured_variables_list}")
@@ -448,14 +450,9 @@ def temperature_details():
 # ################################################################数据概述#######################################
 @temperature_bp.route('/overview', methods=['GET'])
 def temperature_overview():
-    logging.info("数据概览")
-    # 获取所有上传文件的元数据
-    selected_ids = []
-    # 请求报文中获取参数fileId
+    # 1.获取测量文件列表（网页上选择一个文件或多个)
     fileId: str = request.args.get('fileId')
-    measurement_source: str = 'DS_FILES'
     try:
-        # 获取测量文件列表
         measurement_file_list = get_measurement_file_list(fileId=fileId)
     except Exception as e:
         return render_template('error.html', failure_msg=f'{e}')
@@ -464,6 +461,7 @@ def temperature_overview():
         return render_template('error.html', failure_msg='Please upload the file first.')
 
     # 按键分组
+    selected_ids = []
     grouped_special_columns = defaultdict(list)
     if fileId:
         selected_ids = [int(id) for id in fileId.split(',')]
@@ -485,9 +483,12 @@ def temperature_overview():
         grouped_special_columns[key] = list(set(grouped_special_columns[key]))
 
     measurement_source = measurement_file_list[0].get('source')
+    project_type: str = measurement_file_list[0].get('oem')
+
     logging.info(f"相对信号量:{grouped_special_columns}")
     logging.info(f"测量文件来源:{measurement_source}")
     logging.info(f"测量文件:{selected_ids}")
+    logging.info(f"项目:{project_type}")
 
     # 温度时长柱形图和饼状图
     time_diffs_tecut, total_minutes_tecut, time_diffs_tc1th9, total_minutes_tc1th9 = temperature_duration(
@@ -503,7 +504,7 @@ def temperature_overview():
     multi_select_html = generate_select_options(get_measurement_file_list(fileId=None))
 
     # 温度阈值 和 相对温差
-    chip_dict_list = relative_difference(selected_ids, measurement_source=measurement_source)
+    chip_dict_list = relative_difference(selected_ids, project_type=project_type)
     chip_names = [chip['chip_name'] for chip in chip_dict_list]
     max_allowed_values = [chip['max_allowed_value'] for chip in chip_dict_list]
     max_temperature = [chip['max_temperature'] for chip in chip_dict_list]
@@ -588,77 +589,6 @@ def get_rename_mapping(columns: list[str]):
     if 'TECU_t' not in columns and 'TECU_tRaw' in columns:
         rename_mapping['TECU_tRaw'] = 'TECU_t'
     return rename_mapping
-
-
-'''
-获取已上传全部文件元数据
-'''
-
-
-def get_measurement_file_list(fileId: str = None):
-    logging.info(">>测量文件列表:")
-    # 构建基础查询语句
-    query_sql = 'SELECT file_name, id, source,special_columns,source FROM measurement_file WHERE status = %s'
-
-    # 如果提供了 fileId，则添加额外的过滤条件
-    params = ['0']  # 初始化参数列表
-    if fileId:
-        # 将 fileId 字符串分割成列表
-        id_list = [int(id.strip()) for id in fileId.split(',')]
-        # 添加 IN 子句到查询语句
-        query_sql += ' AND id IN ({})'.format(','.join(['%s'] * len(id_list)))
-        # 将 id 列表添加到参数列表
-        params.extend(id_list)
-
-    # 添加排序子句
-    query_sql += ' ORDER BY id DESC'
-
-    # 执行查询
-    measurement_file_list = query_table(db_pool, query=query_sql, params=params)
-    return measurement_file_list
-
-
-'''
-测量文件列表(分页)
-'''
-
-
-def get_measurement_file_list_page(fileId: str = None, start=None, end=None):
-    # 构建基础查询语句
-    query_sql = '''
-        SELECT file_name, id, source as fuel_type, DATE_FORMAT(create_time, '%%Y-%%m-%%d %%H:%%i:%%s') AS create_time,project_name,ecu_hw,oem,vehicle_model,vehicle_number,sap_number,software
-        FROM measurement_file 
-    '''
-    # 如果提供了 fileId，则添加额外的过滤条件
-    params = []  # 初始化参数列表
-    if fileId:
-        # 将 fileId 字符串分割成列表
-        id_list = [int(id.strip()) for id in fileId.split(',')]
-        # 添加 IN 子句到查询语句
-        query_sql += ' WHERE id IN ({})'.format(','.join(['%s'] * len(id_list)))
-        # 将 id 列表添加到参数列表
-        params.extend(id_list)
-    # 添加排序子句
-    query_sql += ' ORDER BY id DESC'
-    # 如果提供了分页参数，则添加 LIMIT 和 OFFSET 子句
-    if start is not None and end is not None:
-        query_sql += ' LIMIT %s OFFSET %s'
-        params.append(end - start)  # 每页数据量
-        params.append(start)  # 起始位置
-    # 执行查询
-    measurement_file_list = query_table(db_pool, query=query_sql, params=params)
-
-    # 计算总记录数
-    params.clear()
-    count_sql = 'SELECT COUNT(1) as total FROM measurement_file'
-    if fileId:
-        count_sql += ' WHERE id IN ({})'.format(','.join(['%s'] * len(id_list)))
-        params.extend(id_list)
-
-    total_count_df: DataFrame = query_table(db_pool, query=count_sql, params=params)
-    total_count = total_count_df[0].get("total")
-
-    return total_count, measurement_file_list
 
 
 # 定义一个函数来处理列名

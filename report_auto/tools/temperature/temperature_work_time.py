@@ -9,6 +9,7 @@ import pandas as pd
 from pandas import DataFrame
 
 from app import db_pool
+from app.service.TemperatureService import chip_dict_in_sql
 from tools.utils.DBOperator import query_table, query_table_sampling, query_table_by_sql
 from tools.utils.MathUtils import relative_difference_chip, difference_chip
 
@@ -121,7 +122,8 @@ def modify_records(records):
     return modified_records
 
 
-def temperature_chip(selected_columns: list, file_ids_int: list, measurement_source: str, kv_chip_dict: dict) -> Dict[str, List]:
+def temperature_chip(selected_columns: list, file_ids_int: list, measurement_source: str, kv_chip_dict: dict) -> Dict[
+    str, List]:
     file_ids_str_for_query = ', '.join(map(str, file_ids_int))
     selected_columns_str = ', '.join(map(str, selected_columns))
     result_dicts = query_table_sampling(db_pool, columns=selected_columns_str,
@@ -186,7 +188,7 @@ def create_data_structure(temperature_time_dc: DataFrame, sensors_list: list, me
 
 
 # table_name: str, columns: str, where: str
-def relative_difference(selected_ids: list[int], measurement_source: str) -> list[dict]:
+def relative_difference(selected_ids: list[int], project_type: str) -> list[dict]:
     # 查看每个芯片的最大测量温度
     max_rlt_df = max_query(selected_ids)
     for column in max_rlt_df.columns:
@@ -199,38 +201,16 @@ def relative_difference(selected_ids: list[int], measurement_source: str) -> lis
     logging.debug(f"result_map:{result_map}")
 
     # 芯片字典
-    chip_dict_list = chip_dict_1(selected_ids=selected_ids)
+    chip_dict_list = chip_dict_in_sql(selected_ids=selected_ids,project_type=project_type)
     for chip in chip_dict_list:
         measured_variable = chip['measured_variable']
         if measured_variable in result_map:
             chip['max_temperature'] = result_map[measured_variable]
-            chip['relative_difference_temperature'] = relative_difference_chip(chip['max_allowed_value'],
-                                                                               chip['max_temperature'])
+            chip['relative_difference_temperature'] = relative_difference_chip(chip['max_allowed_value'],chip['max_temperature'])
             chip['difference_temperature'] = difference_chip(chip['max_allowed_value'], chip['max_temperature'])
     # 过滤掉没有 max_temperature 属性的芯片
-    chip_dict_list = [chip for chip in chip_dict_list if 'max_temperature' in chip]
+    # chip_dict_list = [chip for chip in chip_dict_list if 'max_temperature' in chip]
     return chip_dict_list
-
-
-def chip_dict_1(selected_ids: list[int]) -> dict:
-    logging.info("获取芯片字典列表:")
-
-    # 构建SQL查询语句
-    # 使用参数化查询防止SQL注入
-    placeholders = ', '.join(['%s'] * len(selected_ids))  # 根据selected_ids的数量生成占位符
-    query_sql = f"""
-        SELECT distinct measured_variable, chip_name, max_allowed_value 
-        FROM chip_dict 
-        WHERE measured_file_name IN ({placeholders}) AND measured_variable IS NOT NULL 
-    """
-
-    # 参数列表
-    params = tuple(selected_ids)
-
-    # 调用query_table函数执行查询
-    result_dicts = query_table(db_pool, query=query_sql, params=params)
-    logging.info(f"result_dicts:{result_dicts}")
-    return result_dicts
 
 
 def chip_dict(measurement_source: str, measured_file_name: str) -> dict:
@@ -262,7 +242,7 @@ def max_query(selected_ids: list) -> DataFrame:
     logging.info(f"filtered_column_list:{filtered_column_list}")
 
     # 动态生成 SQL 查询
-    select_clause = ",\n".join([f"ROUND(MAX({col})) AS {col}" for col in filtered_column_list])
+    select_clause = ",\n".join([f"ROUND(MAX({col}),3) AS {col}" for col in filtered_column_list])
     max_query_sql = f"""
         SELECT
         {select_clause}

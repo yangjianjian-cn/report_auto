@@ -79,6 +79,17 @@
         </ul>
     </div>
     <div class="site-content" style="width: 80%; display: inline-block">
+        <form class="layui-form layui-form-pane">
+            <div class="layui-form-item">
+                <div class="layui-inline oemReloadTbl">
+                    <label class="layui-form-label" style="width: 250px;">OEM:</label>
+                    <div class="layui-input-inline " style="width: 250px;">
+                        <input class="layui-input" name="oem" id="oemReloadIpt" autocomplete="off">
+                    </div>
+                    <button class="layui-btn" data-type="reload">搜索</button>
+                </div>
+            </div>
+        </form>
         <table class="layui-hide" id="measurement_file_db" lay-filter="measurement_file_db"></table>
     </div>
 </div>
@@ -90,16 +101,9 @@
 </body>
 <link rel="stylesheet" type="text/css" href="/static/css/bootstrap.min.css"/>
 
-<div class="oemReloadTbl">
-    OEM：
-    <div class="layui-inline">
-        <input class="layui-input" name="oem" id="oemReloadIpt" autocomplete="off">
-    </div>
-    <button class="layui-btn" data-type="reload">搜索</button>
-</div>
 
 <script type="text/html" id="fileListBtn">
-    <a class="layui-btn layui-btn-radius layui-btn-xs" lay-event="edit">EDIT</a>
+    <!--<a class="layui-btn layui-btn-radius layui-btn-xs" lay-event="edit">EDIT</a>-->
     <a class="layui-btn layui-btn-radius layui-btn-danger layui-btn-xs" lay-event="delete">DELETE</a>
     <a class="layui-btn layui-btn-radius layui-btn-warm layui-btn-xs" lay-event="edit">ANALYSIS</a>
 </script>
@@ -218,8 +222,8 @@
                 table.reload('measurement_file_table_id', {
                     page: {
                         curr: 1 //重新从第 1 页开始
-                    }
-                    , where: {
+                    },
+                    where: {
                         key: {
                             oem: j_oemReloadIpt
                         }
