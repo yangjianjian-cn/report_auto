@@ -103,9 +103,9 @@
 
 
 <script type="text/html" id="fileListBtn">
-    <!--<a class="layui-btn layui-btn-radius layui-btn-xs" lay-event="edit">EDIT</a>-->
+    <a class="layui-btn layui-btn-radius layui-btn-xs" lay-event="edit">EDIT</a>
     <a class="layui-btn layui-btn-radius layui-btn-danger layui-btn-xs" lay-event="delete">DELETE</a>
-    <a class="layui-btn layui-btn-radius layui-btn-warm layui-btn-xs" lay-event="edit">ANALYSIS</a>
+    <a class="layui-btn layui-btn-radius layui-btn-normal layui-btn-xs" lay-event="edit">ANALYSIS</a>
 </script>
 
 <script>
@@ -151,6 +151,8 @@
                 {field: 'sap_number', width: 150, title: 'SAP Number'},
                 {field: 'software', width: 150, title: 'Software'},
                 {field: 'create_time', width: 200, title: 'Create Time', sort: true},
+                {field: 'quantitative_variable', width: 200, title: 'Quantitative variable', sort: true},
+                {field: 'statistical_variable', width: 200, title: 'Statistical variable', sort: true},
                 {fixed: 'right', width: 250, title: 'Operation', toolbar: '#fileListBtn'}
             ]],
             id: "measurement_file_table_id"
@@ -161,13 +163,29 @@
             const data = obj.data;
             const layEvent = obj.event;
 
-            if (layEvent === 'delete') {
-                handleDelete(data.id, obj);
-            }
+            const j_measurement_file_name = data.file_name
+            const j_measurement_file_id = data.id
 
-            if (layEvent === 'set_emaphore_componentName') {
-                const j_measurement_file_name = data.file_name
-                const j_measurement_file_id = data.id
+            if (layEvent === 'edit') {
+                layer.open({
+                    type: 2,
+                    title: 'Quantitative Variable: (' + j_measurement_file_name + ')',
+                    shadeClose: false,
+                    shade: 0,
+                    anim: 5,
+                    maxmin: true, //开启最大化最小化按钮
+                    area: ['893px', '600px'],
+                    content: '/temperature/quantitative/page?file_id=' + j_measurement_file_id,
+                    success: function (layero, index) {
+
+                    },
+                    end: function () {
+
+                    }
+                });
+            } else if (layEvent === 'delete') {
+                handleDelete(data.id, obj);
+            } else if (layEvent === 'set_emaphore_componentName') {
                 layer.open({
                     type: 2,
                     title: 'Acquired semaphore: (' + j_measurement_file_name + ')',

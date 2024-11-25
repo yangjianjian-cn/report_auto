@@ -16,7 +16,8 @@ from app import db_pool, env_input_path
 from app.router import temperature_bp
 from app.service.TemperatureService import measurement_file_save, batch_chip_dict_save, \
     get_tool_dictionary_details, get_chip_dict, get_measurement_file_list_page, get_measurement_file_list, \
-    chip_dict_in_sql
+    chip_dict_in_sql, temperature_variables_edit
+from pojo.TemperatureVariable import TemperatureVariable
 from tools.temperature.temperature_work_time import relative_difference
 from tools.temperature.temperature_work_time import temperature_duration, temperature_chip, create_data_structure
 from tools.utils.DBOperator import create_table, batch_insert_data, delete_from_tables, \
@@ -309,6 +310,61 @@ def temperature_configuration_data():
     return jsonify(response_data)
 
 
+@temperature_bp.route('/quantitative/page', methods=['GET'])
+def temperature_variable_page():
+    measurement_file_id: str = request.args.get("file_id")
+    measurement_file_list: list[dict] = get_measurement_file_list(measurement_file_id)
+
+    if len(measurement_file_list) > 0:
+        measurement_file = measurement_file_list[0]
+        quantitative_variable = measurement_file.get("quantitative_variable") or ""
+        statistical_variable = measurement_file.get("statistical_variable") or ""
+        remark = measurement_file.get("remark") or ""
+    else:
+        quantitative_variable = ""
+        statistical_variable = ""
+        remark = ""
+    return render_template('temperature_variables_page.html', measurement_file_id=measurement_file_id,
+                           quantitative_variable=quantitative_variable,
+                           statistical_variable=statistical_variable,
+                           remark=remark)
+
+
+@temperature_bp.route('/quantitative/edit', methods=['POST'])
+def temperature_variable_edit():
+    # 获取 JSON 数据
+    data = request.get_json()
+    # 检查是否成功获取 JSON 数据
+    if not data:
+        return jsonify({"success": False, "message": "Invalid JSON data"}), 400
+
+    # 获取表单数据
+    measurement_file_id = data.get("measurement_file_id")
+    quantitative_variable = data.get('quantitative_variable')
+    statistical_variable = data.get('statistical_variable')
+    remarks = data.get('remarks')
+
+    # 验证数据（这里只是一个简单的检查，你可以根据实际需求进行更详细的验证）
+    if not quantitative_variable or not statistical_variable:
+        return jsonify({'success': False,
+                        'message': "quantitative_variable field or statistical_variable field  is required"}), 400
+
+    temperatureVariable = TemperatureVariable(
+        measurement_file_id=measurement_file_id,
+        quantitative_variable=quantitative_variable,
+        statistical_variable=statistical_variable,
+        remarks=remarks
+    )
+    logging.info(f"temperature_variable_edit:{temperatureVariable}")
+
+    True, "Update successful"
+    operation_rlt, operation_msg = temperature_variables_edit(temperatureVariable)
+    if operation_rlt:
+        return jsonify({'success': True, 'message': 'success'}), 200
+    else:
+        return jsonify({'success': False, 'message': operation_msg}), 200
+
+
 # ################################################################数据详情页#######################################
 @temperature_bp.route('/details', methods=['GET'])
 def temperature_details():
@@ -529,7 +585,6 @@ def temperature_overview():
 
 
 # #############################################################内部方法不参与解包和封包#######################################
-# ################################################################不参与拆包解包操作#######################################
 # 获取客户端IP地址
 def getClientIp():
     client_ip = ''

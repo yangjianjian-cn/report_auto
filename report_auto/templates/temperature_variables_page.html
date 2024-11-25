@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <meta name="renderer" content="webkit">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="format-detection" content="telephone=no">
+    <title>Temperature variables</title>
+
+    <link rel="stylesheet" type="text/css" href="/static/layer/theme/default/layui.css">
+    <script type="text/javascript" src="/static/js/jquery.min.js"></script>
+    <script type="text/javascript" src="/static/layer/layui.js"></script>
+    <script type="text/javascript" src="/static/layer/layer.js"></script>
+
+</head>
+<body>
+<form class="layui-form" lay-filter="form_variable" name="form_variable">
+    <div class="layui-form-item"><label class="layui-form-label">quantitative variable</label>
+        <div class="layui-input-block">
+            <input type="text" name="quantitative_variable" id="quantitative_variable" lay-verify="title"
+                   autocomplete="off"
+                   placeholder="For data details pages - Discrete graphs"
+                   class="layui-input" value="{{ quantitative_variable }}">
+        </div>
+    </div>
+    <div class="layui-form-item"><label class="layui-form-label">statistical variable</label>
+        <div class="layui-input-block">
+            <input type="text" name="statistical_variable" id="statistical_variable"
+                   placeholder="For Data Overview Page - Pie Chart"
+                   autocomplete="off" class="layui-input" value="{{statistical_variable}}">
+        </div>
+    </div>
+    <div class="layui-form-item layui-form-text"><label class="layui-form-label">Remarks</label>
+        <div class="layui-input-block"><textarea placeholder="Please enter the reason for the modification"
+                                                 class="layui-textarea" name="remark" >{{ remark }}</textarea>
+        </div>
+    </div>
+    <div class="layui-form-item">
+        <div class="layui-input-block">
+            <button type="button" class="layui-btn" id="submitBtn">Submit now</button>
+        </div>
+    </div>
+    <input type="hidden" name="measurement_file_id" id="measurement_file_id" value="{{ measurement_file_id }}">
+</form>
+</body>
+<script>
+    // Initialize Layui and define submitForm function
+    layui.use(['form'], function () {
+        const layer = layui.layer;
+
+        // 提交表单函数
+        function submitForm() {
+            const quantitativeVariable = $('#quantitative_variable').val();
+            const statisticalVariable = $('#statistical_variable').val();
+
+            // 验证表单数据
+            if (!quantitativeVariable || !statisticalVariable) {
+                layer.alert(' "Quantitative Variable" OR "Statistical Variable" is required.', {icon: 0});
+                return;
+            }
+
+            const formData = {
+                quantitative_variable: quantitativeVariable,
+                statistical_variable: statisticalVariable,
+                remarks: window.$('textarea[name="remarks"]').val(),
+                measurement_file_id: window.$("#measurement_file_id").val()
+            };
+
+            $.ajax({
+                url: '/temperature/quantitative/edit',
+                type: 'POST',
+                contentType: 'application/json', // 设置 Content-Type 为 application/json
+                data: JSON.stringify(formData), // 将数据序列化为 JSON 字符串
+                success: function (response) {
+                    operation_rlt = response.success;
+                    operation_msg = response.message;
+                    if (operation_rlt) {
+                        layer.alert(operation_msg, {icon: 1});
+
+                    } else {
+                        layer.alert(operation_msg, {icon: 2});
+                    }
+                },
+                error: function (jqXHR, textStatus, errorThrown) {
+                    layer.alert(errorThrown, {icon: 2});
+                }
+            });
+        }
+
+        // 添加事件监听器
+        $(document).ready(function () {
+            $('#submitBtn').on('click', submitForm);
+        });
+    });
+</script>
+</html>

@@ -1,7 +1,10 @@
+from typing import Mapping
+
 from pandas import DataFrame
 
 from app import db_pool
-from tools.utils.DBOperator import query_table, insert_data, batch_save
+from pojo import TemperatureVariable
+from tools.utils.DBOperator import query_table, insert_data, batch_save, update_table
 from tools.utils.DateUtils import get_current_datetime_yyyyMMddHHmmss
 
 '''根据字典类型获取字典项'''
@@ -99,7 +102,7 @@ def chip_dict_in_sql(selected_ids: list[int] = None, project_type: str = None) -
 def get_measurement_file_list_page(fileId: str = None, start=None, end=None, query_params=None):
     # 构建基础查询语句
     query_sql = '''
-        SELECT file_name, id, source as fuel_type, DATE_FORMAT(create_time, '%%Y-%%m-%%d %%H:%%i:%%s') AS create_time,project_name,ecu_hw,oem,vehicle_model,vehicle_number,sap_number,software
+        SELECT file_name, id, source as fuel_type, DATE_FORMAT(create_time, '%%Y-%%m-%%d %%H:%%i:%%s') AS create_time,project_name,ecu_hw,oem,vehicle_model,vehicle_number,sap_number,software,quantitative_variable,statistical_variable,remark
         FROM measurement_file
         WHERE 1 = 1
     '''
@@ -141,7 +144,7 @@ def get_measurement_file_list_page(fileId: str = None, start=None, end=None, que
 # 获取测量文件列表(不分页)
 def get_measurement_file_list(fileId: str = None):
     # 构建基础查询语句
-    query_sql = ' SELECT file_name, id, source,special_columns,oem FROM measurement_file '
+    query_sql = " SELECT file_name, id, source,special_columns,oem,quantitative_variable,statistical_variable,remark FROM measurement_file "
 
     # 如果提供了 fileId，则添加额外的过滤条件
     params = []  # 初始化参数列表
@@ -159,3 +162,19 @@ def get_measurement_file_list(fileId: str = None):
     # 执行查询
     measurement_file_list = query_table(db_pool, query=query_sql, params=params)
     return measurement_file_list
+
+
+# 编辑每个测量文件的统计量和定量变量
+def temperature_variables_edit(temperatureVariable: TemperatureVariable):
+    table = "measurement_file"
+
+    set_params: Mapping[str, str] = {}
+    if temperatureVariable.quantitative_variable:
+        set_params["quantitative_variable"] = temperatureVariable.quantitative_variable
+    if temperatureVariable.statistical_variable:
+        set_params["statistical_variable"] = temperatureVariable.statistical_variable
+
+    where_params: Mapping[str, int] = {}
+    where_params["id"] = temperatureVariable.measurement_file_id
+
+    return update_table(db_pool, table=table, set_params=set_params, where_params=where_params)
