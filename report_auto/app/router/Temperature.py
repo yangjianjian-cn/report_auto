@@ -5,7 +5,6 @@ import logging
 import os
 import re
 from collections import defaultdict
-from typing import Dict, List
 
 from asammdf import MDF
 from asammdf.blocks.utils import MdfException
@@ -14,12 +13,11 @@ from werkzeug.utils import secure_filename
 
 from app import db_pool, env_input_path
 from app.router import temperature_bp
-from app.service.TemperatureService import measurement_file_save, batch_chip_dict_save, \
+from app.service.TemperatureDataService import measurement_file_save, batch_chip_dict_save, \
     get_tool_dictionary_details, get_chip_dict, get_measurement_file_list_page, get_measurement_file_list, \
-    chip_dict_in_sql, temperature_variables_edit
+    chip_dict_in_sql, temperature_variables_edit, process_temperature_data
+from app.service.TemperatureWorkTimeService import relative_difference, temperature_duration
 from pojo.TemperatureVariable import TemperatureVariable
-from tools.temperature.temperature_work_time import relative_difference
-from tools.temperature.temperature_work_time import temperature_duration, temperature_chip, create_data_structure
 from tools.utils.DBOperator import create_table, batch_insert_data, delete_from_tables, \
     alter_table_add_columns, update_table
 from tools.utils.FileUtils import get_filename_without_extension
@@ -409,73 +407,33 @@ def temperature_details():
     measured_variables_list: list[str] = [item['measured_variable'] for item in r_chip_dict]
     logging.info(f"可观测信号量:{measured_variables_list}")
 
-    # 折线图
-    # #DC1_Th
-    selected_columns_dc1: list = []
-    temperature_time_dc1: Dict[str, List] = {}
-    data_structure_dc1: list = []
+    # 离散图和折线图
+    # DC1_Th
+    selected_columns_dc1, temperature_time_dc1, data_structure_dc1 = process_temperature_data(
+        prefix='DC1_',
+        measured_variables_list=measured_variables_list,
+        quantitative_variable_list=quantitative_variable_list,
+        selected_ids=selected_ids,
+        kv_chip_dict=kv_chip_dict
+    )
 
-    dc1_measured_variables_list: list[str] = [var for var in measured_variables_list if var.startswith('DC1_')]
-    if len(dc1_measured_variables_list) > 0:
-        dc1_measured_variables_list.extend(quantitative_variable_list)
-        merged_set= set(dc1_measured_variables_list)
-        dc1_measured_variables_list = list(merged_set)
-        dc1_measured_variables_list.append('timestamps')
-        logging.info(f"DC1_组件信号量:{dc1_measured_variables_list}")
-        temperature_time_dc1 = temperature_chip(selected_columns=dc1_measured_variables_list,
-                                                file_ids_int=selected_ids,
-                                                kv_chip_dict=kv_chip_dict)
+    # TC1_Th
+    selected_columns_tc1, temperature_time_tc1, data_structure_tc1 = process_temperature_data(
+        prefix='TC1_',
+        measured_variables_list=measured_variables_list,
+        quantitative_variable_list=quantitative_variable_list,
+        selected_ids=selected_ids,
+        kv_chip_dict=kv_chip_dict
+    )
 
-        selected_columns_dc1 = [key for key in temperature_time_dc1 if key != 'timestamps']
-        logging.info(f"DC1_组件信号量中文名:{selected_columns_dc1}")
-
-        data_structure_dc1 = create_data_structure(temperature_time_dc1, selected_columns_dc1, quantitative_variable_list[0],
-                                                   num_processes=len(selected_ids))
-
-    # #TC1_Th
-    selected_columns_tc1: list = []
-    temperature_time_tc1: Dict[str, List] = {}
-    data_structure_tc1: list = []
-
-    tc1_measured_variables_list = [var for var in measured_variables_list if var.startswith('TC1_')]
-    if len(tc1_measured_variables_list) > 0:
-        tc1_measured_variables_list.extend(quantitative_variable_list)
-        merged_set= set(tc1_measured_variables_list)
-        tc1_measured_variables_list = list(merged_set)
-        tc1_measured_variables_list.append('timestamps')
-        logging.info(f"TC1_组件信号量:{tc1_measured_variables_list}")
-
-        temperature_time_tc1: Dict[str, List] = temperature_chip(selected_columns=tc1_measured_variables_list,
-                                                                 file_ids_int=selected_ids,
-                                                                 kv_chip_dict=kv_chip_dict)
-        selected_columns_tc1 = [key for key in temperature_time_tc1 if key != 'timestamps']
-
-        data_structure_tc1 = create_data_structure(temperature_time_tc1, selected_columns_tc1, quantitative_variable_list[0],
-                                                   num_processes=len(selected_ids))
-
-    # #TC2_Th
-    selected_columns_tc2: list = []
-    temperature_time_tc2: Dict[str, List] = {}
-    data_structure_tc2: list = []
-
-    tc2_measured_variables_list = [var for var in measured_variables_list if var.startswith('TC2_')]
-    if len(tc2_measured_variables_list) > 0:
-        tc2_measured_variables_list.extend(quantitative_variable_list)
-        merged_set= set(tc2_measured_variables_list)
-        tc2_measured_variables_list = list(merged_set)
-        tc2_measured_variables_list.append('timestamps')
-        logging.info(f"TC2_组件信号量:{tc2_measured_variables_list}")
-
-        temperature_time_tc2 = temperature_chip(selected_columns=tc2_measured_variables_list,
-                                                file_ids_int=selected_ids,
-                                                kv_chip_dict=kv_chip_dict)
-
-        # 过滤 r_chip_dict 中与 tc2_measured_variables_list 匹配的项
-        selected_columns_tc2 = [key for key in temperature_time_tc2 if key != 'timestamps']
-        logging.info(f"TC2_组件信号量中文名:{selected_columns_tc2}")
-
-        data_structure_tc2 = create_data_structure(temperature_time_tc2, selected_columns_tc2, quantitative_variable_list[0],
-                                                   num_processes=len(selected_ids))
+    # TC2_Th
+    selected_columns_tc2, temperature_time_tc2, data_structure_tc2 = process_temperature_data(
+        prefix='TC2_',
+        measured_variables_list=measured_variables_list,
+        quantitative_variable_list=quantitative_variable_list,
+        selected_ids=selected_ids,
+        kv_chip_dict=kv_chip_dict
+    )
 
     # 下拉复选框
     multi_select_html = generate_select_options(get_measurement_file_list(fileId=None))
@@ -518,17 +476,18 @@ def temperature_overview():
     if fileId:
         selected_ids = [int(id) for id in fileId.split(',')]
         filtered_files = [file for file in measurement_file_list if file['id'] in selected_ids]
-        statistical_variables: str = [file['statistical_variable'] for file in filtered_files if
+        statistical_variables_list: list = [file['statistical_variable'] for file in filtered_files if
                                       file['statistical_variable'] is not None]
+        statistical_variables_str = statistical_variables_list[0]
     else:
         selected_ids.append(measurement_file_list[0].get('id'))
         file_info = measurement_file_list[0]
-        statistical_variables: str = file_info['statistical_variable']
+        statistical_variables_str: str = file_info['statistical_variable']
 
     measurement_source = measurement_file_list[0].get('source')
     project_type: str = measurement_file_list[0].get('oem')
 
-    logging.info(f"统计量:{statistical_variables}")
+    logging.info(f"统计量:{statistical_variables_str}")
     logging.info(f"燃料类型:{measurement_source}")
     logging.info(f"项目:{project_type}")
     logging.info(f"观测文件:{selected_ids}")
@@ -538,7 +497,7 @@ def temperature_overview():
 
     # 创建一个字典来存储匹配结果
     statistical_variables_name_list: list[dict] = []
-    statistical_variables_list: list[str] = statistical_variables.split(",")
+    statistical_variables_list = statistical_variables_str.split(",")
     for variable in statistical_variables_list:
         variable = variable.strip()
         matched_chip = next((chip for chip in chip_dict_list if chip['measured_variable'] == variable), None)
