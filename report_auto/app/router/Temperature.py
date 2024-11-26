@@ -500,10 +500,10 @@ def temperature_overview():
     statistical_variables_list = statistical_variables_str.split(",")
     for variable in statistical_variables_list:
         variable = variable.strip()
-        matched_chip = next((chip for chip in chip_dict_list if chip['measured_variable'] == variable), None)
+        matched_chip = next((chip for chip in chip_dict_list if chip['chip_name'] == variable), None)
         if matched_chip:
             statistical_variables_name_list.append(
-                {'measured_variable': variable, 'chip_name': matched_chip['chip_name']})
+                {'measured_variable': matched_chip['measured_variable'], 'chip_name': matched_chip['chip_name']})
         else:
             statistical_variables_name_list.append({'measured_variable': variable, 'chip_name': variable})
 

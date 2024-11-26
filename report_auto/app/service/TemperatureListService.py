@@ -118,7 +118,7 @@ def get_measurement_file_list_page(fileId: str = None, start=None, end=None, que
         pass
 
     # 添加排序子句
-    query_sql += ' ORDER BY id DESC'
+    query_sql += ' ORDER BY update_time DESC'
     # 如果提供了分页参数，则添加 LIMIT 和 OFFSET 子句
     if start is not None and end is not None:
         query_sql += ' LIMIT %s OFFSET %s'

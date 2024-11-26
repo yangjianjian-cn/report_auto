@@ -4,13 +4,11 @@ from collections import defaultdict
 
 
 def generate_select_options(measurement_files, selected_ids=None):
-    # 使用 defaultdict 进行分组
-    # 使用 defaultdict 进行分组
     grouped_files = defaultdict(list)
 
     for file in measurement_files:
-        source = file['source']
-        grouped_files[source].append(file)
+        oem = file['oem']
+        grouped_files[oem].append(file)
 
     # 初始化选中的 ID 列表
     selected_ids = selected_ids or []
@@ -18,8 +16,8 @@ def generate_select_options(measurement_files, selected_ids=None):
     # 使用列表来存储生成的 HTML 部分
     html_parts = ['<select id="example-multiple-optgroups" multiple="multiple" class="bg-warning" tabindex="-1">\n']
 
-    for source, files in grouped_files.items():
-        html_parts.append(f'    <optgroup label="{source}">\n')
+    for oem, files in grouped_files.items():
+        html_parts.append(f'    <optgroup label="{oem}">\n')
 
         for mf in files:
             file_id = mf['id']

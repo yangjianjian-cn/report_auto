@@ -120,11 +120,11 @@ def relative_difference(selected_ids: list[int], chip_dict_list: list) -> list[d
     # 芯片字典
     for chip in chip_dict_list:
         measured_variable = chip['measured_variable']
-        if measured_variable in result_map:
-            chip['max_temperature'] = result_map[measured_variable]
-            chip['relative_difference_temperature'] = relative_difference_chip(chip['max_allowed_value'],
-                                                                               chip['max_temperature'])
-            chip['difference_temperature'] = difference_chip(chip['max_allowed_value'], chip['max_temperature'])
+        max_temperature = result_map.get(measured_variable, 0)
+        chip['max_temperature'] = max_temperature
+        chip['relative_difference_temperature'] = relative_difference_chip(chip['max_allowed_value'], max_temperature)
+        chip['difference_temperature'] = difference_chip(chip['max_allowed_value'], max_temperature)
+
     return chip_dict_list
 
 

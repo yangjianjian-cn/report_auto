@@ -1,5 +1,5 @@
 import multiprocessing
-from typing import Mapping, List, Dict
+from typing import Mapping, List, Dict, Optional
 
 import pandas as pd
 from pandas import DataFrame
@@ -121,7 +121,7 @@ def get_measurement_file_list_page(fileId: str = None, start=None, end=None, que
         pass
 
     # 添加排序子句
-    query_sql += ' ORDER BY id DESC'
+    query_sql += ' ORDER BY update_time DESC'
     # 如果提供了分页参数，则添加 LIMIT 和 OFFSET 子句
     if start is not None and end is not None:
         query_sql += ' LIMIT %s OFFSET %s'
@@ -159,7 +159,7 @@ def get_measurement_file_list(fileId: str = None):
         params.extend(id_list)
 
     # 添加排序子句
-    query_sql += ' ORDER BY id DESC'
+    query_sql += ' ORDER BY update_time DESC'
 
     # 执行查询
     measurement_file_list = query_table(db_pool, query=query_sql, params=params)
@@ -175,6 +175,11 @@ def temperature_variables_edit(temperatureVariable: TemperatureVariable):
         set_params["quantitative_variable"] = temperatureVariable.quantitative_variable
     if temperatureVariable.statistical_variable:
         set_params["statistical_variable"] = temperatureVariable.statistical_variable
+    if temperatureVariable.remark:
+        set_params["remark"] = temperatureVariable.remark
+
+    date_time = get_current_datetime_yyyyMMddHHmmss()
+    set_params["update_time"] = date_time
 
     where_params: Mapping[str, int] = {}
     where_params["id"] = temperatureVariable.measurement_file_id
@@ -265,7 +270,9 @@ def process_temperature_data(prefix: str,
                              kv_chip_dict: Dict) -> (List[str], Dict[str, List], List):
     measured_variables = [var for var in measured_variables_list if var.startswith(prefix)]
     if len(measured_variables) > 0:
-        measured_variables.extend(quantitative_variable_list)
+        quantitative_variable_name:str = quantitative_variable_list[0]
+        quantitative_variable_code: Optional[str] = next( (key for key, value in kv_chip_dict.items() if value == quantitative_variable_name), quantitative_variable_name)
+        measured_variables.extend([quantitative_variable_code])
         measured_variables = list(set(measured_variables))
         measured_variables.append('timestamps')
 
@@ -277,7 +284,7 @@ def process_temperature_data(prefix: str,
         selected_columns = [key for key in temperature_time if key != 'timestamps']
 
         # 创建数据结构
-        data_structure = create_data_structure(temperature_time, selected_columns, quantitative_variable_list[0],
+        data_structure = create_data_structure(temperature_time, selected_columns, quantitative_variable_name,
                                                num_processes=len(selected_ids))
 
         return selected_columns, temperature_time, data_structure
