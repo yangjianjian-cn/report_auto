@@ -9,7 +9,7 @@ import pandas as pd
 from pandas import DataFrame
 
 from app import db_pool
-from app.service.TemperatureService import chip_dict_in_sql
+from pojo.TemperatureDurationResult import TemperatureDurationResult
 from tools.utils.DBOperator import query_table, query_table_sampling, query_table_by_sql
 from tools.utils.MathUtils import relative_difference_chip, difference_chip
 
@@ -19,94 +19,93 @@ from collections import defaultdict
 from concurrent.futures import ThreadPoolExecutor
 
 
-def process_file(file_ids: list, measurement_source: str, grouped_special_columns: dict):
-    # 构建参数列表
+def process_file(file_ids: list, statistical_variables_dict: dict) -> TemperatureDurationResult:
+    result = TemperatureDurationResult()
     placeholders = ",".join(map(str, file_ids))
-    try:
-        # 初始化一个字典来存储每个温度区间的总分钟数
-        cur_time_diffs_tecut = defaultdict(float)
-        cur_time_diffs_tc1th9 = defaultdict(float)
 
-        logging.info(f"file_id:{placeholders}")
+    # 定义一个通用的查询函数
+    def query_and_process(variable_name: str, variable_value: str, category: str):
+        query_sql = f"""
+            SELECT {variable_name}_group AS {variable_name}, ROUND( (MAX(timestamps) - MIN(timestamps)) / 60, 2) AS timestamps
+            FROM
+                ( SELECT
+                    CONCAT(FLOOR(({variable_value} + 40) / 5) * 5 - 40, '-', FLOOR(({variable_value} + 40) / 5) * 5 - 35) AS {variable_name}_group, timestamps
+                    FROM chip_temperature
+                    WHERE file_id IN ({placeholders})
+                ) TMP
+            GROUP BY {variable_name}
+            ORDER BY {variable_name}
+        """
+        logging.info(f"query_sql:{query_sql}")
+        results_df: DataFrame = query_table_by_sql(db_pool, query_sql=query_sql)
+        results_df = results_df.dropna(axis=1, how='all')
+        if variable_name in results_df.columns:
+            durations = results_df.set_index(variable_name)['timestamps'].to_dict()
+            result.add_durations(durations, category)
+            logging.info(f"{category}温度时长:{durations}")
 
-        # ECU TECU_t  temperature duration
-        if 'TECU_t' in grouped_special_columns:
-            query_sql = f"""
-                  SELECT TECU_group AS TECU_T, ROUND( (MAX(timestamps) - MIN(timestamps)) /60,2)  AS timestamps
-                    FROM
-                        ( SELECT
-                            CONCAT(FLOOR((TECU_t + 40) / 5) * 5 - 40, '-', FLOOR((TECU_t + 40) / 5) * 5 - 35) AS TECU_group,timestamps
-                            FROM chip_temperature
-                            WHERE file_id ={placeholders} 
-                        )TMP
-                    GROUP BY TECU_group
-                    order by TECU_T
-            """
-            results_df: DataFrame = query_table_by_sql(db_pool, query_sql=query_sql)
-            results_df = results_df.dropna(axis=1, how='all')  # 剔除所有值都为 None 的列
-            logging.info(f"TECU_T:{len(results_df)}")
+    # 根据需要处理的数据调用通用函数
+    if 'TECU_t' in statistical_variables_dict:
+        query_and_process('TECU_T', 'TECU_t', 'TECU_T')
 
-            if 'TECU_T' in results_df.columns:
-                cur_time_diffs_tecut = results_df.set_index('TECU_T')['timestamps'].to_dict()
-                logging.info(f"TECU_t温度时长:{cur_time_diffs_tecut}")
+    if 'X3' in statistical_variables_dict:
+        for x3 in statistical_variables_dict['X3']:
+            query_and_process('X3', x3, 'X3')
 
-        # ECU Ambient temperature (X3)
-        if "X3" in grouped_special_columns:
-            X3_list: list = grouped_special_columns["X3"]
-            for x3 in X3_list:
-                query_sql = f"""
-                        SELECT X3_group AS X3, ROUND( (MAX(timestamps) - MIN(timestamps)) / 60, 2) AS timestamps
-                        FROM
-                            ( SELECT
-                                CONCAT(FLOOR(({x3} + 40) / 5) * 5 - 40, '-', FLOOR(({x3} + 40) / 5) * 5 - 35) AS X3_group, timestamps
-                                FROM chip_temperature
-                                WHERE file_id = {placeholders}
-                            ) TMP
-                        GROUP BY X3
-                        ORDER BY X3
-                    """
+    if 'X2' in statistical_variables_dict:
+        for x2 in statistical_variables_dict['X2']:
+            query_and_process('X2', x2, 'X2')
 
-                results_df: DataFrame = query_table_by_sql(db_pool, query_sql=query_sql)
-                results_df = results_df.dropna(axis=1, how='all')  # 剔除所有值都为 None 的列
-                if 'X3' in results_df.columns:
-                    cur_time_diffs_tc1th9_1 = results_df.set_index('X3')['timestamps'].to_dict()
-                    # 手动合并并累加重复键的值
-                    for key, value in cur_time_diffs_tc1th9_1.items():
-                        cur_time_diffs_tc1th9[key] += value
-                    logging.info(f"X3温度时长:{cur_time_diffs_tc1th9}")
-
-        # ECU Internal Ambient temperature(X2)
-
-    except Exception as e:
-        logging.error(f"An error occurred: {e}")
-    # 计算总的分钟数
-    cur_total_minutes_tecut = round(sum(cur_time_diffs_tecut.values()), 2)
-    cur_total_minutes_tc1th9 = round(sum(cur_time_diffs_tc1th9.values()), 2)
-    return cur_time_diffs_tecut, cur_time_diffs_tc1th9, cur_total_minutes_tecut, cur_total_minutes_tc1th9
+    return result.get_result()
 
 
-def temperature_duration(file_ids_int: list = None, max_workers=None, measurement_source=None,
-                         grouped_special_columns: dict = None):
+def temperature_duration(file_ids_int: list = None, max_workers=None, statistical_variables_dict: dict = None):
     # 使用 ThreadPoolExecutor 并行处理每个文件
     with ThreadPoolExecutor(max_workers=max_workers) as executor:
-        results = list(
-            executor.map(lambda fids: process_file([fids], measurement_source, grouped_special_columns), file_ids_int))
+        temperatureDuration_result_list: list[dict] = \
+            list(executor.map(lambda fids: process_file([fids], statistical_variables_dict), file_ids_int))
+
+    logging.info(f"temperatureDuration_result_list:{temperatureDuration_result_list}")
+
     # 合并所有文件的结果
-    combined_time_diffs_tecut = defaultdict(float)
-    combined_time_diffs_tc1th9 = defaultdict(float)
-    total_minutes_tecut = 0
-    total_minutes_tc1th9 = 0
+    combined_time_diffs_tecut_dict: dict = defaultdict(float)
+    combined_time_diffs_x3_dict: dict = defaultdict(float)
+    combined_time_diffs_x2_dict: dict = defaultdict(float)
 
-    for time_diffs_tecut, time_diffs_tc1th9, total_minute_tecut, total_minute_tc1th9 in results:
-        for interval, minutes in time_diffs_tecut.items():
-            combined_time_diffs_tecut[interval] += minutes
-        total_minutes_tecut += total_minute_tecut
+    total_minutes_tecut_f: float = 0
+    total_minutes_x3_f: float = 0
+    total_minutes_x2_f: float = 0
 
-        for interval, minutes in time_diffs_tc1th9.items():
-            combined_time_diffs_tc1th9[interval] += minutes
-        total_minutes_tc1th9 += total_minute_tc1th9
+    for temperatureDuration_result_dict in temperatureDuration_result_list:
+        tecut_dict: dict = temperatureDuration_result_dict.get('tecut')
+        x3_dict: dict = temperatureDuration_result_dict.get('x3')
+        x2_dict: dict = temperatureDuration_result_dict.get('x2')
 
-    return dict(combined_time_diffs_tecut), total_minutes_tecut, dict(combined_time_diffs_tc1th9), total_minutes_tc1th9
+        t_total_minutes_tecut_f: float = temperatureDuration_result_dict.get('total_minutes_tecut', 0.0)
+        t_total_minutes_x3_f: float = temperatureDuration_result_dict.get('total_minutes_x3', 0.0)
+        t_total_minutes_x2_f: float = temperatureDuration_result_dict.get('total_minutes_x2', 0.0)
+
+        # 累加每个芯片的温度范围持续时间
+        for temp_range, duration in tecut_dict.items():
+            combined_time_diffs_tecut_dict[temp_range] += duration
+        for temp_range, duration in x3_dict.items():
+            combined_time_diffs_x3_dict[temp_range] += duration
+        for temp_range, duration in x2_dict.items():
+            combined_time_diffs_x2_dict[temp_range] += duration
+
+        # 累加总分钟数
+        total_minutes_tecut_f += t_total_minutes_tecut_f
+        total_minutes_x3_f += t_total_minutes_x3_f
+        total_minutes_x2_f += t_total_minutes_x2_f
+
+    return {
+        'combined_time_diffs_tecut_dict': combined_time_diffs_tecut_dict,
+        'combined_time_diffs_x3_dict': combined_time_diffs_x3_dict,
+        'combined_time_diffs_x2_dict': combined_time_diffs_x2_dict,
+        'total_minutes_tecut_f': total_minutes_tecut_f,
+        'total_minutes_x3_f': total_minutes_x3_f,
+        'total_minutes_x2_f': total_minutes_x2_f
+    }
 
 
 def modify_records(records):
@@ -122,13 +121,12 @@ def modify_records(records):
     return modified_records
 
 
-def temperature_chip(selected_columns: list, file_ids_int: list, measurement_source: str, kv_chip_dict: dict) -> Dict[
+def temperature_chip(selected_columns: list, file_ids_int: list, kv_chip_dict: dict) -> Dict[
     str, List]:
     file_ids_str_for_query = ', '.join(map(str, file_ids_int))
     selected_columns_str = ', '.join(map(str, selected_columns))
     result_dicts = query_table_sampling(db_pool, columns=selected_columns_str,
-                                        file_ids_str_for_query=file_ids_str_for_query,
-                                        measurement_source=measurement_source)
+                                        file_ids_str_for_query=file_ids_str_for_query)
     if result_dicts is None or len(result_dicts) < 1:
         # 返回一个空的 temperature_time 字典
         new_temperature_time = {col: [] for col in selected_columns}
@@ -171,12 +169,9 @@ def process_sensor(sensor, temperature_time_dc1, tecu_temperatures):
             "markArea": markArea}
 
 
-def create_data_structure(temperature_time_dc: DataFrame, sensors_list: list, measurement_source: str,
+def create_data_structure(temperature_time_dc: DataFrame, sensors_list: list, quantitative_variable_str: str,
                           num_processes=None):
-    tecu_temperatures = temperature_time_dc.get('TECU_t', [])
-    if 'NG_FILES' == measurement_source:
-        tecu_temperatures = temperature_time_dc.get('X3', [])
-
+    tecu_temperatures = temperature_time_dc.get(quantitative_variable_str, [])
     with multiprocessing.Pool(processes=num_processes) as pool:
         results = pool.starmap(process_sensor,
                                [(sensor, temperature_time_dc, tecu_temperatures) for sensor in sensors_list])
@@ -187,8 +182,7 @@ def create_data_structure(temperature_time_dc: DataFrame, sensors_list: list, me
     return results
 
 
-# table_name: str, columns: str, where: str
-def relative_difference(selected_ids: list[int], project_type: str) -> list[dict]:
+def relative_difference(selected_ids: list[int], chip_dict_list: list) -> list[dict]:
     # 查看每个芯片的最大测量温度
     max_rlt_df = max_query(selected_ids)
     for column in max_rlt_df.columns:
@@ -201,15 +195,13 @@ def relative_difference(selected_ids: list[int], project_type: str) -> list[dict
     logging.debug(f"result_map:{result_map}")
 
     # 芯片字典
-    chip_dict_list = chip_dict_in_sql(selected_ids=selected_ids,project_type=project_type)
     for chip in chip_dict_list:
         measured_variable = chip['measured_variable']
         if measured_variable in result_map:
             chip['max_temperature'] = result_map[measured_variable]
-            chip['relative_difference_temperature'] = relative_difference_chip(chip['max_allowed_value'],chip['max_temperature'])
+            chip['relative_difference_temperature'] = relative_difference_chip(chip['max_allowed_value'],
+                                                                               chip['max_temperature'])
             chip['difference_temperature'] = difference_chip(chip['max_allowed_value'], chip['max_temperature'])
-    # 过滤掉没有 max_temperature 属性的芯片
-    # chip_dict_list = [chip for chip in chip_dict_list if 'max_temperature' in chip]
     return chip_dict_list
 
 

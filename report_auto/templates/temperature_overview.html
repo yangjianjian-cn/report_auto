@@ -106,13 +106,17 @@
 <script type="text/javascript" src="/static/js/biz/file_list_multi_select_overview.js?v=2"></script>
 <script type="text/javascript" src="/static/js/echarts.min.js"></script>
 <script>
-    const timeDiffs_tecut = {{ time_diffs_tecut | tojson }};
-    const time_diffs_tc1th9 = {{ time_diffs_tc1th9 | tojson }};
-    const totalMinutes_tecut = {{ total_minutes_tecut}};
-    const total_minutes_tc1th9 = {{ total_minutes_tc1th9}};
+    const time_diffs_tecut = {{ time_diffs_tecut | tojson }};
+    const time_diffs_x3 = {{ time_diffs_x3 | tojson }};
+    const time_diffs_x2 = {{ time_diffs_x2 | tojson }};
+
+    const total_minutes_tecut = {{ total_minutes_tecut}};
+    const total_minutes_x3 = {{ total_minutes_x3}};
+    const total_minutes_x2 = {{ total_minutes_x2}};
+
     const measurement_source = {{ measurement_source | tojson}};
 </script>
-<script type="text/javascript" src="/static/js/biz/temperature_duration.js?v=2"></script>
+<script type="text/javascript" src="/static/js/biz/temperature_duration.js"></script>
 <script>
     const chipNames = {{ chip_names | tojson }};
     const maxAllowedValues = {{ max_allowed_values | tojson }};

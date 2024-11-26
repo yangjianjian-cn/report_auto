@@ -16,7 +16,7 @@ let option = {
     title: [
         {
             text: 'ECU TECU_t  temperature duration',
-            subtext: 'Total (minutes) ' + totalMinutes_tecut,
+            subtext: 'Total (minutes) ' + total_minutes_tecut,
             left: '50%',
             textAlign: 'center',
             align: 'center'
@@ -34,7 +34,7 @@ let option = {
     xAxis: [
         {
             type: 'value',
-            max: totalMinutes_tecut,
+            max: total_minutes_tecut,
             splitLine: {
                 show: false
             }
@@ -43,7 +43,7 @@ let option = {
     yAxis: [
         {
             type: 'category',
-            data: Object.keys(timeDiffs_tecut),
+            data: Object.keys(time_diffs_tecut),
             axisLabel: {
                 interval: 0,
                 rotate: 30
@@ -62,8 +62,8 @@ let option = {
                 position: 'right',
                 show: true
             },
-            data: Object.keys(timeDiffs_tecut).map(function (key) {
-                return timeDiffs_tecut[key];
+            data: Object.keys(time_diffs_tecut).map(function (key) {
+                return time_diffs_tecut[key];
             })
         },
         {
@@ -80,10 +80,10 @@ let option = {
             labelLayout: {
                 draggable: true
             },
-            data: Object.keys(timeDiffs_tecut).map((key) => {
+            data: Object.keys(time_diffs_tecut).map((key) => {
                 return {
                     name: key,
-                    value: timeDiffs_tecut[key]
+                    value: time_diffs_tecut[key]
                 };
             })
         }

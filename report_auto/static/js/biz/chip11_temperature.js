@@ -15,8 +15,8 @@ let option11 = {
     },
     title: [
         {
-            text: 'ECU Internal Ambient temperature',
-            subtext: 'Total (minutes) ' + total_minutes_tc1th9,
+            text: 'ECU Internal Ambient temperature(X2)',
+            subtext: 'Total (minutes) ' + total_minutes_x2,
             right: '5%',
             textAlign: 'left'
         }
@@ -44,10 +44,10 @@ let option11 = {
             labelLayout:{
                 draggable:true
             },
-            data: Object.keys(time_diffs_tc1th9).map((key) => {
+            data: Object.keys(time_diffs_x2).map((key) => {
                 return {
                     name: key,
-                    value: time_diffs_tc1th9[key]
+                    value: time_diffs_x2[key]
                 };
             })
         }

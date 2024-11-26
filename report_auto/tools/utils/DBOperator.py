@@ -224,7 +224,7 @@ columns:多个字段以逗号分割
 
 
 @db_pool.with_connection
-def query_table_sampling(columns: str, file_ids_str_for_query: str, conn=None, measurement_source=None):
+def query_table_sampling(columns: str, file_ids_str_for_query: str, conn=None):
     cursor = conn.cursor()
     try:
         sql_query = f"""
@@ -232,7 +232,7 @@ def query_table_sampling(columns: str, file_ids_str_for_query: str, conn=None, m
             FROM (SELECT {columns}
                          ,ROW_NUMBER() OVER (ORDER BY timestamps) AS row_num
                   FROM chip_temperature
-                  WHERE file_id in ({file_ids_str_for_query}) and source='{measurement_source}') AS t
+                  WHERE file_id in ({file_ids_str_for_query}) ) AS t
             WHERE row_num % 1000 = 0
             ORDER BY timestamps
         """
