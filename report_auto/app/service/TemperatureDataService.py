@@ -6,7 +6,8 @@ from pandas import DataFrame
 
 from app import db_pool
 from pojo import TemperatureVariable
-from tools.utils.DBOperator import query_table, insert_data, batch_save, update_table, query_table_sampling
+from tools.utils.DBOperator import query_table, insert_data, batch_save, update_table, query_table_sampling, \
+    delete_from_tables
 from tools.utils.DateUtils import get_current_datetime_yyyyMMddHHmmss
 
 '''根据字典类型获取字典项'''
@@ -44,11 +45,9 @@ def batch_chip_dict_save(data: list, s_oem: str):
         item["measured_file_name"] = s_oem
 
     table_name: str = "chip_dict"
-    # table: str, param: Mapping[str, int], conn=None
-    del_param: dict = {
+    del_param: dict = {"measured_file_name": s_oem}
+    delete_from_tables(db_pool, table=table_name, param=del_param)
 
-    }
-    delete_from_tables(table=table_name)
     ret_msg = batch_save(db_pool, table_name, data)
     operation_code = ret_msg[0]
     operation_result = ret_msg[1]

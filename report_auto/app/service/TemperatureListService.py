@@ -4,7 +4,7 @@ from pandas import DataFrame
 
 from app import db_pool
 from pojo import TemperatureVariable
-from tools.utils.DBOperator import query_table, insert_data, batch_save, update_table
+from tools.utils.DBOperator import query_table, insert_data, batch_save, update_table, delete_from_tables_by_in
 from tools.utils.DateUtils import get_current_datetime_yyyyMMddHHmmss
 
 
@@ -95,6 +95,18 @@ def chip_dict_in_sql(selected_ids: list[int] = None, project_type: str = None) -
         return []
 
     return result_dicts
+
+
+def chip_dict_del(delete_ids: list[str]):
+    table_name: str = "chip_dict"
+
+    # 转换列表中的字符串为整数
+    int_ids = [int(id) for id in delete_ids]
+    # 将整数列表转换为由逗号分隔的字符串
+    int_ids_str = ','.join(str(id) for id in int_ids)
+
+    param:Mapping={"id": int_ids_str}
+    return delete_from_tables_by_in(db_pool,table_name, param)
 
 
 # 文件列表(分页)

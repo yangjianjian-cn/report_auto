@@ -1,7 +1,7 @@
 __coding__ = "utf-8"
 
 import logging
-from typing import Mapping, Dict, List
+from typing import Mapping, Dict, List, Union
 
 import pandas as pd
 from pandas import DataFrame
@@ -292,13 +292,47 @@ def query_table(query=None, params=None, conn=None):
         cursor.close()
 
 
+@db_pool.with_connection
+def delete_from_tables_by_in(table: str, param: Mapping[str, Union[int, str]], conn=None):
+    cursor = conn.cursor()
+    try:
+        # 获取参数键和值
+        key = list(param.keys())[0]
+        values_str = list(param.values())[0]
+
+        # 将值字符串转换为列表
+        values_list = values_str.split(',')
+
+        # 构建占位符列表，例如 ('%s', '%s')
+        placeholders = ', '.join(['%s'] * len(values_list))
+
+        # 构建 IN 子句
+        delete_sql = f"DELETE FROM {table} WHERE {key} IN ({placeholders})"
+
+        logging.info(f"sql_delete_primary: {delete_sql} with values: {values_list}")
+
+        # 执行删除操作
+        cursor.execute(delete_sql, tuple(values_list))  # 将 values_list 转换为元组
+        logging.info(f"Deleted {cursor.rowcount} rows from {table}")
+
+        # 提交事务
+        conn.commit()
+        return True, "Deletion successful"
+    except Exception as e:
+        logging.error(f"An error occurred: {e}")
+        conn.rollback()  # 回滚事务
+        return False, str(e)
+    finally:
+        cursor.close()
+
+
 '''
 物理删除物理表中的数据
 '''
 
 
 @db_pool.with_connection
-def delete_from_tables(table: str, param: Mapping[str, int], conn=None):
+def delete_from_tables(table: str, param: Mapping[str, Union[int, str]], conn=None):
     cursor = conn.cursor()
     try:
         # 删除第一个表中的数据

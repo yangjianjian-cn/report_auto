@@ -16,6 +16,7 @@ from app.router import temperature_bp
 from app.service.TemperatureDataService import measurement_file_save, batch_chip_dict_save, \
     get_tool_dictionary_details, get_chip_dict, get_measurement_file_list_page, get_measurement_file_list, \
     chip_dict_in_sql, temperature_variables_edit, process_temperature_data
+from app.service.TemperatureListService import chip_dict_del
 from app.service.TemperatureWorkTimeService import relative_difference, temperature_duration
 from pojo.TemperatureVariable import TemperatureVariable
 from tools.utils.DBOperator import create_table, batch_insert_data, delete_from_tables, \
@@ -117,6 +118,24 @@ def temperature_configuration_add():
     except Exception as e:
         # 返回错误响应
         return jsonify({"success": False, "message": str(e)})
+
+
+@temperature_bp.route('/configuration/del', methods=['POST'])
+def temperature_configuration_del():
+    try:
+        # 获取请求体中的数据
+        data = request.get_json()
+        delete_ids = data.get('deleteIds', [])
+
+        if not isinstance(delete_ids, list) or len(delete_ids) == 0:
+            return jsonify({'message': 'Invalid or empty deleteIds array'}), 400
+
+        trueOrFalse, trueOrFalseMsg = chip_dict_del(delete_ids)
+        # 返回成功响应
+        return jsonify({'message': trueOrFalseMsg}), 200 if trueOrFalse else 500
+
+    except Exception as e:
+        return jsonify({'message': f'Request error: {str(e)}'}), 500
 
 
 @temperature_bp.route('/todb', methods=['POST'])
@@ -487,7 +506,7 @@ def temperature_overview():
                                             file['statistical_variable'] is not None]
         statistical_variables_str = statistical_variables_list[0]
 
-        project_type:list[str] = [file['oem'] for file in filtered_files]
+        project_type: list[str] = [file['oem'] for file in filtered_files]
 
         measurement_source = filtered_files[0]['source']
 

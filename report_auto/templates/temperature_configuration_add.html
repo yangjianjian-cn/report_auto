@@ -11,8 +11,11 @@
     <title>Configuration</title>
 
     <link rel="stylesheet" type="text/css" href="/static/layer/theme/default/layer.css">
+    <link rel="stylesheet" type="text/css" href="/static/layer/theme/default/layui.css">
+
     <script type="text/javascript" src="/static/js/jquery.min.js"></script>
     <script type="text/javascript" src="/static/layer/layer.js"></script>
+
     <style>
         table {
             width: 100%;
@@ -31,9 +34,14 @@
 </head>
 <body>
 <input type="hidden" id="h_oem_hidden" value="{{ s_oem }}">
-<button id="addRowButton">add row</button>
-<button id="delRowButton">Delete row</button>
-<button id="submitTableButton">Submit</button>
+<div class="layui-btn-group">
+    <button type="button" class="layui-btn layui-btn-sm" id="addRowButton" title="Add Row"><i class="layui-icon"></i>
+    </button>
+    <button type="button" class="layui-btn layui-btn-sm" id="delRowButton" title="Delete Row"><i
+            class="layui-icon"></i></button>
+    <button type="button" class="layui-btn layui-btn-sm" id="submitTableButton" title="Submit"><i
+            class="layui-icon"></i></button>
+</div>
 <table id="measured_variable_table">
     <thead>
     <tr>
@@ -48,18 +56,18 @@
     <!-- 初始数据 -->
 
     {% if chip_dict_list is not none and chip_dict_list|length > 0 %}
-       {% for electronic_component in chip_dict_list %}
+        {% for electronic_component in chip_dict_list %}
             <tr>
-                <td><input type="checkbox"></td>
+                <td><input type="checkbox" value="{{ electronic_component.id }}"></td>
                 <td contenteditable="true">{{ electronic_component.measured_variable }}</td>
                 <td contenteditable="true">{{ electronic_component.chip_name }}</td>
                 <td contenteditable="true">{{ electronic_component.max_allowed_value }}</td>
                 <!--<td contenteditable="true"></td>-->
             </tr>
         {% endfor %}
-    {% elif chip_dict_list is none or chip_dict_list|length == 0%}
+    {% elif chip_dict_list is none or chip_dict_list|length == 0 %}
         <tr>
-            <td><input type="checkbox"></td>
+            <td><input type="checkbox" value=""></td>
             <td contenteditable="true"></td>
             <td contenteditable="true"></td>
             <td contenteditable="true"></td>
@@ -82,6 +90,7 @@
             const checkboxCell = document.createElement('td');
             const checkboxInput = document.createElement('input');
             checkboxInput.type = 'checkbox';
+            checkboxInput.value = ""
             checkboxCell.appendChild(checkboxInput);
 
             const variableCell = document.createElement('td');
@@ -113,19 +122,51 @@
     });
 
     // 删除行的函数
-    document.getElementById('delRowButton').addEventListener('click', function () {
+    document.getElementById('delRowButton').addEventListener('click', async function () {
         const tbody = document.querySelector('#measured_variable_table tbody');
         const checkedRows = tbody.querySelectorAll('input[type="checkbox"]:checked');
 
+        // 创建一个数组来存储行数据
+        let removedValues = [];
         checkedRows.forEach(function (checkbox) {
             const row = checkbox.closest('tr');
+
+            // 收集复选框的value值
+            removedValues.push(checkbox.value);
+
             tbody.removeChild(row);
         });
+
+        // 如果没有选中的行，直接返回
+        if (removedValues.length === 0) {
+            layer.alert('Please select the row to delete!', {icon: 3});
+            return false;
+        }
+
+        // 调用后台接口删除数据
+        try {
+            const response = await fetch('/temperature/configuration/del', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({"deleteIds": removedValues})
+            });
+
+            const result = await response.json();
+
+            if (response.ok) {
+                layer.alert('Delete successfully!', {icon: 1});
+            } else {
+                layer.alert(`Delete failed：${result.message}`, {icon: 2});
+            }
+        } catch (error) {
+            layer.alert('Request error, please try again.' + error, {icon: 5});
+        }
     });
 
     // 提交表格数据的函数
     document.getElementById('submitTableButton').addEventListener('click', function () {
-        debugger
         const tbody = document.querySelector('#measured_variable_table tbody');
         const rows = tbody.querySelectorAll('tr');
         const data = [];
@@ -152,14 +193,14 @@
             .then(response => response.json())
             .then(result => {
                 if (result.success) {
-                    layer.alert('数据提交成功！', {icon: 3});
+                    layer.alert('数据提交成功！', {icon: 1});
                 } else {
-                    layer.alert('数据提交失败：' + result.message, {icon: 3});
+                    layer.alert('数据提交失败：' + result.message, {icon: 2});
                 }
             })
             .catch(error => {
                 console.error('请求失败:',);
-                layer.alert('请求失败，请重试:' + error, {icon: 3});
+                layer.alert('请求失败，请重试:' + error, {icon: 5});
             });
     });
 </script>
