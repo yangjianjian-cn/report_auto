@@ -128,6 +128,8 @@ def analogue_input(req_data: ReqPOJO) -> str:
             elif "level3_high" in file_name:
                 high_deb_level3, high_ok_level3 = digital_output_debouncing_error_healing(file_path, result_dicts)
                 logging.info(f"level3_high:{high_deb_level3},{high_ok_level3}")
+        elif "PWM_output" == req_data.test_scenario:
+            pass
 
     # 3.输出文件
     output_file = os.path.join(output_path, "xlsm", "IOTest_Main_Tmplt.xlsm")

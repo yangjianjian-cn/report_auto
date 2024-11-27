@@ -148,7 +148,7 @@ def chip_dict(measurement_source: str, measured_file_name: str) -> dict:
 
 
 def max_query(selected_ids: list) -> DataFrame:
-    logging.info("获取表chip_temperature列名:")
+    # 获取表chip_temperature列名
     results_df: DataFrame = query_table_by_sql(db_pool, query_sql="DESCRIBE chip_temperature")
     column_list: list = results_df['Field'].tolist()
 
@@ -177,7 +177,6 @@ def max_query(selected_ids: list) -> DataFrame:
     results_df = max_query_rslt_df.reset_index()
     # 为列起别名
     results_df = results_df.rename(columns={'index': 'Measurement_Point'})
-    logging.info(results_df)
 
     return results_df
 

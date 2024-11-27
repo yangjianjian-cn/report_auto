@@ -44,7 +44,11 @@ def batch_chip_dict_save(data: list, s_oem: str):
         item["measured_file_name"] = s_oem
 
     table_name: str = "chip_dict"
+    # table: str, param: Mapping[str, int], conn=None
+    del_param: dict = {
 
+    }
+    delete_from_tables(table=table_name)
     ret_msg = batch_save(db_pool, table_name, data)
     operation_code = ret_msg[0]
     operation_result = ret_msg[1]
@@ -69,11 +73,11 @@ def get_chip_dict(last_id: str) -> list[dict]:
     return selected_columns_dict
 
 
-def chip_dict_in_sql(selected_ids: list[int] = None, project_type: str = None) -> dict:
+def chip_dict_in_sql(selected_ids: list[int] = None, project_type: list[str] = None) -> dict:
     # 构建SQL查询语句
     # 使用参数化查询防止SQL注入
     selected_ids_str = [str(id) for id in selected_ids]
-    selected_ids_str.append(project_type)
+    # selected_ids_str.append(project_type)
 
     placeholders = ', '.join(['%s'] * len(selected_ids_str))  # 根据selected_ids_str的数量生成占位符
 
@@ -90,8 +94,9 @@ def chip_dict_in_sql(selected_ids: list[int] = None, project_type: str = None) -
     result_dicts = query_table(db_pool, query=query_sql, params=params)
 
     if len(result_dicts) == 0:
-        query = "select id,measured_variable, chip_name,max_allowed_value  from chip_dict where  measured_file_name = %s"
-        params = (project_type)
+        placeholders = ', '.join(['%s'] * len(project_type))
+        query = f"select id,measured_variable, chip_name,max_allowed_value  from chip_dict where measured_file_name IN ({placeholders}) AND measured_variable IS NOT NULL "
+        params = tuple(project_type)
         result_dicts: list[dict] = query_table(db_pool, query=query, params=params)
 
     if len(result_dicts) == 0:

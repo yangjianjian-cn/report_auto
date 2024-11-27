@@ -482,16 +482,23 @@ def temperature_overview():
     if fileId:
         selected_ids = [int(id) for id in fileId.split(',')]
         filtered_files = [file for file in measurement_file_list if file['id'] in selected_ids]
+
         statistical_variables_list: list = [file['statistical_variable'] for file in filtered_files if
                                             file['statistical_variable'] is not None]
         statistical_variables_str = statistical_variables_list[0]
+
+        project_type:list[str] = [file['oem'] for file in filtered_files]
+
+        measurement_source = filtered_files[0]['source']
+
     else:
         selected_ids.append(measurement_file_list[0].get('id'))
-        file_info = measurement_file_list[0]
-        statistical_variables_str: str = file_info['statistical_variable']
+        filtered_files = measurement_file_list[0]
 
-    measurement_source = measurement_file_list[0].get('source')
-    project_type: str = measurement_file_list[0].get('oem')
+        statistical_variables_str: str = filtered_files['statistical_variable']
+        project_type: list[str] = [filtered_files['oem']]
+
+        measurement_source = filtered_files['source']
 
     logging.info(f"统计量:{statistical_variables_str}")
     logging.info(f"燃料类型:{measurement_source}")
