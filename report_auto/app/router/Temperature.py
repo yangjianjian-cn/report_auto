@@ -239,12 +239,18 @@ def temperature_list_page():
         pageNum = int(request.args.get('pageNum', 1))  # 默认值为 1
         pageSize = int(request.args.get('pageSize', 10))  # 默认值为 10
 
+        oem = request.args.get('oem', '')
+        if oem:
+            qryParam: dict[str] = {"oem": oem}
+        else:
+            qryParam: dict[str] = None
+
         # 计算数据库查询的起始位置和结束位置
         start = (pageNum - 1) * pageSize
         end = start + pageSize
 
         # 调用函数获取分页数据
-        total_count, measurement_file_list = get_measurement_file_list_page(start=start, end=end)
+        total_count, measurement_file_list = get_measurement_file_list_page(start=start, end=end, query_params=qryParam)
 
         # 构建响应数据
         response_data = {
@@ -378,7 +384,7 @@ def temperature_details():
         return render_template('error.html', failure_msg='Please upload the file first.')
 
     # 定量变量(离散图，求两个变量的线性关系)
-    filtered_files:list=[]
+    filtered_files: list = []
     quantitative_variable_list: list = []
     if fileId:
         selected_ids = [int(id) for id in fileId.split(',')]
@@ -477,7 +483,7 @@ def temperature_overview():
         selected_ids = [int(id) for id in fileId.split(',')]
         filtered_files = [file for file in measurement_file_list if file['id'] in selected_ids]
         statistical_variables_list: list = [file['statistical_variable'] for file in filtered_files if
-                                      file['statistical_variable'] is not None]
+                                            file['statistical_variable'] is not None]
         statistical_variables_str = statistical_variables_list[0]
     else:
         selected_ids.append(measurement_file_list[0].get('id'))

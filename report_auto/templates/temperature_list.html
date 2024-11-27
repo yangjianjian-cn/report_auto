@@ -79,15 +79,15 @@
         </ul>
     </div>
     <div class="site-content" style="width: 80%; display: inline-block">
-        <form class="layui-form layui-form-pane">
-            <div class="layui-form-item">
-                <div class="layui-inline oemReloadTbl">
-                    <label class="layui-form-label" style="width: 250px;">OEM:</label>
-                    <div class="layui-input-inline " style="width: 250px;">
-                        <input class="layui-input" name="oem" id="oemReloadIpt" autocomplete="off">
-                    </div>
-                    <button class="layui-btn" data-type="reload">搜索</button>
+        <form id="searchForm">
+            <div class="layui-inline">
+                <label class="layui-form-label">OEM:</label>
+                <div class="layui-input-block">
+                    <input type="text" name="oem" placeholder="Please Input OEM" autocomplete="off" class="layui-input">
                 </div>
+            </div>
+            <div class="layui-inline">
+                <button type="button" class="layui-btn" id="searchBtn">Search</button>
             </div>
         </form>
         <table class="layui-hide" id="measurement_file_db" lay-filter="measurement_file_db"></table>
@@ -142,10 +142,10 @@
                     event: 'set_emaphore_componentName',
                     style: 'cursor: pointer;color:blue'
                 },
+                {field: 'oem', width: 300, title: 'OEM'},
                 {field: 'project_name', width: 300, title: 'Project Name', sort: true},
                 {field: 'fuel_type', width: 300, title: 'Fuel Type', sort: true},
                 {field: 'ecu_hw', width: 300, title: 'ECU HW'},
-                {field: 'oem', width: 300, title: 'OEM'},
                 {field: 'vehicle_model', width: 300, title: 'Vehicle(Model,...)'},
                 {field: 'vehicle_number', width: 300, title: 'Vehicle identification number'},
                 {field: 'sap_number', width: 150, title: 'SAP Number'},
@@ -154,8 +154,7 @@
                 {field: 'quantitative_variable', width: 200, title: 'Quantitative variable', sort: true},
                 {field: 'statistical_variable', width: 200, title: 'Statistical variable', sort: true},
                 {fixed: 'right', width: 250, title: 'Operation', toolbar: '#fileListBtn'}
-            ]],
-            id: "measurement_file_table_id"
+            ]]
         });
 
         // 单元格工具事件
@@ -232,27 +231,17 @@
             });
         }
 
-        const $ = layui.$, active = {
-            reload: function () {
-                const j_oemReloadIpt = $('#oemReloadIpt').val();
-
-                //执行重载
-                table.reload('measurement_file_table_id', {
-                    page: {
-                        curr: 1 //重新从第 1 页开始
-                    },
-                    where: {
-                        key: {
-                            oem: j_oemReloadIpt
-                        }
-                    }
-                });
-            }
-        };
-
-        $('.oemReloadTbl .layui-btn').on('click', function () {
-            const type = $(this).data('type');
-            active[type] ? active[type].call(this) : '';
+        // 绑定按钮点击事件
+        document.getElementById('searchBtn').addEventListener('click', function () {
+            const oemValue = document.querySelector('input[name="oem"]').value; // 获取表单中的 oem 值
+            table.reload('measurement_file_db', {
+                where: {
+                    oem: oemValue // 这里传递特定的查询条件
+                }
+                , page: {
+                    curr: 1 // 重新从第一页开始
+                }
+            });
         });
     });
 </script>

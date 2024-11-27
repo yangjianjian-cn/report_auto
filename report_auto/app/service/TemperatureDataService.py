@@ -101,43 +101,69 @@ def chip_dict_in_sql(selected_ids: list[int] = None, project_type: str = None) -
 
 
 # 文件列表(分页)
-def get_measurement_file_list_page(fileId: str = None, start=None, end=None, query_params=None):
+def get_measurement_file_list_page(fileId: str = None, start=None, end=None, query_params: dict[str] = None):
     # 构建基础查询语句
     query_sql = '''
-        SELECT file_name, id, source as fuel_type, DATE_FORMAT(create_time, '%%Y-%%m-%%d %%H:%%i:%%s') AS create_time,project_name,ecu_hw,oem,vehicle_model,vehicle_number,sap_number,software,quantitative_variable,statistical_variable,remark
+        SELECT file_name, id, source as fuel_type, DATE_FORMAT(create_time, '%%Y-%%m-%%d %%H:%%i:%%s') AS create_time,
+               project_name, ecu_hw, oem, vehicle_model, vehicle_number, sap_number, software,
+               quantitative_variable, statistical_variable, remark
         FROM measurement_file
-        WHERE 1 = 1
     '''
+
+    # 初始化参数列表和过滤条件标志
+    params = []
+    has_conditions = False
+
     # 如果提供了 fileId，则添加额外的过滤条件
-    params = []  # 初始化参数列表
     if fileId:
-        # 将 fileId 字符串分割成列表
         id_list = [int(id.strip()) for id in fileId.split(',')]
-        # 添加 IN 子句到查询语句
-        query_sql += ' AND id IN ({})'.format(','.join(['%s'] * len(id_list)))
-        # 将 id 列表添加到参数列表
+        if not has_conditions:
+            query_sql += ' WHERE '
+            has_conditions = True
+        else:
+            query_sql += ' AND '
+        query_sql += 'id IN ({})'.format(','.join(['%s'] * len(id_list)))
         params.extend(id_list)
+
     if query_params:
-        pass
+        for key in query_params:
+            if not has_conditions:
+                query_sql += ' WHERE '
+                has_conditions = True
+            else:
+                query_sql += ' AND '
+            query_sql += f"{key} = %s"
+            params.append(query_params[key])
 
     # 添加排序子句
     query_sql += ' ORDER BY update_time DESC'
+
     # 如果提供了分页参数，则添加 LIMIT 和 OFFSET 子句
     if start is not None and end is not None:
         query_sql += ' LIMIT %s OFFSET %s'
         params.append(end - start)  # 每页数据量
         params.append(start)  # 起始位置
+
     # 执行查询
     measurement_file_list = query_table(db_pool, query=query_sql, params=params)
 
     # 计算总记录数
     params.clear()
     count_sql = 'SELECT COUNT(1) as total FROM measurement_file'
-    if fileId:
-        count_sql += ' WHERE id IN ({})'.format(','.join(['%s'] * len(id_list)))
-        params.extend(id_list)
+    if fileId or query_params:
+        count_sql += ' WHERE '
+        if fileId:
+            count_sql += "id IN ({})".format(','.join(['%s'] * len(id_list)))
+            params.extend(id_list)
+            if query_params:
+                count_sql += ' AND '
 
-    total_count_df: DataFrame = query_table(db_pool, query=count_sql, params=params)
+        if query_params:
+            for key in query_params:
+                count_sql += f"{key} = %s"
+                params.append(query_params[key])
+
+    total_count_df = query_table(db_pool, query=count_sql, params=params)
     total_count = total_count_df[0].get("total")
 
     return total_count, measurement_file_list
@@ -270,8 +296,10 @@ def process_temperature_data(prefix: str,
                              kv_chip_dict: Dict) -> (List[str], Dict[str, List], List):
     measured_variables = [var for var in measured_variables_list if var.startswith(prefix)]
     if len(measured_variables) > 0:
-        quantitative_variable_name:str = quantitative_variable_list[0]
-        quantitative_variable_code: Optional[str] = next( (key for key, value in kv_chip_dict.items() if value == quantitative_variable_name), quantitative_variable_name)
+        quantitative_variable_name: str = quantitative_variable_list[0]
+        quantitative_variable_code: Optional[str] = next(
+            (key for key, value in kv_chip_dict.items() if value == quantitative_variable_name),
+            quantitative_variable_name)
         measured_variables.extend([quantitative_variable_code])
         measured_variables = list(set(measured_variables))
         measured_variables.append('timestamps')
