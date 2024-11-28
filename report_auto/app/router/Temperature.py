@@ -135,7 +135,7 @@ def temperature_configuration_del():
         trueOrFalse, trueOrFalseMsg = chip_dict_del(delete_ids)
         return jsonify({"success": trueOrFalse, "message": trueOrFalseMsg}), 200 if trueOrFalse else 500
     except Exception as e:
-        return jsonify({"success": False, "message": e}),500
+        return jsonify({"success": False, "message": e}), 500
 
 
 @temperature_bp.route('/configuration/get', methods=['POST'])
@@ -164,7 +164,7 @@ def temperature_configuration_get():
                 columns = extract_columns_from_mdf(temp_file_path)
 
             # 删除临时文件
-            #os.remove(temp_file_path)
+            # os.remove(temp_file_path)
 
             logging.info(f"columns:{columns}")
 
@@ -446,7 +446,7 @@ def temperature_details():
     if measurement_file_list is None or len(measurement_file_list) == 0:
         return render_template('error.html', failure_msg='Please upload the file first.')
 
-    logging.info(f"获得测量文件:{ len(measurement_file_list)}")
+    logging.info(f"获得测量文件:{len(measurement_file_list)}")
     # 定量变量(离散图，求两个变量的线性关系)
     filtered_files: list = []
     quantitative_variable_list: list = []
@@ -457,15 +457,12 @@ def temperature_details():
         selected_ids.append(measurement_file_list[0].get('id'))
         filtered_files.append(measurement_file_list[0])
 
-    for file_info in filtered_files:
-        special_columns_str = file_info.get('quantitative_variable', '')
-        if special_columns_str:
-            quantitative_variable_list.append(special_columns_str)
-    quantitative_variable_list = list(set(quantitative_variable_list))
+    special_columns_str = filtered_files[0].get('quantitative_variable', '')
+    quantitative_variable_list = [special_columns_str]
 
     measurement_source = filtered_files[0].get('source')
     oem = filtered_files[0].get("oem")
-    project_type:list = [oem]
+    project_type: list = [oem]
 
     logging.info(f"定量变量:{quantitative_variable_list}")
     logging.info(f"燃料类型:{measurement_source}")
@@ -480,26 +477,7 @@ def temperature_details():
 
     # 离散图和折线图
     # DC1_Th
-    selected_columns_dc1, temperature_time_dc1, data_structure_dc1 = process_temperature_data(
-        prefix='DC1_',
-        measured_variables_list=measured_variables_list,
-        quantitative_variable_list=quantitative_variable_list,
-        selected_ids=selected_ids,
-        kv_chip_dict=kv_chip_dict
-    )
-
-    # TC1_Th
-    selected_columns_tc1, temperature_time_tc1, data_structure_tc1 = process_temperature_data(
-        prefix='TC1_',
-        measured_variables_list=measured_variables_list,
-        quantitative_variable_list=quantitative_variable_list,
-        selected_ids=selected_ids,
-        kv_chip_dict=kv_chip_dict
-    )
-
-    # TC2_Th
-    selected_columns_tc2, temperature_time_tc2, data_structure_tc2 = process_temperature_data(
-        prefix='TC2_',
+    temperature_legend_list, temperature_line_dict, temperature_scatter_list = process_temperature_data(
         measured_variables_list=measured_variables_list,
         quantitative_variable_list=quantitative_variable_list,
         selected_ids=selected_ids,
@@ -510,23 +488,15 @@ def temperature_details():
     multi_select_html = generate_select_options(get_measurement_file_list(fileId=None))
 
     # 渲染页面
-    return render_template('temperature_details.html',
-
-                           temperature_time_dc1_legend=selected_columns_dc1,
-                           temperature_time_tc1_legend=selected_columns_tc1,
-                           temperature_time_tc2_legend=selected_columns_tc2,
-
-                           temperature_time_dc1=data_structure_dc1,
-                           temperature_time_tc1=data_structure_tc1,
-                           temperature_time_tc2=data_structure_tc2,
-
-                           temperature_time_dc1_5=temperature_time_dc1,
-                           temperature_time_tc1_6=temperature_time_tc1,
-                           temperature_time_tc2_7=temperature_time_tc2,
+    return render_template('temperature_details_again.html',
+                           temperature_legend_list=temperature_legend_list,
+                           temperature_scatter_list=temperature_scatter_list,
+                           temperature_line_dict=temperature_line_dict,
 
                            multi_select_html=multi_select_html,
                            init_selected_files=selected_ids,
-                           measurement_source=measurement_source
+                           measurement_source=measurement_source,
+                           quantitative_variable = special_columns_str
                            )
 
 

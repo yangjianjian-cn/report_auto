@@ -2,7 +2,6 @@ import multiprocessing
 from typing import Mapping, List, Dict, Optional
 
 import pandas as pd
-from pandas import DataFrame
 
 from app import db_pool
 from pojo import TemperatureVariable
@@ -274,14 +273,14 @@ def temperature_chip(selected_columns: list, file_ids_int: list, kv_chip_dict: d
     return new_temperature_time
 
 
-def process_sensor(sensor, temperature_time_dc1, tecu_temperatures):
-    if sensor not in temperature_time_dc1:
+def process_sensor(sensor, temperature_line_dict:Dict[str, List], quantitative_temperatures:list):
+    if sensor not in temperature_line_dict:
         return None
 
-    sensor_temperatures = temperature_time_dc1[sensor]
-    min_length = min(len(tecu_temperatures), len(sensor_temperatures))
+    sensor_temperatures = temperature_line_dict[sensor]
+    min_length = min(len(quantitative_temperatures), len(sensor_temperatures))
 
-    series_data = [[sensor_temperatures[i], tecu_temperatures[i]] for i in range(min_length)]
+    series_data = [[sensor_temperatures[i], quantitative_temperatures[i]] for i in range(min_length)]
     emphasis = {'focus': 'series'}
     markArea = {'silent': 'true', 'itemStyle': {'color': 'transparent', 'borderWidth': 1, 'borderType': 'dashed'},
                 'data': [[{'name': '', 'xAxis': 'min', 'yAxis': 'min'}, {'xAxis': 'max', 'yAxis': 'max'}]]}
@@ -290,12 +289,14 @@ def process_sensor(sensor, temperature_time_dc1, tecu_temperatures):
             "markArea": markArea}
 
 
-def create_data_structure(temperature_time_dc: DataFrame, sensors_list: list, quantitative_variable_str: str,
+def create_data_structure(temperature_line_dict: Dict[str, List], temperature_legend_list: list[str],
+                          quantitative_variable_str: str,
                           num_processes=None):
-    tecu_temperatures = temperature_time_dc.get(quantitative_variable_str, [])
+    quantitative_temperatures:list = temperature_line_dict.get(quantitative_variable_str, [])
     with multiprocessing.Pool(processes=num_processes) as pool:
         results = pool.starmap(process_sensor,
-                               [(sensor, temperature_time_dc, tecu_temperatures) for sensor in sensors_list])
+                               [(sensor, temperature_line_dict, quantitative_temperatures) for sensor in
+                                temperature_legend_list])
 
     # 过滤掉 None 结果
     results = [res for res in results if res is not None]
@@ -303,32 +304,28 @@ def create_data_structure(temperature_time_dc: DataFrame, sensors_list: list, qu
     return results
 
 
-def process_temperature_data(prefix: str,
-                             measured_variables_list: List[str],
+def process_temperature_data(measured_variables_list: List[str],
                              quantitative_variable_list: List[str],
                              selected_ids: List[int],
                              kv_chip_dict: Dict) -> (List[str], Dict[str, List], List):
-    measured_variables = [var for var in measured_variables_list if var.startswith(prefix)]
-    if len(measured_variables) > 0:
-        quantitative_variable_name: str = quantitative_variable_list[0]
-        quantitative_variable_code: Optional[str] = next(
-            (key for key, value in kv_chip_dict.items() if value == quantitative_variable_name),
-            quantitative_variable_name)
-        measured_variables.extend([quantitative_variable_code])
-        measured_variables = list(set(measured_variables))
-        measured_variables.append('timestamps')
+    quantitative_variable_name: str = quantitative_variable_list[0]
+    quantitative_variable_code: Optional[str] = next(
+        (key for key, value in kv_chip_dict.items() if value == quantitative_variable_name), quantitative_variable_name)
+    measured_variables_list.extend([quantitative_variable_code])
+    measured_variables = list(set(measured_variables_list))
+    measured_variables.append('timestamps')
 
-        # 获取温度随时间变化的数据
-        temperature_time = temperature_chip(selected_columns=measured_variables, file_ids_int=selected_ids,
-                                            kv_chip_dict=kv_chip_dict)
+    # 获取温度随时间变化的数据
+    temperature_line_dict: dict[str, list] = temperature_chip(selected_columns=measured_variables,
+                                                              file_ids_int=selected_ids,
+                                                              kv_chip_dict=kv_chip_dict)
 
-        # 处理返回的数据
-        selected_columns = [key for key in temperature_time if key != 'timestamps']
+    # 处理返回的数据
+    temperature_legend_list: list[str] = [key for key in temperature_line_dict if key != 'timestamps']
 
-        # 创建数据结构
-        data_structure = create_data_structure(temperature_time, selected_columns, quantitative_variable_name,
-                                               num_processes=len(selected_ids))
+    # 创建数据结构
+    temperature_scatter_list = create_data_structure(temperature_line_dict, temperature_legend_list,
+                                                     quantitative_variable_name,
+                                                     num_processes=len(selected_ids))
 
-        return selected_columns, temperature_time, data_structure
-    else:
-        return [], {}, []
+    return temperature_legend_list, temperature_line_dict, temperature_scatter_list

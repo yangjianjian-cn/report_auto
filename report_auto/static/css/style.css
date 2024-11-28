@@ -110,6 +110,11 @@ select {
     height: 300px;
 }
 
+.chart_div {
+    width: 100%;
+    height: 400px;
+}
+
 .chart_top {
     width: 100%;
     height: 300px;
