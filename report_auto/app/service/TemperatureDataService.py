@@ -37,18 +37,28 @@ def measurement_file_save(params: dict = None):
 
 
 def batch_chip_dict_save(data: list, s_oem: str):
+    i_data_list: list = []
     # 处理数据（这里只是一个示例，实际应用中可能需要保存到数据库等）
     for item in data:
+        # 使用 get 方法避免键不存在时抛出异常，同时也可以设置默认值
+        measured_variable = item.get('measured_variable', '')
+        chip_name = item.get('chip_name', '')
+        max_allowed_value = item.get('max_allowed_value', '')
+        # 如果所有关键字段都为空，则跳过当前循环
+        if not (measured_variable and chip_name and max_allowed_value):
+            continue
+
         date_time = get_current_datetime_yyyyMMddHHmmss()
         item["create_time"] = date_time
         item["update_time"] = date_time
         item["measured_file_name"] = s_oem
+        i_data_list.append(item)
 
     table_name: str = "chip_dict"
     del_param: dict = {"measured_file_name": s_oem}
     delete_from_tables(db_pool, table=table_name, param=del_param)
 
-    ret_msg = batch_save(db_pool, table_name, data)
+    ret_msg = batch_save(db_pool, table_name, i_data_list)
     operation_code = ret_msg[0]
     operation_result = ret_msg[1]
 

@@ -12,10 +12,11 @@
 
     <link rel="stylesheet" type="text/css" href="/static/layer/theme/default/layer.css">
     <link rel="stylesheet" type="text/css" href="/static/layer/theme/default/layui.css">
+    <link rel="stylesheet" type="text/css" href="/static/css/webuploader.css">
 
     <script type="text/javascript" src="/static/js/jquery.min.js"></script>
     <script type="text/javascript" src="/static/layer/layer.js"></script>
-
+    <script type="text/javascript" src="/static/layer/layui.js"></script>
     <style>
         table {
             width: 100%;
@@ -35,17 +36,27 @@
 <body>
 <input type="hidden" id="h_oem_hidden" value="{{ s_oem }}">
 <div class="layui-btn-group">
-    <button type="button" class="layui-btn layui-btn-sm" id="addRowButton" title="Add Row"><i class="layui-icon"></i>
+    <button type="button" class="layui-btn layui-btn-sm" id="getMeasurementVariables"
+            title="Acquire measurement variables">
+        <i class="layui-icon"></i>GET
     </button>
-    <button type="button" class="layui-btn layui-btn-sm" id="delRowButton" title="Delete Row"><i
-            class="layui-icon"></i></button>
-    <button type="button" class="layui-btn layui-btn-sm" id="submitTableButton" title="Submit"><i
-            class="layui-icon"></i></button>
+
+    <button type="button" class="layui-btn layui-btn-sm" id="addRowButton" title="Add Row">
+        <i class="layui-icon"></i>
+    </button>
+
+    <button type="button" class="layui-btn layui-btn-sm" id="delRowButton" title="Delete selection Rows">
+        <i class="layui-icon"></i>
+    </button>
+
+    <button type="button" class="layui-btn layui-btn-sm" id="submitTableButton" title="Submit">
+        <i class="layui-icon"></i>
+    </button>
 </div>
 <table id="measured_variable_table">
     <thead>
     <tr>
-        <th></th>
+        <th style="text-align: left;"><input type="checkbox" id="selectAllCheckbox"></th>
         <th>measured_variable</th>
         <th>chip_name</th>
         <th>max_allowed_value</th>
@@ -65,106 +76,112 @@
                 <!--<td contenteditable="true"></td>-->
             </tr>
         {% endfor %}
-    {% elif chip_dict_list is none or chip_dict_list|length == 0 %}
-        <tr>
-            <td><input type="checkbox" value=""></td>
-            <td contenteditable="true"></td>
-            <td contenteditable="true"></td>
-            <td contenteditable="true"></td>
-            <!--<td contenteditable="true"></td>-->
-        </tr>
     {% endif %}
     </tbody>
 </table>
+</body>
 <script>
+    function createCell(textContent = '', contentEditable = false) {
+        const cell = document.createElement('td');
+        cell.textContent = textContent;
+        if (contentEditable) cell.contentEditable = 'true';
+        return cell;
+    }
+
+    function createRow(column = '') {
+        const newRow = document.createElement('tr');
+
+        const checkboxCell = createCell();
+        const checkboxInput = document.createElement('input');
+        checkboxInput.type = 'checkbox';
+        checkboxInput.value = '';
+        checkboxCell.appendChild(checkboxInput);
+
+        const variableCell = createCell(column, true);
+        const chipNameCell = createCell('', true);
+        const maxValueCell = createCell('', true);
+
+        newRow.appendChild(checkboxCell);
+        newRow.appendChild(variableCell);
+        newRow.appendChild(chipNameCell);
+        newRow.appendChild(maxValueCell);
+
+        return newRow;
+    }
+
+    // 全选/全不选
+    document.getElementById('selectAllCheckbox').addEventListener('change', function () {
+        const checkboxes = document.querySelectorAll('#measured_variable_table tbody input[type="checkbox"]');
+
+        checkboxes.forEach(checkbox => {
+            checkbox.checked = this.checked;
+        });
+    });
+
     // 添加行的函数
     document.addEventListener('DOMContentLoaded', function () {
         document.getElementById('addRowButton').addEventListener('click', function () {
-            // 获取表格的 tbody 元素
             const tbody = document.querySelector('#measured_variable_table tbody');
-
-            // 创建新行
-            const newRow = document.createElement('tr');
-
-            // 创建单元格
-            const checkboxCell = document.createElement('td');
-            const checkboxInput = document.createElement('input');
-            checkboxInput.type = 'checkbox';
-            checkboxInput.value = ""
-            checkboxCell.appendChild(checkboxInput);
-
-            const variableCell = document.createElement('td');
-            variableCell.textContent = '';
-            variableCell.contentEditable = 'true';
-
-            const chipNameCell = document.createElement('td');
-            chipNameCell.textContent = '';
-            chipNameCell.contentEditable = 'true';
-
-            const maxValueCell = document.createElement('td');
-            maxValueCell.textContent = '';
-            maxValueCell.contentEditable = 'true';
-
-            // const viewVariableCell = document.createElement('td');
-            // viewVariableCell.textContent = '';
-            // viewVariableCell.contentEditable = 'true';
-
-            // 将单元格添加到新行
-            newRow.appendChild(checkboxCell);
-            newRow.appendChild(variableCell);
-            newRow.appendChild(chipNameCell);
-            newRow.appendChild(maxValueCell);
-            // newRow.appendChild(viewVariableCell);
-
-            // 将新行添加到 tbody
+            const newRow = createRow();
             tbody.appendChild(newRow);
         });
     });
 
     // 删除行的函数
+    // 获取需要多次使用的DOM元素
+    const tbody = document.querySelector('#measured_variable_table tbody');
+    const selectAllCheckbox = document.getElementById('selectAllCheckbox');
+    // 删除功能
     document.getElementById('delRowButton').addEventListener('click', async function () {
-        const tbody = document.querySelector('#measured_variable_table tbody');
-        const checkedRows = tbody.querySelectorAll('input[type="checkbox"]:checked');
+        layer.confirm('Are you sure you want to delete ?', async function (index) {
+            const checkedRows = Array.from(tbody.querySelectorAll('input[type="checkbox"]:checked'));
 
-        // 创建一个数组来存储行数据
-        let removedValues = [];
-        checkedRows.forEach(function (checkbox) {
-            const row = checkbox.closest('tr');
-
-            // 收集复选框的value值
-            removedValues.push(checkbox.value);
-
-            tbody.removeChild(row);
-        });
-
-        // 如果没有选中的行，直接返回
-        if (removedValues.length === 0) {
-            layer.alert('Please select the row to delete!', {icon: 3});
-            return false;
-        }
-
-        // 调用后台接口删除数据
-        try {
-            const response = await fetch('/temperature/configuration/del', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({"deleteIds": removedValues})
-            });
-
-            const result = await response.json();
-
-            if (response.ok) {
-                layer.alert('Delete successfully!', {icon: 1});
-            } else {
-                layer.alert(`Delete failed：${result.message}`, {icon: 2});
+            if (checkedRows.length === 0) {
+                layer.alert('Please select the row to delete!', {icon: 3});
+                return false;
             }
-        } catch (error) {
-            layer.alert('Request error, please try again.' + error, {icon: 5});
-        }
-    });
 
+            // 收集需要删除的数据
+            const removedValues = checkedRows
+                .filter(checkbox => checkbox.value !== '')
+                .map(checkbox => checkbox.value);
+
+            // 删除选中的行
+            const rowsToDelete = checkedRows.map(checkbox => checkbox.closest('tr'));
+            rowsToDelete.forEach(row => tbody.removeChild(row));
+
+            if (removedValues.length > 0) {
+                // 发送删除请求
+                try {
+                    const response = await fetch('/temperature/configuration/del', {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify({deleteIds: removedValues})
+                    });
+                    console.log(response)
+
+                    const result = response.json();
+                    console.log(result)
+                    console.log(result.success)
+                    console.log(result.message)
+
+                    if (response.ok) {
+                        layer.alert('Delete successfully!', {icon: 1});
+                    } else {
+                        layer.alert("Delete failed", {icon: 2});
+                    }
+                } catch (error) {
+                    layer.alert('Request error, please try again.' + error, {icon: 5});
+                }
+            }
+            // 取消全选状态
+            if (selectAllCheckbox.checked) {
+                selectAllCheckbox.checked = false;
+            }
+            // 关闭 confirm 确认框
+            layer.close(index);
+        });
+    });
     // 提交表格数据的函数
     document.getElementById('submitTableButton').addEventListener('click', function () {
         const tbody = document.querySelector('#measured_variable_table tbody');
@@ -203,6 +220,35 @@
                 layer.alert('请求失败，请重试:' + error, {icon: 5});
             });
     });
+
+    // 获取测量量
+    // document.getElementById('getMeasurementVariables').addEventListener('click', function () {
+    layui.use(['upload', 'layer'], function () {
+        const $ = layui.jquery
+            , upload = layui.upload
+            , layer = layui.layer;
+        upload.render({
+            elem: '#getMeasurementVariables'
+            , url: '/temperature/configuration/get'
+            , accept: 'file'
+            , exts: 'dat|mf4'
+            , size: 200 * 1024 * 1024 //限制文件大小，单位 KB
+            , done: function (res) {
+                if (res.success) {
+                    const tbody = document.querySelector('#measured_variable_table tbody');
+                    res.columns.forEach(column => {
+                        const newRow = createRow(column);
+                        tbody.appendChild(newRow);
+                    });
+                } else {
+                    layer.msg(res.message);
+                }
+            }
+            , error: function (index, upload) {
+                layer.msg('error');
+            }
+        });
+    })
+    // });
 </script>
-</body>
 </html>

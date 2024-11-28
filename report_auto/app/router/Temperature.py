@@ -4,6 +4,7 @@ import json
 import logging
 import os
 import re
+import tempfile
 from collections import defaultdict
 
 from asammdf import MDF
@@ -17,6 +18,7 @@ from app.service.TemperatureDataService import measurement_file_save, batch_chip
     get_tool_dictionary_details, get_chip_dict, get_measurement_file_list_page, get_measurement_file_list, \
     chip_dict_in_sql, temperature_variables_edit, process_temperature_data
 from app.service.TemperatureListService import chip_dict_del
+from app.service.TemperatureUploadService import extract_columns_from_mdf
 from app.service.TemperatureWorkTimeService import relative_difference, temperature_duration
 from pojo.TemperatureVariable import TemperatureVariable
 from tools.utils.DBOperator import create_table, batch_insert_data, delete_from_tables, \
@@ -131,11 +133,53 @@ def temperature_configuration_del():
             return jsonify({'message': 'Invalid or empty deleteIds array'}), 400
 
         trueOrFalse, trueOrFalseMsg = chip_dict_del(delete_ids)
-        # 返回成功响应
-        return jsonify({'message': trueOrFalseMsg}), 200 if trueOrFalse else 500
+        return jsonify({"success": trueOrFalse, "message": trueOrFalseMsg}), 200 if trueOrFalse else 500
+    except Exception as e:
+        return jsonify({"success": False, "message": e}),500
+
+
+@temperature_bp.route('/configuration/get', methods=['POST'])
+def temperature_configuration_get():
+    try:
+        # 检查是否有文件上传
+        if 'file' not in request.files:
+            return jsonify({"success": False, "message": "No file part"}), 400
+
+        file = request.files['file']
+
+        # 检查文件是否为空
+        if file.filename == '':
+            return jsonify({"success": False, "message": "No selected file"}), 400
+
+        # 检查文件扩展名
+        if file and allowed_file(file.filename):
+            # 创建临时文件
+            with tempfile.NamedTemporaryFile(delete=False) as temp_file:
+                file.save(temp_file.name)
+                temp_file_path = temp_file.name
+
+            # 提取列名称
+            columns = None
+            if file.filename.endswith('.dat') or file.filename.endswith('.mf4'):
+                columns = extract_columns_from_mdf(temp_file_path)
+
+            # 删除临时文件
+            #os.remove(temp_file_path)
+
+            logging.info(f"columns:{columns}")
+
+            if columns is not None:
+                # 返回列名称
+                return jsonify({"success": True, "message": "Columns extracted successfully", "columns": columns}), 200
+            else:
+                return jsonify({"success": False, "message": "Unsupported file format"}), 400
+        else:
+            return jsonify({"success": False, "message": "File type not allowed"}), 400
 
     except Exception as e:
-        return jsonify({'message': f'Request error: {str(e)}'}), 500
+        logging.error(f"获取测量量异常: {e}", exc_info=True)
+        # 返回错误响应
+        return jsonify({"success": False, "message": str(e)}), 500
 
 
 @temperature_bp.route('/todb', methods=['POST'])
@@ -402,6 +446,7 @@ def temperature_details():
     if measurement_file_list is None or len(measurement_file_list) == 0:
         return render_template('error.html', failure_msg='Please upload the file first.')
 
+    logging.info(f"获得测量文件:{ len(measurement_file_list)}")
     # 定量变量(离散图，求两个变量的线性关系)
     filtered_files: list = []
     quantitative_variable_list: list = []
@@ -420,14 +465,15 @@ def temperature_details():
 
     measurement_source = filtered_files[0].get('source')
     oem = filtered_files[0].get("oem")
+    project_type:list = [oem]
 
     logging.info(f"定量变量:{quantitative_variable_list}")
     logging.info(f"燃料类型:{measurement_source}")
-    logging.info(f"测量项目:{oem}")
+    logging.info(f"测量项目:{project_type}")
     logging.info(f"观测文件:{selected_ids}")
 
     # 2. 获取芯片字典列表
-    r_chip_dict: list[dict] = chip_dict_in_sql(selected_ids=selected_ids, project_type=oem)
+    r_chip_dict: list[dict] = chip_dict_in_sql(selected_ids=selected_ids, project_type=project_type)
     kv_chip_dict: dict = {item['measured_variable']: item['chip_name'] for item in r_chip_dict}
     measured_variables_list: list[str] = [item['measured_variable'] for item in r_chip_dict]
     logging.info(f"可观测信号量:{measured_variables_list}")
@@ -671,3 +717,10 @@ def sort_and_convert(data):
         {**{key: value}, 'idx': idx}
         for idx, (key, value) in enumerate(sorted_data.items())
     ]
+
+
+# ECU-HTM,获取信号列列名称，（配置允许的文件扩展名）
+def allowed_file(filename):
+    ALLOWED_EXTENSIONS = {'mf4', 'dat'}
+    return '.' in filename and \
+           filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
