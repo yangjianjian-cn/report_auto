@@ -332,7 +332,7 @@ def delete_from_tables_by_in(table: str, param: Mapping[str, Union[int, str]], c
 
 
 @db_pool.with_connection
-def delete_from_tables(table: str, param: Mapping[str, Union[int, str]], conn=None):
+def delete_from_tables(table: str, param: Dict[str, Union[int, str]], conn=None):
     cursor = conn.cursor()
     try:
         # 删除第一个表中的数据
@@ -352,14 +352,33 @@ def delete_from_tables(table: str, param: Mapping[str, Union[int, str]], conn=No
         cursor.close()
 
 
-def build_delete_query(table_name: str, param: Mapping[str, int]) -> str:
+from typing import Dict, Union, Tuple, List
+
+
+def build_delete_query(table_name: str, param: Dict[str, Union[int, str]]) -> str:
+    # 验证表名是否为空或非字符串
+    if not table_name or not isinstance(table_name, str):
+        raise ValueError("Table name must be a non-empty string.")
+
+    # 验证参数是否为空
+    if not param:
+        raise ValueError("Parameters cannot be empty for a DELETE query.")
+
+    # 转义表名，具体转义字符取决于所使用的数据库类型
+    # 这里假设使用的是 MySQL 或类似的数据库
+    safe_table_name = f"`{table_name}`"
+
     conditions = []
     params_list = []
+
+    # 正确遍历字典的键值对
     for key, value in param.items():
+        if not isinstance(key, str) or not isinstance(value, (int, str)):
+            raise ValueError("All keys must be strings and all values must be integers or strings.")
         conditions.append(f"{key} = %s")
         params_list.append(value)
 
-    sql_delete = f"DELETE FROM {table_name} WHERE {' AND '.join(conditions)}"
+    sql_delete = f"DELETE FROM {safe_table_name} WHERE {' AND '.join(conditions)}"
     return sql_delete
 
 

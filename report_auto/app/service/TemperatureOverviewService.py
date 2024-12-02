@@ -35,11 +35,12 @@ def process_file(file_ids: list, statistical_variables_dict: dict) -> Temperatur
         """
         logging.info(f"query_sql:{query_sql}")
         results_df: DataFrame = query_table_by_sql(db_pool, query_sql=query_sql)
-        results_df = results_df.dropna(axis=1, how='all')
-        if variable_name in results_df.columns:
-            durations = results_df.set_index(variable_name)['timestamps'].to_dict()
-            result.add_durations(durations, category)
-            logging.info(f"{category}温度时长:{durations}")
+        if results_df is not None :
+            results_df = results_df.dropna(axis=1, how='all')
+            if variable_name in results_df.columns:
+                durations = results_df.set_index(variable_name)['timestamps'].to_dict()
+                result.add_durations(durations, category)
+                logging.info(f"{category}温度时长:{durations}")
 
     # 根据需要处理的数据调用通用函数
     if 'TECU_t' in statistical_variables_dict:

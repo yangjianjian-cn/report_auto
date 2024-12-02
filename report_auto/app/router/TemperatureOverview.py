@@ -48,6 +48,9 @@ def temperature_overview():
 
         measurement_source = filtered_files['source']
 
+    if not statistical_variables_str:
+        return render_template('error.html', failure_msg='Statistical variables not configured.')
+
     logging.info(f"统计量:{statistical_variables_str}")
     logging.info(f"燃料类型:{measurement_source}")
     logging.info(f"项目:{project_type}")
@@ -65,7 +68,7 @@ def temperature_overview():
         if matched_chip:
             statistical_variables_name_list.append(
                 {'measured_variable': matched_chip['measured_variable'], 'chip_name': matched_chip['chip_name']})
-        else:
+        elif "TECU_t" == variable:
             statistical_variables_name_list.append({'measured_variable': variable, 'chip_name': variable})
 
     grouped_variables = defaultdict(set)
@@ -73,6 +76,7 @@ def temperature_overview():
         chip_name = item['chip_name']
         measured_variable = item['measured_variable']
         grouped_variables[chip_name].add(measured_variable)
+
     # 将集合转换为列表
     grouped_variables_list: list = {chip: list(variables) for chip, variables in grouped_variables.items()}
     logging.info(f"统计量(名称:变量):{grouped_variables_list}")

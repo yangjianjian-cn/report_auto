@@ -72,38 +72,17 @@ def delete_file():
         second_table_name = 'chip_temperature'
         second_param: map = {'file_id': file_id}
 
-        result, message = delete_from_tables(db_pool, table=primary_table_name,
-                                             param=primary_param)
+        result, message = delete_from_tables(db_pool, table=primary_table_name,param=primary_param)
         if result:
-            result, message = delete_from_tables(db_pool, table=second_table_name,
-                                                 param=second_param)
+            result, message = delete_from_tables(db_pool, table=second_table_name, param=second_param)
             if result:
-                return jsonify({'success': True, 'message': '文件删除成功'})
+                return jsonify({'success': True, 'message': 'File deleted successfully'})
             else:
-                return jsonify({'success': False, 'message': '文件删除失败'})
+                return jsonify({'success': False, 'message': 'File deletion failed'})
         else:
-            return jsonify({'success': False, 'message': '文件删除失败'})
+            return jsonify({'success': False, 'message': 'File deletion failed'})
     except Exception as e:
         return jsonify({'success': False, 'message': str(e)}), 500
-
-
-@temperature_bp.route('/configuration/list', methods=['GET'])
-def temperature_configuration():
-    measurement_file_id = request.args.get("file_id")
-    return render_template('temperature_configuration_list.html', measurement_file_id=measurement_file_id)
-
-
-@temperature_bp.route('/configuration_data', methods=['GET'])
-def temperature_configuration_data():
-    measurement_file_id: str = request.args.get('measurement_file_id')
-    configuration_data_list: list[dict] = get_chip_dict(measurement_file_id)
-    # 构建响应数据
-    response_data = {
-        "code": 200,
-        "msg": "success",
-        "data": configuration_data_list
-    }
-    return jsonify(response_data)
 
 
 @temperature_bp.route('/quantitative/page', methods=['GET'])
@@ -120,10 +99,6 @@ def temperature_variable_page():
         quantitative_variable = ""
         statistical_variable = ""
         remark = ""
-
-    print(quantitative_variable)
-    print(statistical_variable)
-    print(remark)
 
     quantitative_variable_sltlist = get_tool_dictionary_details(ToolConstants.QUANTITATIVE_VARIABLE)
     print(quantitative_variable_sltlist)
@@ -182,11 +157,11 @@ def temperature_analysis():
     if error_response:
         return error_response
 
-    measurement_file_list:list[dict] = get_measurement_file_list(fileId=last_id)
+    measurement_file_list:list[dict] = get_measurement_file_list(fileId=str(last_id))
     if len(measurement_file_list) == 0 :
         return None, jsonify({'generate_report_failed': 'Non-existent data'})
 
-    measure_file_path = data['save_path']
+    measure_file_path = measurement_file_list[0].get("save_path")
     if not measure_file_path:
         return last_id, jsonify({'generate_report_failed': 'File storage path not found!'})
 

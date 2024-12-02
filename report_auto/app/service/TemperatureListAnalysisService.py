@@ -1,4 +1,4 @@
-from typing import Mapping, Union
+from typing import Mapping, Union, Dict
 
 from pandas import DataFrame
 
@@ -123,6 +123,6 @@ def temperature_variables_edit(temperatureVariable: TemperatureVariable):
 
 
 def del_chip_temperatures(fileId: int):
-    param: Mapping[str, Union[int]] = {"file_id", fileId}
+    param: Dict[str, Union[int, str]] = {"file_id": fileId}
     oprlt, opmsg = delete_from_tables(db_pool,"chip_temperature", param)
     return  oprlt, opmsg

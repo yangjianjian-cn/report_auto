@@ -76,13 +76,14 @@
     <input type="hidden" name="h_statistical_variable_str_id" id="h_statistical_variable_str_id" value="{{ statistical_variable_str }}">
 </form>
 </body>
-<script type="text/javascript">
+<script>
     let selected_statistical_variable = new Set();
     const statistical_variable_str = $('#h_statistical_variable_str_id').val();
     if (statistical_variable_str) {
         selected_statistical_variable = new Set(statistical_variable_str.split(',').filter(Boolean));
     }
-
+</script>
+<script type="text/javascript">
     $(document).ready(function() {
         // 初始化 multiselect 插件
         $('#statistical_variable').multiselect({
@@ -128,7 +129,7 @@
         function submitForm() {
             const quantitativeVariable = $('#quantitative_variable').val();
             const  arrayFromSet = Array.from(selected_statistical_variable);
-            let statisticalVariable = arrayFromSet.join(', ');
+            let statisticalVariable = arrayFromSet.join(',');
 
             // 验证表单数据
             if (!quantitativeVariable && !statisticalVariable) {

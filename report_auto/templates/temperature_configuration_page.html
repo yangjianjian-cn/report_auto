@@ -8,7 +8,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="format-detection" content="telephone=no">
-    <title>Configuration</title>
+    <title>Entire project label configuration</title>
 
     <link rel="stylesheet" type="text/css" href="/static/layer/theme/default/layer.css">
     <link rel="stylesheet" type="text/css" href="/static/layer/theme/default/layui.css">
@@ -34,7 +34,6 @@
     </style>
 </head>
 <body>
-<input type="hidden" id="h_oem_hidden" value="{{ s_oem }}">
 <div class="layui-btn-group">
     <button type="button" class="layui-btn layui-btn-sm" id="getMeasurementVariables"
             title="Acquire measurement variables">
@@ -79,7 +78,21 @@
     {% endif %}
     </tbody>
 </table>
+<input type="hidden" id="h_oem_hidden" value="{{ s_oem }}">
+<input type="hidden" id="h_file_id" value="{{ page_measured_file_id }}">
 </body>
+<script type="text/javascript">
+    function initializeButton() {
+        const fileIdInput = document.getElementById('h_file_id');
+        const page_measured_file_id = fileIdInput.value;
+
+        const button = document.getElementById('getMeasurementVariables');
+        if ( page_measured_file_id != "") {
+            button.style.display = 'none';
+        }
+    }
+    document.addEventListener("DOMContentLoaded", initializeButton);
+</script>
 <script>
     function createCell(textContent = '', contentEditable = false) {
         const cell = document.createElement('td');
@@ -158,7 +171,6 @@
                         headers: {'Content-Type': 'application/json'},
                         body: JSON.stringify({deleteIds: removedValues})
                     });
-                    console.log(response)
 
                     const result = response.json();
                     console.log(result)
@@ -182,6 +194,7 @@
             layer.close(index);
         });
     });
+
     // 提交表格数据的函数
     document.getElementById('submitTableButton').addEventListener('click', function () {
         const tbody = document.querySelector('#measured_variable_table tbody');
@@ -199,8 +212,17 @@
             data.push(rowData);
         });
         const j_oem_hidden = $("#h_oem_hidden").val();
+
+        const measured_file_id = $("#h_file_id").val();
+        var fetch_url = '/temperature/configuration/add';
+        if (measured_file_id != ""){
+             fetch_url = fetch_url + '?measured_file_id=' + encodeURIComponent(measured_file_id);
+        }else{
+            fetch_url = fetch_url + '?OEM=' + encodeURIComponent(j_oem_hidden);
+        }
+
         // 发送 AJAX 请求
-        fetch('/temperature/configuration/add?OEM=' + encodeURIComponent(j_oem_hidden), {
+        fetch(fetch_url, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
@@ -210,14 +232,13 @@
             .then(response => response.json())
             .then(result => {
                 if (result.success) {
-                    layer.alert('数据提交成功！', {icon: 1});
+                    layer.alert('Data submitted successfully! ', {icon: 1});
                 } else {
-                    layer.alert('数据提交失败：' + result.message, {icon: 2});
+                    layer.alert('Data submission failed: ' + result.message, {icon: 2});
                 }
             })
             .catch(error => {
-                console.error('请求失败:',);
-                layer.alert('请求失败，请重试:' + error, {icon: 5});
+                layer.alert('The request failed. Please try again.' + error, {icon: 5});
             });
     });
 

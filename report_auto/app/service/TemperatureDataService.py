@@ -24,7 +24,12 @@ def measurement_file_save(params: dict = None):
     return operation_code, operation_result
 
 
-def batch_chip_dict_save(data: list, s_oem: str):
+def batch_chip_dict_save(data: list=None, s_oem: str=None,s_measured_file_id:str=None):
+    if s_measured_file_id:
+        measured_file_name = s_measured_file_id
+    else:
+        measured_file_name = s_oem
+
     i_data_list: list = []
     # 处理数据（这里只是一个示例，实际应用中可能需要保存到数据库等）
     for item in data:
@@ -39,11 +44,11 @@ def batch_chip_dict_save(data: list, s_oem: str):
         date_time = get_current_datetime_yyyyMMddHHmmss()
         item["create_time"] = date_time
         item["update_time"] = date_time
-        item["measured_file_name"] = s_oem
+        item["measured_file_name"] = measured_file_name
         i_data_list.append(item)
 
     table_name: str = "chip_dict"
-    del_param: dict = {"measured_file_name": s_oem}
+    del_param: dict = {"measured_file_name": measured_file_name}
     delete_from_tables(db_pool, table=table_name, param=del_param)
 
     ret_msg = batch_save(db_pool, table_name, i_data_list)
@@ -125,8 +130,9 @@ def get_measurement_file_list_page(fileId: str = None, start=None, end=None, que
 # 获取测量文件列表(不分页)
 def get_measurement_file_list(fileId: str = None):
     # 构建基础查询语句
-    query_sql = " SELECT file_name, id, source,special_columns,oem,quantitative_variable,statistical_variable,remark FROM measurement_file "
+    query_sql = " SELECT file_name, id, source,special_columns,oem,quantitative_variable,statistical_variable,remark,save_path FROM measurement_file "
 
+    print( type(fileId))
     # 如果提供了 fileId，则添加额外的过滤条件
     params = []  # 初始化参数列表
     if fileId:

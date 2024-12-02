@@ -11,3 +11,4 @@ import app.router.TemperatureUpload
 import app.router.TemperatureAnalysis
 import app.router.TemperatureOverview
 import app.router.TemperatureDetail
+import app.router.TemperatureConfiguration
