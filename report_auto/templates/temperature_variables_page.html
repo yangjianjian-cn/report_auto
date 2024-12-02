@@ -11,26 +11,55 @@
     <title>Temperature variables</title>
 
     <link rel="stylesheet" type="text/css" href="/static/layer/theme/default/layui.css">
+    <link rel="stylesheet" type="text/css" href="/static/css/bootstrap.min.css"/>
+    <link rel="stylesheet" type="text/css" href="/static/css/bootstrap-multiselect.css"/>
+
     <script type="text/javascript" src="/static/js/jquery.min.js"></script>
     <script type="text/javascript" src="/static/layer/layui.js"></script>
     <script type="text/javascript" src="/static/layer/layer.js"></script>
 
+    <script type="text/javascript" src="/static/js/bootstrap.min.js"></script>
+    <script type="text/javascript" src="/static/js/bootstrap-multiselect.js"></script>
+
+     <style>
+        .wide-select {
+            width: 50%;
+        }
+    </style>
 </head>
 <body>
-<form class="layui-form" lay-filter="form_variable" name="form_variable">
-    <div class="layui-form-item"><label class="layui-form-label">quantitative variable</label>
+<form  lay-filter="form_variable" name="form_variable">
+    <div class="layui-form-item">
+        <label class="layui-form-label"  style="width: 200px;text-align: left">quantitative variable</label>
         <div class="layui-input-block">
-            <input type="text" name="quantitative_variable" id="quantitative_variable" lay-verify="title"
-                   autocomplete="off"
-                   placeholder="For data details pages - Discrete graphs"
-                   class="layui-input" value="{{ quantitative_variable }}">
+             <select id="quantitative_variable" class="layui-select wide-select bg-light">
+                <option value="">--For data details pages - Discrete graphs--</option>
+                {% if quantitative_variable_sltlist is not none and quantitative_variable_sltlist|length > 0 %}
+                        {% for quantitative_variable in quantitative_variable_sltlist %}
+                            {% if  quantitative_variable.item_value == quantitative_variable_str %}
+                                <option value="{{ quantitative_variable.item_value }}" selected>{{ quantitative_variable.item_label }}</option>
+                            {% else %}
+                                <option value="{{ quantitative_variable.item_value }}" >{{ quantitative_variable.item_label }}</option>
+                            {% endif %}
+                        {% endfor %}
+                {% endif %}
+            </select>
         </div>
     </div>
-    <div class="layui-form-item"><label class="layui-form-label">statistical variable</label>
+    <div class="layui-form-item">
+        <label class="layui-form-label" style="width: 200px;text-align: left">statistical variable</label>
         <div class="layui-input-block">
-            <input type="text" name="statistical_variable" id="statistical_variable"
-                   placeholder="For Data Overview Page - Pie Chart"
-                   autocomplete="off" class="layui-input" value="{{statistical_variable}}">
+            <select id="statistical_variable" class="layui-select wide-select bg-light" multiple="multiple">
+                {% if statistical_variable_sltlist is not none and statistical_variable_sltlist|length > 0 %}
+                    {% for statistical_variable in statistical_variable_sltlist %}
+                        {% if statistical_variable.item_value in statistical_variable_str %}
+                            <option value="{{ statistical_variable.item_value }}" selected="selected">{{ statistical_variable.item_label }}</option>
+                        {% else %}
+                            <option value="{{ statistical_variable.item_value }}">{{ statistical_variable.item_label }}</option>
+                        {% endif %}
+                    {% endfor %}
+                {% endif %}
+            </select>
         </div>
     </div>
     <div class="layui-form-item layui-form-text"><label class="layui-form-label">Remarks</label>
@@ -44,9 +73,53 @@
         </div>
     </div>
     <input type="hidden" name="measurement_file_id" id="measurement_file_id" value="{{ measurement_file_id }}">
+    <input type="hidden" name="h_statistical_variable_str_id" id="h_statistical_variable_str_id" value="{{ statistical_variable_str }}">
 </form>
 </body>
-<script>
+<script type="text/javascript">
+    let selected_statistical_variable = new Set();
+    const statistical_variable_str = $('#h_statistical_variable_str_id').val();
+    if (statistical_variable_str) {
+        selected_statistical_variable = new Set(statistical_variable_str.split(',').filter(Boolean));
+    }
+
+    $(document).ready(function() {
+        // 初始化 multiselect 插件
+        $('#statistical_variable').multiselect({
+            enableClickableOptGroups: false,
+            enableCollapsibleOptGroups: true,
+            disableIfEmpty: true,
+            maxHeight: 200,
+            inheritClass: true,
+            numberDisplayed: 3,
+            delimiterText: '; ',
+            widthSynchronizationMode: 'ifPopupIsSmaller',
+            buttonWidth: '50%',
+            buttonTextAlignment: 'left',
+            enableFiltering: true,
+            nonSelectedText: '--For Data Overview Page - Pie Chart--',
+            templates: {
+             filter: '<div class="multiselect-filter"><div class="input-group input-group-sm p-1"><div class="input-group-prepend"><i class="input-group-text fas fa-search"></i></div><input class="form-control multiselect-search" type="text" /><div class="input-group-append"><button class="multiselect-clear-filter input-group-text" type="button"><i class="fas fa-times"></i></button></div></div></div>'
+            },
+            onChange: function (option, checked) {
+                let current_selected_statistical_variable = $(option).val();
+                current_selected_statistical_variable = current_selected_statistical_variable.trim();
+                if (checked) {
+                    selected_statistical_variable.add(current_selected_statistical_variable);
+                } else {
+                    selected_statistical_variable.delete(current_selected_statistical_variable);
+                }
+                console.log(selected_statistical_variable);
+            }
+        });
+        // 初始化 Layui 表单组件
+        layui.use(['form'], function(){
+            const form = layui.form;
+            form.render(); // 渲染表单元素
+        });
+});
+</script>
+<script type="text/javascript">
     // Initialize Layui and define submitForm function
     layui.use(['form'], function () {
         const layer = layui.layer;
@@ -54,10 +127,11 @@
         // 提交表单函数
         function submitForm() {
             const quantitativeVariable = $('#quantitative_variable').val();
-            const statisticalVariable = $('#statistical_variable').val();
+            const  arrayFromSet = Array.from(selected_statistical_variable);
+            let statisticalVariable = arrayFromSet.join(', ');
 
             // 验证表单数据
-            if (!quantitativeVariable || !statisticalVariable) {
+            if (!quantitativeVariable && !statisticalVariable) {
                 layer.alert(' "Quantitative Variable" OR "Statistical Variable" is required.', {icon: 0});
                 return;
             }
@@ -75,11 +149,10 @@
                 contentType: 'application/json', // 设置 Content-Type 为 application/json
                 data: JSON.stringify(formData), // 将数据序列化为 JSON 字符串
                 success: function (response) {
-                    operation_rlt = response.success;
-                    operation_msg = response.message;
+                    var operation_rlt = response.success;
+                    var operation_msg = response.message;
                     if (operation_rlt) {
                         layer.alert(operation_msg, {icon: 1});
-
                     } else {
                         layer.alert(operation_msg, {icon: 2});
                     }

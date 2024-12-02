@@ -9,17 +9,6 @@ from tools.utils.DBOperator import query_table, insert_data, batch_save, update_
     delete_from_tables
 from tools.utils.DateUtils import get_current_datetime_yyyyMMddHHmmss
 
-'''根据字典类型获取字典项'''
-
-
-def get_tool_dictionary_details(dict_type: str = 'file_source'):
-    # 构建基础查询语句
-    query_sql = 'select dict_value,dict_name from tool_dictionary where dict_type = %s order by dict_id'
-    params = [dict_type]  # 初始化参数列表
-    # 执行查询
-    measurement_file_list = query_table(db_pool, query=query_sql, params=params)
-    return measurement_file_list
-
 
 def measurement_file_save(params: dict = None):
     date_time = get_current_datetime_yyyyMMddHHmmss()
@@ -62,55 +51,6 @@ def batch_chip_dict_save(data: list, s_oem: str):
     operation_result = ret_msg[1]
 
     return operation_code, operation_result
-
-
-# 获取每个文件采集的信号量和信号量名称
-def get_chip_dict(last_id: str) -> list[dict]:
-    query = "select id,measured_variable, chip_name,max_allowed_value from chip_dict where measured_file_name = %s "
-    params = (last_id)
-    selected_columns_dict: list[dict] = query_table(db_pool, query=query, params=params)
-
-    if len(selected_columns_dict) == 0:
-        query = "select id,measured_variable, chip_name,max_allowed_value  from chip_dict where  measured_file_name = (select oem from measurement_file where id =  %s )"
-        params = (last_id)
-        selected_columns_dict: list[dict] = query_table(db_pool, query=query, params=params)
-
-    if len(selected_columns_dict) == 0:
-        # 当查询结果为空时，返回一个空的字符串列表
-        return []
-    return selected_columns_dict
-
-
-def chip_dict_in_sql(selected_ids: list[int] = None, project_type: list[str] = None) -> dict:
-    # 构建SQL查询语句
-    # 使用参数化查询防止SQL注入
-    selected_ids_str = [str(id) for id in selected_ids]
-    # selected_ids_str.append(project_type)
-
-    placeholders = ', '.join(['%s'] * len(selected_ids_str))  # 根据selected_ids_str的数量生成占位符
-
-    query_sql = f"""
-        SELECT distinct measured_variable, chip_name, max_allowed_value 
-        FROM chip_dict 
-        WHERE measured_file_name IN ({placeholders}) AND measured_variable IS NOT NULL 
-    """
-
-    # 参数列表
-    params = tuple(selected_ids_str)
-
-    # 调用query_table函数执行查询
-    result_dicts = query_table(db_pool, query=query_sql, params=params)
-
-    if len(result_dicts) == 0:
-        placeholders = ', '.join(['%s'] * len(project_type))
-        query = f"select id,measured_variable, chip_name,max_allowed_value  from chip_dict where measured_file_name IN ({placeholders}) AND measured_variable IS NOT NULL "
-        params = tuple(project_type)
-        result_dicts: list[dict] = query_table(db_pool, query=query, params=params)
-
-    if len(result_dicts) == 0:
-        return []
-
-    return result_dicts
 
 
 # 文件列表(分页)
@@ -273,7 +213,7 @@ def temperature_chip(selected_columns: list, file_ids_int: list, kv_chip_dict: d
     return new_temperature_time
 
 
-def process_sensor(sensor, temperature_line_dict:Dict[str, List], quantitative_temperatures:list):
+def process_sensor(sensor, temperature_line_dict: Dict[str, List], quantitative_temperatures: list):
     if sensor not in temperature_line_dict:
         return None
 
@@ -292,7 +232,7 @@ def process_sensor(sensor, temperature_line_dict:Dict[str, List], quantitative_t
 def create_data_structure(temperature_line_dict: Dict[str, List], temperature_legend_list: list[str],
                           quantitative_variable_str: str,
                           num_processes=None):
-    quantitative_temperatures:list = temperature_line_dict.get(quantitative_variable_str, [])
+    quantitative_temperatures: list = temperature_line_dict.get(quantitative_variable_str, [])
     with multiprocessing.Pool(processes=num_processes) as pool:
         results = pool.starmap(process_sensor,
                                [(sensor, temperature_line_dict, quantitative_temperatures) for sensor in

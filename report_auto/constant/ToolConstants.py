@@ -1,0 +1,7 @@
+__coding__ = "utf-8"
+"""静态常量类"""
+
+
+class ToolConstants:
+    QUANTITATIVE_VARIABLE = "QUANTITATIVE_VARIABLE"
+    STATISTICAL_VARIABLE = "STATISTICAL_VARIABLE"

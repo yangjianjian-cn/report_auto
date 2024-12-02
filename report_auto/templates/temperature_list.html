@@ -201,6 +201,34 @@
 
                     }
                 });
+            } else if ("analysis" === layEvent) {
+                // 显示加载层
+                const index = layer.load(1, {
+                    shade: [0.1, '#fff'] // 0.1透明度的白色背景
+                });
+
+                // 定义要发送的数据
+                const sendData = {
+                    save_file_id: j_measurement_file_id
+                };
+
+                // 发送Ajax请求
+                $.ajax({
+                    url: "/temperature/analysis", // 请求地址
+                    type: "POST", // 请求方法
+                    data: JSON.stringify(sendData), // 要发送的数据，转换成JSON格式
+                    contentType: "application/json; charset=utf-8", // 设置请求头，告诉服务器数据格式为JSON
+                    dataType: "json", // 指定预期服务器返回的数据类型为JSON
+                    success: function(response) {
+                         layer.alert("success",{icon:1});
+                    },
+                    error: function(jqXHR, textStatus, errorThrown) {
+                        layer.alert("Request failed: [", textStatus, "], error details: [", errorThrown + "]",{icon:2});
+                    },
+                    complete: function() {
+                        layer.close(index);
+                    }
+                });
             }
         });
 

@@ -203,7 +203,7 @@
                     <th>operation</th>
                 </tr>
                 </thead>
-                <tbody id="demoList">
+                <tbody id="measurement_file_list_id">
                 {% if measurement_file_list is not none and measurement_file_list|length > 0 %}
                     {% for file in measurement_file_list %}
                         <tr>
@@ -383,7 +383,7 @@
             tr.remove();
         });
 
-        $('#demoList').append(tr);
+        $('#measurement_file_list_id').append(tr);
     }
 
     // 测量文件数据入库
