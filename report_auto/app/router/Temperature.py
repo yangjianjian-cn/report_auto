@@ -60,7 +60,7 @@ def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 
-def extract_columns_from_mdf(file_path):
+def extract_columns_from_mdf(file_path)->list[str]:
     # 使用 asammdf 库读取 MDF 文件并提取列名称
     mdf = MDF(file_path)
     # 定义要保留的前缀

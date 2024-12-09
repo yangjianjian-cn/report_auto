@@ -37,11 +37,12 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(level
 @temperature_bp.route('/configuration/page', methods=['GET'])
 def temperature_configuration_add_page():
     s_oem = request.args.get("oem")
-    file_id = request.args.get("measured_file_id","")
-    last_id:str = file_id if file_id else s_oem # 文件配置了label，取文件配置的label；若文件未配置，取项目配置的label
+    file_id = request.args.get("measured_file_id", "")
+    last_id: str = file_id if file_id else s_oem  # 文件配置了label，取文件配置的label；若文件未配置，取项目配置的label
 
     chip_dict_list: list[dict] = get_chip_dict(last_id)
-    return render_template('temperature_configuration_page.html', s_oem=s_oem, page_measured_file_id=file_id, chip_dict_list=chip_dict_list)
+    return render_template('temperature_configuration_page.html', s_oem=s_oem, page_measured_file_id=file_id,
+                           chip_dict_list=chip_dict_list)
 
 
 # 追加 label-name
@@ -52,7 +53,8 @@ def temperature_configuration_add():
         s_measured_file_id = request.args.get("measured_file_id")
         # 获取前端传递的数据
         data = request.get_json()
-        operator_result, operator_msg = batch_chip_dict_save(data=data, s_oem=s_oem,s_measured_file_id=s_measured_file_id)
+        operator_result, operator_msg = batch_chip_dict_save(data=data, s_oem=s_oem,
+                                                             s_measured_file_id=s_measured_file_id)
         # 返回成功响应
         return jsonify({"success": operator_result, "message": operator_msg})
     except Exception as e:
@@ -99,19 +101,21 @@ def temperature_configuration_get():
                 temp_file_path = temp_file.name
 
             # 提取列名称
-            columns = None
+            label_name_columns: list[str] = None
+            label_name_alias_columns: list[str] = None
             if file.filename.endswith('.dat') or file.filename.endswith('.mf4'):
-                columns = extract_columns_from_mdf(temp_file_path)
-                logging.info("提取列:%s",columns)
+                label_name_columns: list[str] = extract_columns_from_mdf(temp_file_path)
+                logging.info("提取列:%s", label_name_columns)
+                # label_name_alias_columns:list =
 
             # 删除临时文件
             # os.remove(temp_file_path)
 
-            logging.info(f"columns:{columns}")
+            logging.info(f"columns:{label_name_columns}")
 
-            if columns is not None:
+            if label_name_columns is not None:
                 # 返回列名称
-                return jsonify({"success": True, "message": "Columns extracted successfully", "columns": columns}), 200
+                return jsonify({"success": True, "message": "Columns extracted successfully", "columns": label_name_columns}), 200
             else:
                 return jsonify({"success": False, "message": "Unsupported file format"}), 400
         else:

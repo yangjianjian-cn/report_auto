@@ -56,7 +56,8 @@
     <thead>
     <tr>
         <th style="text-align: left;"><input type="checkbox" id="selectAllCheckbox"></th>
-        <th>measured_variable</th>
+        <th>label_name</th>
+        <th>label_alias_name</th>
         <th>chip_name</th>
         <th>max_allowed_value</th>
         <!--<th>view_variable</th>-->
@@ -69,7 +70,8 @@
         {% for electronic_component in chip_dict_list %}
             <tr>
                 <td><input type="checkbox" value="{{ electronic_component.id }}"></td>
-                <td contenteditable="true">{{ electronic_component.measured_variable }}</td>
+                <td contenteditable="true">{{ electronic_component.label_name }}</td>
+                <td contenteditable="true">{{ electronic_component.label_alias_name }}</td>
                 <td contenteditable="true">{{ electronic_component.chip_name }}</td>
                 <td contenteditable="true">{{ electronic_component.max_allowed_value }}</td>
                 <!--<td contenteditable="true"></td>-->
@@ -87,10 +89,11 @@
         const page_measured_file_id = fileIdInput.value;
 
         const button = document.getElementById('getMeasurementVariables');
-        if ( page_measured_file_id != "") {
+        if (page_measured_file_id != "") {
             button.style.display = 'none';
         }
     }
+
     document.addEventListener("DOMContentLoaded", initializeButton);
 </script>
 <script>
@@ -110,12 +113,14 @@
         checkboxInput.value = '';
         checkboxCell.appendChild(checkboxInput);
 
-        const variableCell = createCell(column, true);
-        const chipNameCell = createCell('', true);
-        const maxValueCell = createCell('', true);
+        const labelNameCell = createCell(column, true);
+        const labelAliasNameCell = createCell(column, true);
+        const chipNameCell = createCell(column, true);
+        const maxValueCell = createCell(column, true);
 
         newRow.appendChild(checkboxCell);
-        newRow.appendChild(variableCell);
+        newRow.appendChild(labelNameCell);
+        newRow.appendChild(labelAliasNameCell);
         newRow.appendChild(chipNameCell);
         newRow.appendChild(maxValueCell);
 
@@ -173,10 +178,6 @@
                     });
 
                     const result = response.json();
-                    console.log(result)
-                    console.log(result.success)
-                    console.log(result.message)
-
                     if (response.ok) {
                         layer.alert('Delete successfully!', {icon: 1});
                     } else {
@@ -204,10 +205,10 @@
         rows.forEach(function (row) {
             const cells = row.querySelectorAll('td');
             const rowData = {
-                measured_variable: cells[1].textContent.trim(),
-                chip_name: cells[2].textContent.trim(),
-                max_allowed_value: cells[3].textContent.trim()
-                //,view_variable: cells[4].textContent.trim()
+                label_name: cells[1].textContent.trim(),
+                label_alias_name: cells[2].textContent.trim(),
+                chip_name: cells[3].textContent.trim(),
+                max_allowed_value: cells[4].textContent.trim()
             };
             data.push(rowData);
         });
@@ -215,9 +216,9 @@
 
         const measured_file_id = $("#h_file_id").val();
         var fetch_url = '/temperature/configuration/add';
-        if (measured_file_id != ""){
-             fetch_url = fetch_url + '?measured_file_id=' + encodeURIComponent(measured_file_id);
-        }else{
+        if (measured_file_id != "") {
+            fetch_url = fetch_url + '?measured_file_id=' + encodeURIComponent(measured_file_id);
+        } else {
             fetch_url = fetch_url + '?OEM=' + encodeURIComponent(j_oem_hidden);
         }
 

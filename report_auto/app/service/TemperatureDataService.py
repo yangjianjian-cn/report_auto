@@ -3,10 +3,12 @@ import multiprocessing
 from typing import Mapping, List, Dict, Optional
 
 import pandas as pd
+from pandas import DataFrame
 
 from app import db_pool
 from pojo import TemperatureVariable
-from tools.utils.DBOperator import query_table, insert_data, batch_save, update_table, query_table_sampling
+from tools.utils.DBOperator import query_table, insert_data, batch_save, update_table, query_table_sampling, \
+    query_table_by_sql_withParams
 from tools.utils.DateUtils import get_current_datetime_yyyyMMddHHmmss
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
@@ -36,12 +38,13 @@ def batch_chip_dict_save(data: list = None, s_oem: str = None, s_measured_file_i
     # 处理数据（这里只是一个示例，实际应用中可能需要保存到数据库等）
     for item in data:
         # 使用 get 方法避免键不存在时抛出异常，同时也可以设置默认值
-        measured_variable = item.get('measured_variable', '')
+        label_name = item.get('label_name', '')
+        label_alias_name = item.get('label_alias_name', '')
         chip_name = item.get('chip_name', '')
         max_allowed_value = item.get('max_allowed_value', '')
         max_allowed_value = 0.0 if not max_allowed_value else float(max_allowed_value)
         # 如果所有关键字段都为空，则跳过当前循环
-        if not (measured_variable and chip_name):
+        if not (label_name and label_alias_name and chip_name):
             continue
 
         item['max_allowed_value'] = max_allowed_value
@@ -53,18 +56,18 @@ def batch_chip_dict_save(data: list = None, s_oem: str = None, s_measured_file_i
     logging.debug(f"i_data_list={i_data_list}")
 
     table_name: str = "chip_dict"
-    query_sql = f"select measured_variable,chip_name from {table_name} where measured_file_name = %s"
+    query_sql = f"select label_alias_name,chip_name from {table_name} where measured_file_name = %s"
     params = (measured_file_name,)
     result_dicts: list[dict] = query_table(db_pool, query=query_sql, params=params)
     logging.debug(f"result_dicts={result_dicts}")
 
     # 创建一个集合来加速查找
-    result_set = {(d['measured_variable'], d['chip_name']) for d in result_dicts}
+    result_set = {(d['label_alias_name'], d['chip_name']) for d in result_dicts}
 
     # 筛选 i_data_list 中的元素
     filtered_i_data_list = [
         item for item in i_data_list
-        if (item['measured_variable'], item['chip_name']) not in result_set
+        if (item['label_alias_name'], item['chip_name']) not in result_set
     ]
 
     ret_msg = batch_save(db_pool, table_name, filtered_i_data_list)
@@ -214,7 +217,7 @@ def temperature_chip(selected_columns: list, file_ids_int: list, kv_chip_dict: d
         new_temperature_time = {col: [] for col in selected_columns}
         return new_temperature_time
 
-    result_dicts = modify_records(result_dicts)
+    # result_dicts = modify_records(result_dicts)
 
     # 使用字典推导式来创建结果字典
     temperature_time: Dict[str, List] = {
@@ -266,19 +269,19 @@ def create_data_structure(temperature_line_dict: Dict[str, List], temperature_le
     return results
 
 
-def process_temperature_data(measured_variables_list: List[str],
+def process_temperature_data(label_alias_name_list: List[str],
                              quantitative_variable_list: List[str],
                              selected_ids: List[int],
                              kv_chip_dict: Dict) -> (List[str], Dict[str, List], List):
     quantitative_variable_name: str = quantitative_variable_list[0]
     quantitative_variable_code: Optional[str] = next(
         (key for key, value in kv_chip_dict.items() if value == quantitative_variable_name), quantitative_variable_name)
-    measured_variables_list.extend([quantitative_variable_code])
-    measured_variables = list(set(measured_variables_list))
-    measured_variables.append('timestamps')
+    label_alias_name_list.extend([quantitative_variable_code])
+    label_alias_names = list(set(label_alias_name_list))
+    label_alias_names.append('timestamps')
 
     # 获取温度随时间变化的数据
-    temperature_line_dict: dict[str, list] = temperature_chip(selected_columns=measured_variables,
+    temperature_line_dict: dict[str, list] = temperature_chip(selected_columns=label_alias_names,
                                                               file_ids_int=selected_ids,
                                                               kv_chip_dict=kv_chip_dict)
 
@@ -291,3 +294,21 @@ def process_temperature_data(measured_variables_list: List[str],
                                                      num_processes=len(selected_ids))
 
     return temperature_legend_list, temperature_line_dict, temperature_scatter_list
+
+
+def s_get_non_empty_column_names(file_ids: list[int] = None, r_chip_dict: list[dict] = None) -> list[str]:
+    table_name: str = "chip_temperature"
+    logging.debug(f"r_chip_dict:{r_chip_dict}")
+
+    non_empty_columns: DataFrame = query_table_by_sql_withParams(db_pool, table_name, file_ids)
+    logging.debug(f"non_empty_columns:{non_empty_columns}")
+
+    first_row = non_empty_columns.iloc[0]
+    non_empty_columns = [
+        col for col, value in first_row.items()
+        if pd.notna(value) and value != ''
+    ]
+    logging.debug(f"non_empty_columns:{non_empty_columns}")
+
+    filtered_r_chip_dict = [item for item in r_chip_dict if item['label_alias_name'] in non_empty_columns]
+    return filtered_r_chip_dict

@@ -442,6 +442,40 @@ def query_table_by_sql(query_sql: str, conn=None) -> DataFrame:
         cursor.close()
 
 
+#  获取指定表中指定 file_id 记录的非空列名。
+@db_pool.with_connection
+def query_table_by_sql_withParams(table_name: str, file_ids: list[int], conn=None):
+    if not file_ids:
+        raise ValueError("file_ids cannot be empty.")
+
+    if conn is None:
+        raise ValueError("Database connection is required.")
+
+    # 构建 SQL查询语句，限制只取一行
+    placeholders = ', '.join(['%s'] * len(file_ids))
+    query_sql = f"SELECT * FROM {table_name} WHERE file_id IN ({placeholders}) LIMIT 1"
+    try:
+        cursor = conn.cursor()
+        # 执行查询
+        params = tuple(file_ids) if len(file_ids) > 1 else (file_ids[0],)
+        cursor.execute(query_sql, params)  # 确保 file_ids 作为元组传递
+        result = cursor.fetchall()
+
+        if not result:
+            return None  # 如果没有结果，返回空列表
+
+        # 获取列名
+        column_names = [desc[0] for desc in cursor.description]
+
+        # 将结果转换为DataFrame
+        results_df = pd.DataFrame(result, columns=column_names)
+        return results_df
+    except Exception as e:
+        logging.error(f"An unexpected error occurred: {e}")
+        logging.error("Traceback:", exc_info=True)
+        raise  # 抛出其他类型的异常
+
+
 @db_pool.with_connection
 def update_table(table: str, set_params: Mapping[str, any], where_params: Mapping[str, any], conn=None):
     cursor = conn.cursor()

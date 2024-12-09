@@ -1,10 +1,10 @@
 import logging
-import re
+
 from asammdf import MDF
 from asammdf.blocks.utils import MdfException
 from flask import jsonify
 
-from app.service.ToolCommonService import get_chip_dict
+from app.service.ToolCommonService import get_chip_dict, create_rename_mapping
 from tools.utils.DBOperator import batch_insert_data, alter_table_add_columns, create_table
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
@@ -25,7 +25,7 @@ def prepare_data_collection(last_id, measure_file_path):
     if not selected_columns_dict:
         return None, jsonify({'generate_report_failed': "unconfigured acquisition volume"})
 
-    selected_columns = [d['measured_variable'] for d in selected_columns_dict]
+    selected_columns = [d['label_alias_name'] for d in selected_columns_dict]
     logging.info(f"[信号量]已配置:{selected_columns}")
 
     try:
@@ -68,17 +68,7 @@ def clean_data(df):
     def get_rename_mapping(columns: list[str]):
         logging.debug(f"get_rename_mapping:{columns}")
 
-        rename_mapping: dict = {}
-        for col in columns:
-            if '\\' in col:  # TECU_tRaw\ETKC:1
-                alias = col.split('\\')[0]
-                rename_mapping[col] = alias
-            elif re.match(r'.*_ECU\d+', col):  # 匹配包含 _ECU 后跟数字的列名
-                parts = col.split('_')
-                new_col = '_'.join(parts[:2])  # 只取前两部分
-                rename_mapping[col] = new_col
-            else:
-                rename_mapping[col] = col  # 保持原样
+        rename_mapping: dict = create_rename_mapping(columns)
 
         # 特殊情况处理：TECU_tRaw 列，别名为 TECU_t
         if 'TECU_t' not in columns and 'TECU_tRaw' in columns:

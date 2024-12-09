@@ -82,6 +82,11 @@ def getBit0(decimal_number: int) -> str:
 
 # 相对差值
 def relative_difference_chip(num1: float, num2: float) -> int:
+    if num1 == 0.0 and num2 != 0:
+        return num2
+    elif num1 == 0.0:
+        return num1
+
     if num2 is None:
         num2 = 0
 

@@ -120,8 +120,8 @@ def relative_difference(selected_ids: list[int], chip_dict_list: list) -> list[d
 
     # 芯片字典
     for chip in chip_dict_list:
-        measured_variable = chip['measured_variable']
-        max_temperature = result_map.get(measured_variable, 0)
+        label_alias_name = chip['label_alias_name']
+        max_temperature = result_map.get(label_alias_name, 0)
         chip['max_temperature'] = max_temperature
         chip['relative_difference_temperature'] = relative_difference_chip(chip['max_allowed_value'], max_temperature)
         chip['difference_temperature'] = difference_chip(chip['max_allowed_value'], max_temperature)
@@ -133,7 +133,7 @@ def chip_dict(measurement_source: str, measured_file_name: str) -> dict:
     logging.info("获取芯片字典列表:")
     # 使用参数化查询防止SQL注入
     query_sql = """
-        SELECT measured_variable, chip_name, max_allowed_value 
+        SELECT label_alias_name, chip_name, max_allowed_value 
         FROM chip_dict 
         WHERE status = %s AND source = %s 
     """

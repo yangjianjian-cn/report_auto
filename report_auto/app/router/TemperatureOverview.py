@@ -67,15 +67,15 @@ def temperature_overview():
         matched_chip = next((chip for chip in chip_dict_list if chip['chip_name'] == variable), None)
         if matched_chip:
             statistical_variables_name_list.append(
-                {'measured_variable': matched_chip['measured_variable'], 'chip_name': matched_chip['chip_name']})
+                {'label_alias_name': matched_chip['label_alias_name'], 'chip_name': matched_chip['chip_name']})
         elif "TECU_t" == variable:
-            statistical_variables_name_list.append({'measured_variable': variable, 'chip_name': variable})
+            statistical_variables_name_list.append({'label_alias_name': variable, 'chip_name': variable})
 
     grouped_variables = defaultdict(set)
     for item in statistical_variables_name_list:
         chip_name = item['chip_name']
-        measured_variable = item['measured_variable']
-        grouped_variables[chip_name].add(measured_variable)
+        label_alias_name = item['label_alias_name']
+        grouped_variables[chip_name].add(label_alias_name)
 
     # 将集合转换为列表
     grouped_variables_list: list = {chip: list(variables) for chip, variables in grouped_variables.items()}

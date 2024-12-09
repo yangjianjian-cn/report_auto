@@ -6,7 +6,7 @@ from flask import request, render_template
 
 from app.router import temperature_bp
 from app.service.TemperatureDataService import get_measurement_file_list, \
-    process_temperature_data
+    process_temperature_data, s_get_non_empty_column_names
 from app.service.ToolCommonService import chip_dict_in_sql
 from tools.utils.HtmlGenerator import generate_select_options
 
@@ -51,16 +51,22 @@ def temperature_details():
 
     # 2. 获取芯片字典列表
     r_chip_dict: list[dict] = chip_dict_in_sql(selected_ids=selected_ids, project_type=project_type)
-    kv_chip_dict: dict = {item['measured_variable']: item['chip_name'] for item in r_chip_dict}
-    measured_variables_list: list[str] = [item['measured_variable'] for item in r_chip_dict]
-    logging.info(f"可观测信号量:{measured_variables_list}")
 
-    if not special_columns_str or len(measured_variables_list) == 0:
+    # 3.过滤掉不存在的列
+    r_chip_dict = s_get_non_empty_column_names(file_ids=selected_ids, r_chip_dict=r_chip_dict)
+    if r_chip_dict is None or len(r_chip_dict) == 0:
+        return render_template('error.html', failure_msg='Empty File...')
+
+    kv_chip_dict: dict = {item['label_alias_name']: item['chip_name'] for item in r_chip_dict}
+    label_alias_name_list: list[str] = [item['label_alias_name'] for item in r_chip_dict]
+    logging.info(f"可观测信号量:{label_alias_name_list}")
+
+    if not special_columns_str or len(label_alias_name_list) == 0:
         return render_template('error.html', failure_msg='Observation variable not configured!')
 
     # 离散图和折线图
     temperature_legend_list, temperature_line_dict, temperature_scatter_list = process_temperature_data(
-        measured_variables_list=measured_variables_list,
+        label_alias_name_list=label_alias_name_list,
         quantitative_variable_list=quantitative_variable_list,
         selected_ids=selected_ids,
         kv_chip_dict=kv_chip_dict
