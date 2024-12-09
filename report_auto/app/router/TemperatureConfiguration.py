@@ -102,6 +102,7 @@ def temperature_configuration_get():
             columns = None
             if file.filename.endswith('.dat') or file.filename.endswith('.mf4'):
                 columns = extract_columns_from_mdf(temp_file_path)
+                logging.info("提取列:%s",columns)
 
             # 删除临时文件
             # os.remove(temp_file_path)

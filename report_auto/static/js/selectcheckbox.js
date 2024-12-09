@@ -10,7 +10,7 @@ function updateSelectCheck2() {
     const dict_value = select1.value;
     const jsonData = {"dict_value": dict_value}
     $.ajax({
-        url: '/report/2/dict_type/items',  // 替换为你的服务器端点
+        url: '/report/2/dict_type/items',
         type: 'POST',
         contentType: 'application/json',  // 设置请求头
         data: JSON.stringify(jsonData),  // 发送的数据

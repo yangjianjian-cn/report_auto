@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>IOTest_Tplt</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+    <link rel="stylesheet" href="/static/layer/theme/default/layui.css">
+    <link rel="stylesheet" href="/static/layer/theme/default/layer.css">
+    <script src="/static/layer/layer.js"></script>
+    <script src="/static/layer/layui.js"></script>
+    <style>
+        .layui-table-click {
+            background-color: #f2f2f2 !important; /* 浅蓝色背景 */
+            border: 2px solid #0099CC !important; /* 蓝色边框 */
+        }
+    </style>
+</head>
+<body>
+<div class="layui-btn-group">
+    <button type="button" class="layui-btn layui-btn-sm" id="addRowButton" title="Add Row"><i class="layui-icon"></i>
+    </button>
+    <button type="button" class="layui-btn layui-btn-sm" id="delRowButton" title="Delete selection Rows"><i
+            class="layui-icon"></i></button>
+    <button type="button" class="layui-btn layui-btn-sm" id="submitTableButton" title="Submit"><i
+            class="layui-icon"></i></button>
+</div>
+<table id="iotest_tplt_table" lay-filter="iotest_tplt_table"></table>
+</body>
+<script>
+    layui.use(['table', 'jquery', 'layer'], function () {
+        const table = layui.table;
+        const $ = layui.jquery;
+        const layer = layui.layer;
+
+        let data = []; // 本地数据数组
+
+        // 初始化表格配置
+        const tableConfig = {
+            elem: '#iotest_tplt_table',
+            cellMinWidth: 200,
+            height: 600,
+            editTrigger: 'dblclick',
+            page: false,
+            limit: Infinity,
+            response: {
+                statusName: 'code',
+                statusCode: 200,
+                msgName: 'msg',
+                dataName: 'data'
+            },
+            cols: [
+                [
+                    {type: 'checkbox', fixed: 'left', rowspan: 2},
+                    {
+                        field: 'pin_no',
+                        fixed: 'left',
+                        title: 'Pin No.',
+                        width: 150,
+                        sort: true,
+                        edit: 'textarea',
+                        rowspan: 2
+                    },
+                    {field: 'hw_pin', fixed: 'left', title: 'HW Pin', sort: true, edit: 'textarea', rowspan: 2},
+                    {field: 'short_name', title: 'Short Name', edit: 'textarea', rowspan: 2},
+                    {field: 'io_comment', title: 'COMMENT', edit: 'textarea', rowspan: 2},
+                    {field: 'long_name', title: 'Long Name', edit: 'textarea', rowspan: 2},
+                    {field: 'information_hints', title: 'Information Hints', edit: 'textarea', rowspan: 2},
+                    {field: 'device_encapsulation', title: 'Device Encapsulation', edit: 'textarea', rowspan: 2},
+                    {title: 'Level1 Simple electrical test', colspan: 5, align: 'center'},
+                    {title: 'Level2 Error detection', colspan: 4, align: 'center'},
+                    {title: 'Level3 Error debouncing and error healing', colspan: 4, align: 'center'},
+                    {title: 'Level4 Substitute value reaction test', colspan: 4, align: 'center'}
+                ],
+                [
+
+                    {field: 'checked_values', title: 'Checked Values', edit: 'textarea'},
+                    {field: 'preparation_1', title: 'Prep. 1', edit: 'textarea'},
+                    {field: 'stimulation_1', title: 'Stim. 1', edit: 'textarea'},
+                    {field: 'tester', title: 'Tester', edit: 'textarea'},
+                    {field: 'measurements_1', title: 'Meas. 1', edit: 'textarea'},
+
+                    {field: 'checked_errors', title: 'Checked Errors', edit: 'textarea'},
+                    {field: 'preparation_2', title: 'Prep. 2', edit: 'textarea'},
+                    {field: 'stimulation_2', title: 'Stim. 2', edit: 'textarea'},
+                    {field: 'measurements_2', title: 'Meas. 2', edit: 'textarea'},
+
+                    {field: 'debouncing_healing', title: 'Debouncing', edit: 'textarea'},
+                    {field: 'preparation_3', title: 'Prep. 3', edit: 'textarea'},
+                    {field: 'stimulation_3', title: 'Stim. 3', edit: 'textarea'},
+                    {field: 'measurements_3', title: 'Meas. 3', edit: 'textarea'},
+
+                    {field: 'error_substitute', title: 'Error Sub.', edit: 'textarea'},
+                    {field: 'preparation_4', title: 'Prep. 4', edit: 'textarea'},
+                    {field: 'stimulation_4', title: 'Stim. 4', edit: 'textarea'},
+                    {field: 'measurements_4', title: 'Meas. 4', edit: 'textarea'}
+                ]],
+            data: data
+        };
+
+        // 初始化表格实例
+        const tableIns = table.render(tableConfig);
+
+        // 加载初始数据
+        function loadInitialData() {
+            $.ajax({
+                url: '/report/iotest/tplt/page/data',
+                method: 'GET',
+                success: (res) => {
+                    if (res.code === 200) {
+                        updateTableData(res.data);
+                    } else {
+                        layer.msg(`Failed to fetch data: ${res.msg}`, {icon: 5});
+                    }
+                },
+                error: (err) => {
+                    layer.msg('An error occurred while fetching data.', {icon: 5});
+                }
+            });
+        }
+
+        // 行单击事件
+        table.on('row(iotest_tplt_table)', function (obj) {
+            //标注选中样式
+            obj.tr.addClass('layui-table-click').siblings().removeClass('layui-table-click');
+        });
+
+        // 更新表格数据
+        function updateTableData(newData) {
+            // 为每条数据添加一个唯一的临时ID
+            newData = newData.map((item, index) => ({
+                ...item,
+                _tempId: `tempId_${index}` // 使用索引创建临时ID
+            }));
+
+            data = newData; // 更新本地数据数组
+            reloadTable();
+        }
+
+        // 重新加载表格
+        function reloadTable() {
+            tableIns.reload({data: data});
+        }
+
+        // 添加行
+        function addRow() {
+            const newRowData = Object.fromEntries(
+                tableConfig.cols[0].map(col => [col.field, ''])
+            );
+            data.push(newRowData);
+            reloadTable();
+        }
+
+        // 删除选中行
+        function deleteSelectedRows() {
+            const checkStatus = table.checkStatus('iotest_tplt_table'); // 获取选中的行
+            const selectedRows = checkStatus.data;
+
+            if (selectedRows.length === 0) {
+                layer.msg('Please select at least one row to delete.', {icon: 5});
+                return;
+            }
+
+            // 确认对话框
+            layer.confirm('Are you sure you want to delete the selected rows?', {
+                icon: 3,
+                title: 'Confirmation'
+            }, function (index) {
+                // 显示加载层
+                const loadingIndex = layer.load(2);
+                const ids = checkStatus.data.map(row => row.id || null);
+
+                // 发送POST请求以提交要删除的数据
+                $.ajax({
+                    url: '/report/iotest/tplt/page/del', // 后端删除接口
+                    method: 'POST',
+                    contentType: 'application/json',
+                    data: JSON.stringify({ids: ids}), // 将选中的行数据转换为JSON格式
+                    success: function (response) {
+                        layer.close(loadingIndex); // 关闭加载层
+
+                        if (response.success) {
+                            // 从本地数据中移除所有被选中的行
+                            data = data.filter(row => !selectedRows.some(selectedRow => selectedRow._tempId === row._tempId));
+
+                            reloadTable(); // 重新加载表格
+                            layer.msg('Rows deleted successfully.', {icon: 1});
+                        } else {
+                            layer.msg(`Failed to delete data: ${response.message}`, {icon: 5});
+                        }
+                    },
+                    error: function (xhr, status, error) {
+                        layer.close(loadingIndex); // 关闭加载层
+                        layer.msg(`An error occurred while deleting data: ${error}`, {icon: 5});
+                    }
+                });
+                layer.close(index); // 关闭确认框
+            });
+        }
+
+        // 提交表格数据
+        function submitTableData() {
+            // 获取表格中的所有数据（包括新增和修改的数据）
+            const tableData = data.map(row => {
+                // 移除临时ID和其他不需要提交到服务器的字段
+                const {_tempId, ...rest} = row;
+                return rest;
+            });
+
+            if (tableData.length === 0) {
+                layer.msg('The table is empty. Nothing to submit.', {icon: 5});
+                return;
+            }
+
+            // 显示加载层
+            const loadingIndex = layer.load(2);
+
+            // 发送POST请求以提交数据
+            $.ajax({
+                url: '/report/iotest/tplt/page/submit',
+                method: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify({data: tableData}), // 将数据转换为JSON格式
+                success: function (response) {
+                    layer.close(loadingIndex); // 关闭加载层
+
+                    if (response.success) {
+                        layer.msg('Data submitted successfully.', {icon: 1});
+                        // 页面刷新
+                        window.location.reload();
+                    } else {
+                        layer.msg(`Failed to submit data: ${response.message}`, {icon: 5});
+                    }
+                },
+                error: function (xhr, status, error) {
+                    layer.close(loadingIndex); // 关闭加载层
+                    layer.msg(`An error occurred while submitting data: ${error}`, {icon: 5});
+                }
+            });
+        }
+
+
+        // 绑定按钮点击事件
+        $('#addRowButton').on('click', addRow);
+        $('#delRowButton').on('click', deleteSelectedRows);
+        $('#submitTableButton').on('click', submitTableData);
+
+        // 页面加载时初始化数据
+        $(document).ready(loadInitialData);
+    });
+</script>
+
+</html>

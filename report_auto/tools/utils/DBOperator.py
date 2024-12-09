@@ -1,7 +1,8 @@
 __coding__ = "utf-8"
 
 import logging
-from typing import Mapping, Dict, List, Union
+from typing import Dict, Union, List, Tuple
+from typing import Mapping
 
 import pandas as pd
 from pandas import DataFrame
@@ -195,8 +196,6 @@ def batch_save(table_name: str, data: list, conn=None) -> tuple:
     logging.debug(f"insert_sql: {insert_sql}")
 
     # 默认值
-    last_id = None
-
     if conn is None:
         conn = db_pool.get_connection()  # 从装饰器获取的连接
 
@@ -211,7 +210,7 @@ def batch_save(table_name: str, data: list, conn=None) -> tuple:
     except Exception as e:
         conn.rollback()
         logging.error(f"An error occurred during batch data insertion: {str(e)}")
-        ret_msg = (False, last_id)
+        ret_msg = (False, e)
     finally:
         cursor.close()
     return ret_msg
@@ -326,6 +325,40 @@ def delete_from_tables_by_in(table: str, param: Mapping[str, Union[int, str]], c
         cursor.close()
 
 
+@db_pool.with_connection
+def delete_from_tables_by_list(table: str, param: Mapping[str, Union[int, str]], conn=None):
+    cursor = conn.cursor()
+    try:
+        # 获取参数键和值
+        key = list(param.keys())[0]
+        values_list = param[key]
+        print(values_list)
+
+        if not values_list:
+            return True, "No IDs to delete"
+
+        # 构建占位符列表，例如 ('%s', '%s')
+        placeholders = ', '.join(['%s'] * len(values_list))
+
+        # 构建 IN 子句
+        delete_sql = f"DELETE FROM {table} WHERE {key} IN ({placeholders})"
+        logging.info(f"{delete_sql} with {len(values_list)} IDs")
+
+        # 执行删除操作
+        cursor.execute(delete_sql, values_list)  # 将 values_list 转换为元组
+        logging.info(f"Deleted {cursor.rowcount} rows from {table}")
+
+        # 提交事务
+        conn.commit()
+        return True, "Deletion successful"
+    except Exception as e:
+        logging.error(f"An error occurred: {e}")
+        conn.rollback()  # 回滚事务
+        return False, str(e)
+    finally:
+        cursor.close()
+
+
 '''
 物理删除物理表中的数据
 '''
@@ -350,9 +383,6 @@ def delete_from_tables(table: str, param: Dict[str, Union[int, str]], conn=None)
         return False, str(e)
     finally:
         cursor.close()
-
-
-from typing import Dict, Union, Tuple, List
 
 
 def build_delete_query(table_name: str, param: Dict[str, Union[int, str]]) -> str:
@@ -457,6 +487,20 @@ def alter_table_add_columns(table: str, columns: List[str], column_type: str, co
     except Exception as e:
         logging.error(f"An error occurred: {e}")
         conn.rollback()  # 回滚事务
+        return False, str(e)
+    finally:
+        cursor.close()
+
+
+@db_pool.with_connection
+def execute_ddl_sql(sql: str, conn=None) -> Tuple[bool, str]:
+    cursor = conn.cursor()
+    try:
+        cursor.execute(sql)
+        logging.info(f"Executed SQL: {sql}")
+        return True, "SQL execution successful"
+    except Exception as e:
+        logging.error(f"SQL execution error: {e}")
         return False, str(e)
     finally:
         cursor.close()

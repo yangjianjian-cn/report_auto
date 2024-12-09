@@ -135,7 +135,7 @@
             server: '/report/upload',
             accept: {
                 title: 'Measurement files',
-                extensions: 'dat,png'
+                extensions: 'dat'
             },
 
             // 禁掉全局的拖拽功能。这样不会出现图片拖进页面的时候，把图片打开。
@@ -184,7 +184,7 @@
         };
 
         uploader.on('dndAccept', function (items) {
-            const allowedExtensions = ['.dat','.png'];
+            const allowedExtensions = ['.dat'];
             const acceptedItems = [];
             const rejectedItems = [];
 

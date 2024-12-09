@@ -1,3 +1,4 @@
+import logging
 import multiprocessing
 from typing import Mapping, List, Dict, Optional
 
@@ -5,9 +6,10 @@ import pandas as pd
 
 from app import db_pool
 from pojo import TemperatureVariable
-from tools.utils.DBOperator import query_table, insert_data, batch_save, update_table, query_table_sampling, \
-    delete_from_tables
+from tools.utils.DBOperator import query_table, insert_data, batch_save, update_table, query_table_sampling
 from tools.utils.DateUtils import get_current_datetime_yyyyMMddHHmmss
+
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 
 
 def measurement_file_save(params: dict = None):
@@ -24,7 +26,7 @@ def measurement_file_save(params: dict = None):
     return operation_code, operation_result
 
 
-def batch_chip_dict_save(data: list=None, s_oem: str=None,s_measured_file_id:str=None):
+def batch_chip_dict_save(data: list = None, s_oem: str = None, s_measured_file_id: str = None):
     if s_measured_file_id:
         measured_file_name = s_measured_file_id
     else:
@@ -37,21 +39,35 @@ def batch_chip_dict_save(data: list=None, s_oem: str=None,s_measured_file_id:str
         measured_variable = item.get('measured_variable', '')
         chip_name = item.get('chip_name', '')
         max_allowed_value = item.get('max_allowed_value', '')
+        max_allowed_value = 0.0 if not max_allowed_value else float(max_allowed_value)
         # 如果所有关键字段都为空，则跳过当前循环
-        if not (measured_variable and chip_name and max_allowed_value):
+        if not (measured_variable and chip_name):
             continue
 
+        item['max_allowed_value'] = max_allowed_value
         date_time = get_current_datetime_yyyyMMddHHmmss()
         item["create_time"] = date_time
         item["update_time"] = date_time
         item["measured_file_name"] = measured_file_name
         i_data_list.append(item)
+    logging.debug(f"i_data_list={i_data_list}")
 
     table_name: str = "chip_dict"
-    del_param: dict = {"measured_file_name": measured_file_name}
-    delete_from_tables(db_pool, table=table_name, param=del_param)
+    query_sql = f"select measured_variable,chip_name from {table_name} where measured_file_name = %s"
+    params = (measured_file_name,)
+    result_dicts: list[dict] = query_table(db_pool, query=query_sql, params=params)
+    logging.debug(f"result_dicts={result_dicts}")
 
-    ret_msg = batch_save(db_pool, table_name, i_data_list)
+    # 创建一个集合来加速查找
+    result_set = {(d['measured_variable'], d['chip_name']) for d in result_dicts}
+
+    # 筛选 i_data_list 中的元素
+    filtered_i_data_list = [
+        item for item in i_data_list
+        if (item['measured_variable'], item['chip_name']) not in result_set
+    ]
+
+    ret_msg = batch_save(db_pool, table_name, filtered_i_data_list)
     operation_code = ret_msg[0]
     operation_result = ret_msg[1]
 
@@ -132,7 +148,7 @@ def get_measurement_file_list(fileId: str = None):
     # 构建基础查询语句
     query_sql = " SELECT file_name, id, source,special_columns,oem,quantitative_variable,statistical_variable,remark,save_path FROM measurement_file "
 
-    print( type(fileId))
+    print(type(fileId))
     # 如果提供了 fileId，则添加额外的过滤条件
     params = []  # 初始化参数列表
     if fileId:

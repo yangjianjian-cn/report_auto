@@ -53,12 +53,19 @@
                         {% endfor %}
                     </select>
 
-                    <select id="select2" name="inputType" style="width: 250px;" >
+                    <select id="select2" name="inputType" style="width: 250px;">
                         <option value="" data-label="">--Please select--</option>
                     </select>
+
+                    &nbsp;&nbsp;
+                    <button type="button" class="layui-btn layui-btn-primary layui-btn-sm"
+                            title="Please check or configure the test template" id="h_test_template">
+                        <i class="layui-icon"></i>
+                    </button>
+
                 </div>
             </td>
-            <td colspan="5" align="right">
+            <td colspan="5" style="align:right">
                 <button type="button" class="layui-btn" id="report_generation">report generation</button>
                 <button type="button" class="layui-btn layui-btn-normal" id="report_download">download the report
                 </button>
@@ -81,11 +88,11 @@
                 <!--<div id="filePicker"></div>-->
                 <div id="customFilePicker"
                      style="width: 100px; height: 40px; background-color: #007bff; color: white; text-align: center; line-height: 40px; cursor: pointer;margin-left:43%;margin-top:2px;margin-bottom:2px;">
-                    选择文件
+                    Select file
                 </div>
                 <input id="filePicker" type="file" webkitdirectory mozdirectory msdirectory odirectory directory
                        multiple style="display:none;"/>
-                <p>或将文件拖到这里，单次最多可选50个</p>
+                <p>Or drag files here to choose up to 50 at a time</p>
             </div>
         </div>
         <div class="statusBar" style="display:none;">
@@ -102,14 +109,39 @@
     </div>
 </div>
 </body>
+
 <script>
+    layui.use(['layer'], function () {
+        const layer = layui.layer;
+        // 为锚点绑定点击事件
+        document.getElementById('h_test_template').addEventListener('click', function () {
+            const index = layer.open({
+                type: 2, // iframe 模式
+                title: 'IOTest Test Report Template', // 弹出层标题
+                shadeClose: false, // 点击遮罩不关闭弹出层
+                shade: 0, // 不显示遮罩
+                anim: 5, // 弹出层动画类型
+                maxmin: true, // 开启最大化最小化按钮
+                area: ['893px', '600px'], // 弹出层大小
+                content: '/report/iotest/tplt/page', // iframe 的 URL，包含查询参数
+                scrollbar: false, // 显式设置允许显示滚动条
+                success: function (layero, index) {
+                },
+                end: function () {
+                }
+            });
+            layer.full(index);
+        });
+    });
     var uploadedFileName = [];
 </script>
 <script type="text/javascript" src="/static/js/biz/io_test_uploader.js"></script>
 <script type="text/javascript" src="/static/js/selectcheckbox.js"></script>
 <script type="text/javascript" src="/static/js/index.js"></script>
+
 <!--
 <script type="text/javascript" src="/static/js/echarts.min.js"></script>
 <script type="text/javascript" src="/static/js/IOTestPiechart.js?v=1"></script>
 -->
+
 </html>

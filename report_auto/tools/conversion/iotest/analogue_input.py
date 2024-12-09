@@ -6,7 +6,7 @@ from tools.utils.DBOperator import query_table
 
 class IOTestDataInDB(object):
     # 查询test_area下test_scenario,需要得信号量
-    def get_io_test_data(self, test_area: str = None, test_scenario: str = None, test_area_dataLabel: str = None) -> dict:
+    def get_io_test_data(self, test_area: str = None, test_area_dataLabel: str = None) -> dict:
         query = '''
                     SELECT pin_no,hw_pin,short_name,io_comment,long_name,information_hints,device_encapsulation,
                         level1,checked_values,preparation_1,stimulation_1,tester,measurements_1,

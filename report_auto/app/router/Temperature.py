@@ -64,7 +64,7 @@ def extract_columns_from_mdf(file_path):
     # 使用 asammdf 库读取 MDF 文件并提取列名称
     mdf = MDF(file_path)
     # 定义要保留的前缀
-    prefixes = ['TC1_', 'TC2_', 'DC1_', 'DC2_']
+    prefixes = ['TC1_', 'TC2_', 'DC1_', 'DC2_','FanSpd_nAct','Epm_nEng','VehV_v','CEngDsT_t','ElSGov_trq','PthSet_trqlnlA']
     # 提取并过滤列名称,列表中的元素类似TC1_Th16_Relay_side\ES620 _614
     columns = [
         signal.name.split('\\')[0]
