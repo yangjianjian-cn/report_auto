@@ -104,6 +104,6 @@ def difference_chip(num1: float, num2: float) -> int:
 
 
 # 测试函数
-values = [40, 111, 168, 251, 252]
-for value in values:
-    print(f"十进制数 {value} : {get_third_bit(value)}")
+# values = [40, 111, 168, 251, 252]
+# for value in values:
+#     print(f"十进制数 {value} : {get_third_bit(value)}")

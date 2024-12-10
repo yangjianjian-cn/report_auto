@@ -4,6 +4,7 @@ from flask import Blueprint
 
 report_bp = Blueprint('report', __name__, url_prefix='/report')
 import app.router.ReportAuto
+import app.router.IOTestReport
 
 temperature_bp = Blueprint('temperature', __name__, url_prefix='/temperature')
 import app.router.Temperature

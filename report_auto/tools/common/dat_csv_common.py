@@ -8,7 +8,7 @@ from pojo.IOTestCounter import load_from_io_json, IOTestCounter
 from pojo.MSTCounter import load_from_mst_json, MSTCounter
 from pojo.MSTReqPOJO import ReqPOJO
 from tools.common.csv_column_rename import reMstDF
-from tools.conversion.iotest.analogue_input import IOTestDataInDB
+from tools.conversion.iotest.analysis_todb import IOTestDataInDB
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 

@@ -7,18 +7,22 @@ from openpyxl import load_workbook
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 
 
+# 1-passed 2-failed 3-na 4-nottested
+
 def write_analysis_tocsv(output_file: str, insert_rownum: int, levels: map, result_dicts: dict):
     # level_map初始化
-    level_map: map = {
-        "level1": "passed",
-        "level2": "passed",
-        "level3": "passed",
-        "level4": "passed",
-    }
+    # {'level1': {1}, 'level2': {1, 3}, 'level3': {1, 3}, 'level4': {1}}
+    level_map: map = {}
     # level_map赋值
     for level, status_set in levels.items():
-        if "failed" in status_set:
+        if 1 in status_set:
+            level_map[level] = "passed"
+        elif 2 in status_set:
             level_map[level] = "failed"
+        elif 3 in status_set:
+            level_map[level] = "n/a"
+        elif 4 in status_set:
+            level_map[level] = "not tested"
     logging.info(f"level_map:{level_map}")
 
     # excel文件中，一行数据

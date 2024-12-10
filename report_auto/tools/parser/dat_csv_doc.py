@@ -5,7 +5,7 @@ from pojo.IOTestCounter import load_from_io_json, IOTestCounter, save_to_io_json
 from pojo.MSTCounter import load_from_mst_json, MSTCounter, save_to_mst_json
 from pojo.MSTReqPOJO import ReqPOJO
 from tools.common.dat_csv_common import dat_csv_conversion
-from tools.conversion.iotest.analogue_input_parser import analogue_input
+from tools.conversion.iotest.analysis_dat import dat_data_analysis
 from tools.conversion.msttest.mst_report_generation import mst_report, mst_header_page_docx
 from tools.utils.CustomException import CustomException
 from tools.utils.FileUtils import get_filename_without_extension, merge_docs
@@ -89,19 +89,21 @@ def dat_csv_docx(req_data: ReqPOJO):
         html_success = join_with_br(success_messages)
         html_error = join_with_br(error_messages)
         return html_success, html_error
-
     # 3.IOTest生成报告
     elif 'IO_Test' == req_data.test_team:
         try:
-            output_path = analogue_input(req_data)
+            return_msg_str, output_file = dat_data_analysis(req_data)
             updateCounter(req_data)
             success_messages.clear()
-            success_messages.append('Successfully: %s, %s' % (req_data.test_area, req_data.test_area_dataLabel))
+            if not return_msg_str:
+                success_messages.append('Successfully: %s, %s' % (req_data.test_area, req_data.test_area_dataLabel))
+            else:
+                success_messages.append('UnSuccessfully: %s, %s,%s' % (req_data.test_area, req_data.test_area_dataLabel, return_msg_str))
         except Exception as e:
             error_messages.clear()
-            success_messages.append(
-                'UnSuccessfully: {}, {}, {}'.format(req_data.test_area, req_data.test_area_dataLabel, str(e)))
+            success_messages.append('UnSuccessfully: {}, {}, {}'.format(req_data.test_area, req_data.test_area_dataLabel, str(e)))
             logging.error(f"report generation exception:{str(e)}")
+            raise e
 
         html_success = join_with_br(success_messages)
         html_error = join_with_br(error_messages)
