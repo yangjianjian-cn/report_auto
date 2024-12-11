@@ -8,7 +8,8 @@ from flask import request, render_template
 from app.router import temperature_bp
 from app.service.TemperatureDataService import get_measurement_file_list
 from app.service.TemperatureOverviewService import relative_difference, temperature_duration
-from app.service.ToolCommonService import chip_dict_in_sql
+from app.service.ToolCommonService import chip_dict_in_sql, get_tool_parameters
+from constant.ToolConstants import ToolConstants
 from tools.utils.HtmlGenerator import generate_select_options
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
@@ -57,6 +58,13 @@ def temperature_overview():
     logging.info(f"观测文件:{selected_ids}")
 
     chip_dict_list = chip_dict_in_sql(selected_ids=selected_ids, project_type=project_type)
+    logging.info(f"电子元器件字典:{chip_dict_list}")
+
+    param_val: str = get_tool_parameters(ToolConstants.WORK_CONDITION)
+    param_val_list: list[str] = param_val.split(',')
+
+    # 使用列表推导式过滤掉 label_alias_name 在 param_val_list 中的元素
+    chip_dict_list = [item for item in chip_dict_list if item['label_alias_name'] not in param_val_list]
     logging.info(f"电子元器件字典:{chip_dict_list}")
 
     # 创建一个字典来存储匹配结果

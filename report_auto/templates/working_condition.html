@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>HTM</title>
+    <title>WORK_CONDITION</title>
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
     <meta name="renderer" content="webkit">
     <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
@@ -27,13 +27,12 @@
                 <a href="/report/1" ,target="_blank">MST</a>
             </li>
             <li class="layui-nav-item">
-                <a href="/report/2" ,target="_blank">IOTest</a>
+                <a href="/report/2" ,target="_blank">IOTes</a>
             </li>
             <span class="layui-nav-bar"></span>
         </ul>
     </div>
 </div>
-
 <div class="layui-container" style="width: 99%">
     <div class="layui-panel site-menu" style="width: 18%; display: inline-block">
         <ul class="layui-menu layui-menu-lg site-docs-menu">
@@ -41,7 +40,7 @@
                 <div class="layui-menu-body-title">Chip Temperature</div>
                 <hr>
                 <ul>
-                    <li>
+                    <li class="layui-menu-item-checked2">
                         <div class="layui-menu-body-title">
                             <a href="/temperature/index">
                                 <span>数据采集</span>
@@ -57,7 +56,7 @@
                             </a>
                         </div>
                     </li>
-                    <li>
+                    <li class="">
                         <div class="layui-menu-body-title">
                             <a href="/temperature/overview">
                                 <span>数据概述</span>
@@ -65,7 +64,7 @@
                             </a>
                         </div>
                     </li>
-                    <li class="layui-menu-item-checked2">
+                    <li>
                         <div class="layui-menu-body-title">
                             <a href="/temperature/details">
                                 <span>数据详情</span>
@@ -75,24 +74,29 @@
                     </li>
                 </ul>
             </li>
+            <li class="layui-menu-item-group" lay-options="{type: 'group', isAllowSpread: true}">
+                <div class="layui-menu-body-title">Work Condition</div>
+                <hr>
+                <ul>
+                    <li class="layui-menu-item-checked2">
+                        <div class="layui-menu-body-title">
+                            <a href="/temperature/working_condition">
+                                <span>工  况</span>
+                                <span class="layui-font-12 layui-font-gray">Working Condition</span>
+                            </a>
+                        </div>
+                    </li>
+                </ul>
+            </li>
         </ul>
     </div>
     <div class="site-content" style="width: 80%; display: inline-block">
         {{ multi_select_html|safe }}
-        <span style="color: #7abaff">Query the data of the most recent file by default</span>
+        <span style="color: #01aaed">(Query the data of the most recent file by default)</span>
 
         <div class="chart_container">
-            <div class="chart_div" id="chip_temperature12"></div>
+            <div class="chart_div" id="wk_condition_01"></div>
         </div>
-
-        <div class="chart_container">
-            <div class="chart_div" id="chip_temperature13"></div>
-        </div>
-
-        <!--隐藏域-->
-        <input type="hidden" id="init_selected_files" value='{{ init_selected_files|safe }}'>
-        <input type="hidden" id="measurement_source" value='{{ measurement_source|safe }}'>
-
     </div>
 </div>
 <div class="layui-footer footer footer-demo">
@@ -101,85 +105,10 @@
     <p><span></span></p>
 </div>
 </body>
-<script type="text/javascript" src="/static/js/biz/file_list_multi_select_details.js?v=2"></script>
+<script type="text/javascript" src="/static/js/biz/work_condition_file_list.js"></script>
 <script type="text/javascript" src="/static/js/echarts.min.js"></script>
 <script>
-    temperature_legend_list = {{ temperature_legend_list|tojson}};
-    temperature_scatter_list = {{ temperature_scatter_list|tojson}};
-    temperature_line_dict = {{ temperature_line_dict|tojson}};
-    j_measurement_source_text = "{{ quantitative_variable}}";
-
-    c_tooltip = {
-        showDelay: 0,
-        formatter: function (params) {
-            if (params.value.length > 1) {
-                return (
-                    params.seriesName +
-                    ' :<br/>' +
-                    params.value[0] +
-                    '°C ' +
-                    params.value[1] +
-                    '°C '
-                );
-            } else {
-                return (
-                    params.seriesName +
-                    ' :<br/>' +
-                    params.name +
-                    ' : ' +
-                    params.value +
-                    '°C '
-                );
-            }
-        },
-        axisPointer: {
-            show: true,
-            type: 'cross',
-            lineStyle: {
-                type: 'dashed',
-                width: 1
-            }
-        }
-    }
-    c_toolbox = {
-        feature: {
-            dataZoom: {}
-            ,
-            brush: {
-                type: ['rect', 'polygon', 'clear']
-            }
-            ,
-            restore: {}
-        }
-    }
-    c_grid = {
-        left: '10%',
-        right: '32%',
-        bottom: '3%',
-        top: 80,
-        containLabel: true
-    }
-    c_xAxis = {
-        type: 'value',
-        scale: true,
-        name: j_measurement_source_text,
-        axisLabel: {
-            formatter: '{value}°C'
-        },
-        splitLine: {
-            show: false
-        }
-    }
-    c_yAxis = {
-        type: 'value',
-        scale: true,
-        splitNumber: 5,
-        name: 'Temperature',
-        formatter: function (value) {
-            return value.toFixed(1) + '°C';
-        }
-    }
+    const work_condition_dict = {{ work_condition_dict_line|tojson }}
 </script>
-<script type="text/javascript" src="/static/js/biz/chip12_temperature.js?v=1"></script>
-<script type="text/javascript" src="/static/js/biz/chip13_temperature.js?v=1"></script>
+<script type="text/javascript" src="/static/js/biz/work_condition/wk_cond01.js"></script>
 </html>

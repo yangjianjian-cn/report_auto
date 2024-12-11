@@ -67,7 +67,8 @@ def dat_csv_conversion(dat_file: str, req_data: ReqPOJO) -> str:
             df.rename(columns=alias_column_names, inplace=True)
 
             ioTestDataInDB = IOTestDataInDB()
-            result_dicts: dict = ioTestDataInDB.get_io_test_data(test_area=req_data.test_area,test_scenario=req_data.test_scenario,test_area_dataLabel=req_data.test_area_dataLabel)
+            result_dicts: dict = ioTestDataInDB.get_io_test_data(test_area=req_data.test_area,
+                                                                 test_area_dataLabel=req_data.test_area_dataLabel)
             db_columns_list:list = ioTestDataInDB.csv_needed_columns(result_dicts)
             logging.info(f"columns_to_include_list:{db_columns_list}")
 

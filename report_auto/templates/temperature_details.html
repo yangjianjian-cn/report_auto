@@ -75,53 +75,35 @@
                     </li>
                 </ul>
             </li>
+            <li class="layui-menu-item-group" lay-options="{type: 'group', isAllowSpread: true}">
+                <div class="layui-menu-body-title">Work Condition</div>
+                <hr>
+                <ul>
+                    <li class="layui-menu-item-checked2">
+                        <div class="layui-menu-body-title">
+                            <a href="/temperature/working_condition">
+                                <span>工  况</span>
+                                <span class="layui-font-12 layui-font-gray">Working Condition</span>
+                            </a>
+                        </div>
+                    </li>
+                </ul>
+            </li>
         </ul>
     </div>
     <div class="site-content" style="width: 80%; display: inline-block">
         {{ multi_select_html|safe }}
         <span style="color: #7abaff">Query the data of the most recent file by default</span>
-        <!--
-        <div class="title-block">
-            <h2 class="title">芯片温度曲线</h2>
-        </div>
-        -->
 
         <div class="chart_container">
-            <div class="chart" id="chip_temperature01"></div>
-            <div class="chart" id="chip_temperature02"></div>
-        </div>
-        <div class="chart_container">
-            <div class="chart" id="chip_temperature03"></div>
-            <div class="chart" id="chip_temperature04"></div>
+            <div class="chart_div" id="chip_temperature12"></div>
         </div>
 
-        <!--
-        <div class="title-block">
-            <h2 class="title">temperature time curve</h2>
-        </div>
-        -->
         <div class="chart_container">
-            <div class="chart" id="chip_temperature05"></div>
-            <div class="chart" id="chip_temperature06"></div>
-        </div>
-        <div class="chart_container">
-            <div class="chart" id="chip_temperature07"></div>
-            <div class="chart" id="chip_temperature08"></div>
+            <div class="chart_div" id="chip_temperature13"></div>
         </div>
 
         <!--隐藏域-->
-        <input type="hidden" id="temperature_time_dc1_legend" value='{{ temperature_time_dc1_legend }}'>
-        <input type="hidden" id="temperature_time_tc1_legend" value='{{ temperature_time_tc1_legend }}'>
-        <input type="hidden" id="temperature_time_tc2_legend" value='{{ temperature_time_tc2_legend }}'>
-
-        <input type="hidden" id="temperature_time_dc1" value='{{ temperature_time_dc1 }}'>
-        <input type="hidden" id="temperature_time_tc1" value='{{ temperature_time_tc1 }}'>
-        <input type="hidden" id="temperature_time_tc2" value='{{ temperature_time_tc2 }}'>
-
-        <input type="hidden" id="temperature_time_dc1_5" value='{{ temperature_time_dc1_5|tojson }}'>
-        <input type="hidden" id="temperature_time_tc1_6" value='{{ temperature_time_tc1_6|tojson }}'>
-        <input type="hidden" id="temperature_time_tc2_7" value='{{ temperature_time_tc2_7|tojson }}'>
-
         <input type="hidden" id="init_selected_files" value='{{ init_selected_files|safe }}'>
         <input type="hidden" id="measurement_source" value='{{ measurement_source|safe }}'>
 
@@ -136,10 +118,10 @@
 <script type="text/javascript" src="/static/js/biz/file_list_multi_select_details.js?v=2"></script>
 <script type="text/javascript" src="/static/js/echarts.min.js"></script>
 <script>
-    j_measurement_source = document.getElementById('measurement_source').value;
-    j_measurement_source_text = 'TECU_T'
-    if ('NG_FILES' == j_measurement_source)
-        j_measurement_source_text = 'X3'
+    temperature_legend_list = {{ temperature_legend_list|tojson}};
+    temperature_scatter_list = {{ temperature_scatter_list|tojson}};
+    temperature_line_dict = {{ temperature_line_dict|tojson}};
+    j_measurement_source_text = "{{ quantitative_variable}}";
 
     c_tooltip = {
         showDelay: 0,
@@ -212,11 +194,6 @@
         }
     }
 </script>
-<script type="text/javascript" src="/static/js/biz/chip01_temperature.js?v=1"></script>
-<script type="text/javascript" src="/static/js/biz/chip02_temperature.js?v=1"></script>
-<script type="text/javascript" src="/static/js/biz/chip03_temperature.js?v=1"></script>
-
-<script type="text/javascript" src="/static/js/biz/chip05_temperature.js?v=1"></script>
-<script type="text/javascript" src="/static/js/biz/chip06_temperature.js?v=1"></script>
-<script type="text/javascript" src="/static/js/biz/chip07_temperature.js?v=1"></script>
+<script type="text/javascript" src="/static/js/biz/chip12_temperature.js?v=1"></script>
+<script type="text/javascript" src="/static/js/biz/chip13_temperature.js?v=1"></script>
 </html>

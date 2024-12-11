@@ -206,12 +206,10 @@ def modify_records(records):
     return modified_records
 
 
-def temperature_chip(selected_columns: list, file_ids_int: list, kv_chip_dict: dict) -> Dict[
-    str, List]:
+def temperature_chip(selected_columns: list, file_ids_int: list, kv_chip_dict: dict) -> Dict[str, List]:
     file_ids_str_for_query = ', '.join(map(str, file_ids_int))
     selected_columns_str = ', '.join(map(str, selected_columns))
-    result_dicts = query_table_sampling(db_pool, columns=selected_columns_str,
-                                        file_ids_str_for_query=file_ids_str_for_query)
+    result_dicts = query_table_sampling(db_pool, columns=selected_columns_str,file_ids_str_for_query=file_ids_str_for_query)
     if result_dicts is None or len(result_dicts) < 1:
         # 返回一个空的 temperature_time 字典
         new_temperature_time = {col: [] for col in selected_columns}

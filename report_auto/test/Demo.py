@@ -1,9 +1,6 @@
-if "level2" in "level2_ok":
-    print("exists")
-else:
-    print("not found")
+type_str = type(0.20035954111153842)
 
-return_msg: list[str] = []
-return_msg.append("123")
-return_msg.append("456")
-print(return_msg)
+if type_str is float:
+    print("float")
+else:
+    print("unknown")

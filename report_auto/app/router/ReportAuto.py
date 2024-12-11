@@ -185,6 +185,7 @@ def report_download():
 # 生成报告
 @report_bp.route('/generate_report', methods=['POST'])
 def generate_report():
+    logging.info("生成报告:generate_report...")
     # 1. 解析前端发送的 JSON 数据
     data = request.get_json()
 

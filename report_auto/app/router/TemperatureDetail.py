@@ -7,7 +7,8 @@ from flask import request, render_template
 from app.router import temperature_bp
 from app.service.TemperatureDataService import get_measurement_file_list, \
     process_temperature_data, s_get_non_empty_column_names
-from app.service.ToolCommonService import chip_dict_in_sql
+from app.service.ToolCommonService import chip_dict_in_sql, get_tool_parameters
+from constant.ToolConstants import ToolConstants
 from tools.utils.HtmlGenerator import generate_select_options
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
@@ -51,6 +52,14 @@ def temperature_details():
 
     # 2. 获取芯片字典列表
     r_chip_dict: list[dict] = chip_dict_in_sql(selected_ids=selected_ids, project_type=project_type)
+    logging.info(f"电子元器件字典:{r_chip_dict}")
+
+    param_val: str = get_tool_parameters(ToolConstants.WORK_CONDITION)
+    param_val_list: list[str] = param_val.split(',')
+
+    # 使用列表推导式过滤掉 label_alias_name 在 param_val_list 中的元素
+    r_chip_dict = [item for item in r_chip_dict if item['label_alias_name'] not in param_val_list]
+    logging.info(f"电子元器件字典:{r_chip_dict}")
 
     # 3.过滤掉不存在的列
     r_chip_dict = s_get_non_empty_column_names(file_ids=selected_ids, r_chip_dict=r_chip_dict)
@@ -76,7 +85,7 @@ def temperature_details():
     multi_select_html = generate_select_options(get_measurement_file_list(fileId=None))
 
     # 渲染页面
-    return render_template('temperature_details_again.html',
+    return render_template('temperature_details.html',
                            temperature_legend_list=temperature_legend_list,
                            temperature_scatter_list=temperature_scatter_list,
                            temperature_line_dict=temperature_line_dict,

@@ -8,8 +8,12 @@ import numpy as np
 
 # 数字x除以1000，结果截取小数点后一位
 def truncate_to_one_decimal_place(x) -> float:
-    # 将数字转换为字符串，并确保它至少有一位小数
-    s = f"{x / 1000:.2f}"
+    if type(x) is float:
+        s = f"{x}"
+    else:
+        # 将数字转换为字符串，并确保它至少有一位小数
+        s = f"{x / 1000:.2f}"
+
     # 截取小数点后的一位数字
     truncated = float(s[:s.index('.') + 2])
     return truncated
@@ -101,7 +105,6 @@ def difference_chip(num1: float, num2: float) -> int:
         num2 = 0
     r_num = (num1 - num2)
     return int(r_num)
-
 
 # 测试函数
 # values = [40, 111, 168, 251, 252]

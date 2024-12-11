@@ -76,6 +76,20 @@
                     </li>
                 </ul>
             </li>
+            <li class="layui-menu-item-group" lay-options="{type: 'group', isAllowSpread: true}">
+                <div class="layui-menu-body-title">Work Condition</div>
+                <hr>
+                <ul>
+                    <li class="layui-menu-item-checked2">
+                        <div class="layui-menu-body-title">
+                            <a href="/temperature/working_condition">
+                                <span>工  况</span>
+                                <span class="layui-font-12 layui-font-gray">Working Condition</span>
+                            </a>
+                        </div>
+                    </li>
+                </ul>
+            </li>
         </ul>
     </div>
     <div class="site-content" style="width: 80%; display: inline-block">
@@ -215,13 +229,13 @@
                     data: JSON.stringify(sendData), // 要发送的数据，转换成JSON格式
                     contentType: "application/json; charset=utf-8", // 设置请求头，告诉服务器数据格式为JSON
                     dataType: "json", // 指定预期服务器返回的数据类型为JSON
-                    success: function(response) {
-                         layer.alert("success",{icon:1});
+                    success: function (response) {
+                        layer.alert("success", {icon: 1});
                     },
-                    error: function(jqXHR, textStatus, errorThrown) {
-                        layer.alert("Request failed: [", textStatus, "], error details: [", errorThrown + "]",{icon:2});
+                    error: function (jqXHR, textStatus, errorThrown) {
+                        layer.alert("Request failed: [", textStatus, "], error details: [", errorThrown + "]", {icon: 2});
                     },
-                    complete: function() {
+                    complete: function () {
                         layer.close(index);
                     }
                 });

@@ -1,5 +1,6 @@
 import logging
 import os
+from pathlib import Path
 
 from pojo.IOTestCounter import load_from_io_json, IOTestCounter, save_to_io_json
 from pojo.MSTCounter import load_from_mst_json, MSTCounter, save_to_mst_json
@@ -48,19 +49,21 @@ def dat_csv_docx(req_data: ReqPOJO):
     u_files: str = req_data.u_files
 
     # 1.测量数据转换成csv文件
-    all_files = os.listdir(req_data.dat_path)
+    # all_files = os.listdir(req_data.dat_path)
+    all_files = list(Path(req_data.dat_path).glob('*.dat'))
     for file in all_files:
-        # dat、mf4 转 csv
-        if file.endswith(".dat") and file in u_files:
-            # dat文件转csv
-            receive_msg = dat_csv_conversion(file, req_data)
-            if receive_msg.startswith("err:"):
-                # 转换异常
-                logging.error(f'文件{file}解析异常:{receive_msg}')
-            else:
-                # 成功转换csv
-                csvPathList.append(receive_msg)
-                logging.info(f"转换完成:{receive_msg}")
+        if file.name not in u_files:
+            continue
+        # dat文件转csv
+        receive_msg = dat_csv_conversion(file.name, req_data)
+        if receive_msg.startswith("err:"):
+            # 转换异常
+            logging.error(f'文件{file}解析异常:{receive_msg}')
+        else:
+            # 成功转换csv
+            csvPathList.append(receive_msg)
+            logging.info(f"转换完成:{receive_msg}")
+
     # 2.MST生成报告
     success_messages = []
     error_messages = []
@@ -89,10 +92,11 @@ def dat_csv_docx(req_data: ReqPOJO):
         html_success = join_with_br(success_messages)
         html_error = join_with_br(error_messages)
         return html_success, html_error
+
     # 3.IOTest生成报告
     elif 'IO_Test' == req_data.test_team:
         try:
-            return_msg_str, output_file = dat_data_analysis(req_data)
+            return_msg_str = dat_data_analysis(req_data)
             updateCounter(req_data)
             success_messages.clear()
             if not return_msg_str:
@@ -103,7 +107,6 @@ def dat_csv_docx(req_data: ReqPOJO):
             error_messages.clear()
             success_messages.append('UnSuccessfully: {}, {}, {}'.format(req_data.test_area, req_data.test_area_dataLabel, str(e)))
             logging.error(f"report generation exception:{str(e)}")
-            raise e
 
         html_success = join_with_br(success_messages)
         html_error = join_with_br(error_messages)

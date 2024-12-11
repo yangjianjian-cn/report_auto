@@ -47,44 +47,44 @@ def substitute_value_reaction_test(csv_file: str, result_dicts, test_type: str) 
     # 通用部分
     df_selected = pd.read_csv(csv_file, encoding='utf8')
     uRaw = result_dicts[0].get("measurements_1")
-    logging.info(f"测量电压:{uRaw}")
+    logging.info(f"level1测量电压:{uRaw}")
     if not uRaw:
-        return 2, " level1 column 'measurements_1' not configured"
+        return 2, "level1 column 'measurements_1' not configured"
 
+    # level2 preparation_2,电压阈值
     preparation_2_str: str = result_dicts[0].get("preparation_2")
     if not preparation_2_str:
         return 2, " level2 column 'preparation_2' not configured"
     preparation_2_list: list = preparation_2_str.splitlines()
     if len(preparation_2_list) != 2:
         return 2, " level2 column 'preparation_2' configured error"
-
     uRawLimit: str = preparation_2_list[0 if test_type == 'high' else 1]
     logging.info(f"{'电压上限' if test_type == 'high' else '电压下限'}:{uRawLimit}")
 
-    observed_voltage: str = result_dicts[0].get("measurements_4")
-    logging.info(f"观测电压:{observed_voltage}")
-    if not observed_voltage:
-        return 2, "level4 column measurements_4 not configured"
-
+    # level4 preparation_4 默认电压
     uRaw1Def: str = result_dicts[0].get("preparation_4")
     logging.info(f"默认电压:{uRaw1Def}")
     if not uRaw1Def:
         return 2, "level4 column preparation_4 not configured(Default voltage value)"
 
+    # level4 measurements_4 实际观测电压
+    observed_voltage: str = result_dicts[0].get("measurements_4")
+    logging.info(f"level4 column 'measurements_4':{observed_voltage}")
+    if not observed_voltage:
+        return 2, "level4 column measurements_4 not configured"
+
     # 根据test_type决定是检查上限还是下限
     if test_type == 'high':
-        filtered_df = df_selected[df_selected[uRaw] > df_selected[uRawLimit]]
+        filtered_df = df_selected[df_selected[observed_voltage] > df_selected[uRawLimit]]
     elif test_type == 'low':
-        filtered_df = df_selected[df_selected[uRaw] < df_selected[uRawLimit]]
+        filtered_df = df_selected[df_selected[observed_voltage] < df_selected[uRawLimit]]
 
+    test_rslt = 3, "n/a"
     if not filtered_df.empty:
         # 检查 'APP_uRaw1' 和 'APP_uRaw1Def_C' 是否完全相等
         equal_values = filtered_df[filtered_df[observed_voltage] == filtered_df[uRaw1Def]]
         if not equal_values.empty:
             test_rslt = 1, "passed"
-    else:
-        test_rslt = 3, "n/a"
-
     return test_rslt
 
 
@@ -105,7 +105,9 @@ def analogue_input_level4(csv_file: str, result_dicts) -> dict:
         return 1, "success"
     elif results_high_code == 2 or results_low_code == 2:
         return 2, "failure"
-    else:
-        results_code = results_high_code if results_high_code else results_low_code
+    elif results_high_code == 3 and results_low_code == 3:
         results_msg = results_high_msg if results_high_msg else results_low_msg
-        return results_code, results_msg
+        return 3, results_msg
+    elif results_high_code == 4 and results_low_code == 4:
+        results_msg = results_high_msg if results_high_msg else results_low_msg
+        return 4, results_msg

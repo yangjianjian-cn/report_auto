@@ -3,8 +3,10 @@ __coding__ = "utf-8"
 import re
 from typing import Mapping
 
+from pandas import DataFrame, Series
+
 from app import db_pool
-from tools.utils.DBOperator import query_table, delete_from_tables_by_in
+from tools.utils.DBOperator import query_table, delete_from_tables_by_in, query_table_by_sql
 
 
 # 根据字典类型获取字典项
@@ -114,3 +116,11 @@ def create_rename_mapping(columns: list[str]):
             rename_mapping[col] = col  # 如果不满足上述条件，则保持原样
 
     return rename_mapping
+
+
+# 查询参数表
+def get_tool_parameters(para_name: str) -> str:
+    qry_sql = f" SELECT value FROM tool_parameters WHERE name = '{para_name}' "
+    results_df: DataFrame = query_table_by_sql(db_pool, qry_sql)
+    values: Series = results_df['value']
+    return values[0]
