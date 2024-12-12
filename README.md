@@ -101,50 +101,12 @@ nohup gunicorn  -w 3 -b 0.0.0.0:5000 main:main --timeout 300 > gunicorn_output.l
 ## 代码结构
 
 以下是 Report Auto 项目的详细目录结构及各部分的功能说明：本工具为基于Python语言的Flask Web应用程序，采用MySQL存储数据
-report_auto/
-|--app/
-|  |--|__init__.py   # 应用程序的核心逻辑
-|  |...              # 其他应用相关模块
-|--constant/         # 项目中使用的常量定义
-|--pojo/             # Python对象模型（Plain Old Python Objects），用于表示数据结构
-|--static/           # 静态资源文件
-|  |--|css/          # CSS样式文件
-|  |--|images/       # 图像文件
-|  |--|js/           # JavaScript脚本文件
-|  |--|layer/        # Layer插件相关文件（用于前端弹层）
-|  |--|swf/          # Flash动画文件（项目未使用）
-|--templates/        # 报告生成所用的模板文件（如HTML、Jinja2模板）
-|--test/             # 测试代码
-|--tools/            # 工具库，包含各种辅助功能
-|  |--|common/       # 通用工具函数
-|  |--|conversion/   # 数据转换工具
-|  |  |--|iotest     # I/O测试相关的转换工具
-|  |  |--|msttest    # MST测试相关的转换工具
-|  |--|parser        # 数据解析器
-|  |--|report        # 报告生成工具
-|  |--|utils         # 其他实用工具
-|--.env              # 环境变量配置文件
-|--main.py           # 项目入口文件，包含CLI命令解析逻辑
-|--report_auto.sh    # Shell脚本，用于部署
-|--requirements.txt  # 项目依赖列表    
+![image](https://github.com/user-attachments/assets/cb833898-588e-4e23-8297-098e327ca974)
+
 
 ### 关键模块说明
-**app/**: 包含应用程序的主要逻辑，包括数据处理流程、报告生成等核心功能 。
-**constant/:** 存储项目中使用的所有常量，如故障类型、测试场景类型、程序中特定业务参数。
-**pojo/**: 定义了简单的Python类，用于表示数据实体或业务对象。
-**static/**: 存放静态资源文件，如CSS、JavaScript、图像等，主要用于前端页面。
-**templates/**: 存储HTML模板文件，基于Jinja2模板引擎进行渲染
-**test/**: 包含单元测试和集成测试代码，确保项目功能的正确性。
-**tools/:** 提供了一系列辅助工具，用于支持数据转换、解析、报告生成、温度分析等功能。
-**common/**: 通用工具函数，如日期处理、字符串操作等。
-**conversion/:** 数据转换工具，特别是针对不同类型的测试数据（如IO测试、MST测试）。
-**parser/**: 数据解析器，负责从不同的数据源（如CSV、数据库）读取和解析数据。
-**report/**: 报告生成工具，负责根据模板生成最终的报告文件。
-**utils/**: 其他实用工具，如日志记录、文件操作等。
-**.env**: 环境变量配置文件，用于设置项目运行所需的环境变量。
-**main.py**: 项目的入口文件，包含了命令行接口（CLI）的实现，允许用户通过命令行与项目交互。
-**report_auto.sh:** 可能是一个Shell脚本，用于简化项目的部署或执行批量任务。
-**requirements.txt:** 列出了项目依赖的Python包，方便开发者安装所有必要的库。
+![image](https://github.com/user-attachments/assets/f8cb05ec-330e-4805-b916-b3c60b89934a)
+
 
 ### 关键模块详细说明
 
@@ -173,28 +135,16 @@ jdbc_mysql=IP:用户:端口:密码:数据库实例
 
 2. 加载变量
 
-report_auto/
-├── app/                    # 应用程序的核心逻辑
-│   ├── __init__.py
+![image](https://github.com/user-attachments/assets/e982143e-e863-471e-96bf-b62459dec857)
 
-app/ __init__.py，一个读取report_auto/.env文件，加载环境变量到系统的程序
+
+app/__init__.py，一个读取report_auto/.env文件，加载环境变量到系统的程序
 
  
 
 3.  定义路由，注册蓝图
 
-report_auto/
-├── app/                    # 应用程序的核心逻辑
-
-│   ├── router
-
-│   │	── __init__.py
-
-│   │	├── IOTestReport.py
-
-│   │	├── TemperatureUpload.py
-
-...
+![image](https://github.com/user-attachments/assets/4c68b66c-50ac-4092-aba1-954f9de2aa53)
 
 __init__.py: 这段代码定义了两个蓝图，一个用于报告功能，另一个用于温度相关的功能，每个蓝图都有自己的路由和视图函数，
 
@@ -224,16 +174,8 @@ TemperatureDetail.py 指标的线性关系、指标时间变化趋势 (数据详
 
 4. 编写业务逻辑
 
-report_auto/
-├── app/                    # 应用程序的核心逻辑
+![image](https://github.com/user-attachments/assets/243c5b4c-3049-410d-88ee-f2f2e022dfc8)
 
-│   ├── service
-
-│   │	── iotest
-
-│   │	├── IOTestReportService.py
-
-│   │	├── TemperatureDataService.py
 
 路由处理函数对参数进行校验、转换后，调用service模块，编写业务逻辑
 
@@ -241,16 +183,7 @@ report_auto/
 
 5. 数据访问层及各种工具类
 
-report_auto/
-├── tools/                  # 工具库，包含各种辅助功能
-│   ├── common/             # 通用工具函数
-│   ├── conversion/         # 数据转换工具
-│   │   ├── iotest/         # I/O测试相关的转换工具
-│   │   └── msttest/        # MST测试相关的转换工具
-│   ├── parser/             # 数据解析器
-│   ├── report/             # 报告生成工具
-│   ├── temperature/        # 温度数据分析工具
-│   └── utils/       
+![image](https://github.com/user-attachments/assets/61a7a13c-5de6-471a-8163-448976045cfa)
 
 tools/utils/**.py
 
@@ -259,9 +192,7 @@ service模块编写业务逻辑，会存储、检索、修改、删除数据，D
 6.  自动化报告模块
 
 report_auto/
-├── tools/ 
-
-
+|  |tools/
 
 tools/dat/dat_csv.py 早前编写的基于Ui_Dialog的桌面程序 
 
