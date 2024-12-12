@@ -195,30 +195,27 @@ service模块编写业务逻辑，会存储、检索、修改、删除数据，D
 
 tools/dat/dat_csv.py 早前编写的基于Ui_Dialog的桌面程序 
 
-dat文件转换成csv文件
+
+下面的文件是基于flask编写的web应用程序
+① dat文件转换成csv文件
 
 tools/parser/dat_csv_doc.py 
 
 tools/common/dat_csv_common.py
 
-
-
-分析csv文件
+②分析csv文件
 
 tools/conversion/msttest
 
 tools/conversion/*.py
 
-结合docx模板生成word报告
+③ 结合docx模板生成word报告
 
 tools/report/report_generation.py
 
-
-
-Excel报告的生成
+④ Excel报告的生成
 
 tools/conversion/iotest/**.py
-
 
 
 7. 前端发起请求的几种方式
