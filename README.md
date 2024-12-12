@@ -80,58 +80,59 @@ nohup gunicorn  -w 3 -b 0.0.0.0:5000 main:main --timeout 300 > gunicorn_output.l
 
 *访问：http://127.0.0.1:5000/report/1*
 
-![image-20241212152512672](C:\Users\Administrator\AppData\Roaming\Typora\typora-user-images\image-20241212152512672.png)
+![io](https://github.com/user-attachments/assets/ce3fb364-f95d-479c-a398-32c441d0f142)
+
+
 
 2. **生成Excel(xlsm)报告**
 
 *访问：http://127.0.0.1:5000/report/2*
+![image-20241212152330891](https://github.com/user-attachments/assets/14cf627d-edcd-47c2-95bd-81783ce1e6bf)
 
-![image-20241212152330891](C:\Users\Administrator\AppData\Roaming\Typora\typora-user-images\image-20241212152330891.png)
+
 
 3. **数据可视化**
 
 ​	*访问:http://127.0.0.1:5000/temperature/list*
 
-![image-20241212152623404](C:\Users\Administrator\AppData\Roaming\Typora\typora-user-images\image-20241212152623404.png)
+![image-20241212152623404](https://github.com/user-attachments/assets/1017e8eb-3ad0-4c94-9009-989948f4f0a1)
+
 
 ## 代码结构
 
 以下是 Report Auto 项目的详细目录结构及各部分的功能说明：本工具为基于Python语言的Flask Web应用程序，采用MySQL存储数据
-
 report_auto/
-├── app/                    # 应用程序的核心逻辑
-│   ├── __init__.py
-│   └── ...                 # 其他应用相关模块
-├── constant/               # 项目中使用的常量定义
-├── pojo/                   # Python对象模型（Plain Old Python Objects），用于表示数据结构
-├── static/                 # 静态资源文件
-│   ├── css/                # CSS样式文件
-│   ├── images/             # 图像文件
-│   ├── js/                 # JavaScript脚本文件
-│   ├── layer/              # Layer插件相关文件（用于前端弹层）
-│   └── swf/                # Flash动画文件（项目未使用）
-├── templates/              # 报告生成所用的模板文件（如HTML、Jinja2模板）
-├── test/                   # 测试代码
-├── tools/                  # 工具库，包含各种辅助功能
-│   ├── common/             # 通用工具函数
-│   ├── conversion/         # 数据转换工具
-│   │   ├── iotest/         # I/O测试相关的转换工具
-│   │   └── msttest/        # MST测试相关的转换工具
-│   ├── parser/             # 数据解析器
-│   ├── report/             # 报告生成工具
-│   ├── temperature/        # 温度数据分析工具
-│   └── utils/              # 其他实用工具
-├── .env                    # 环境变量配置文件
-├── main.py                 # 项目入口文件，包含CLI命令解析逻辑
-├── report_auto.sh          # Shell脚本，可能用于部署或批处理任务
-└── requirements.txt        # 项目依赖列表
+|--app/
+|  |--|__init__.py   # 应用程序的核心逻辑
+|  |...              # 其他应用相关模块
+|--constant/         # 项目中使用的常量定义
+|--pojo/             # Python对象模型（Plain Old Python Objects），用于表示数据结构
+|--static/           # 静态资源文件
+|  |--|css/          # CSS样式文件
+|  |--|images/       # 图像文件
+|  |--|js/           # JavaScript脚本文件
+|  |--|layer/        # Layer插件相关文件（用于前端弹层）
+|  |--|swf/          # Flash动画文件（项目未使用）
+|--templates/        # 报告生成所用的模板文件（如HTML、Jinja2模板）
+|--test/             # 测试代码
+|--tools/            # 工具库，包含各种辅助功能
+|  |--|common/       # 通用工具函数
+|  |--|conversion/   # 数据转换工具
+|  |  |--|iotest     # I/O测试相关的转换工具
+|  |  |--|msttest    # MST测试相关的转换工具
+|  |--|parser        # 数据解析器
+|  |--|report        # 报告生成工具
+|  |--|utils         # 其他实用工具
+|--.env              # 环境变量配置文件
+|--main.py           # 项目入口文件，包含CLI命令解析逻辑
+|--report_auto.sh    # Shell脚本，用于部署
+|--requirements.txt  # 项目依赖列表    
 
 ### 关键模块说明
-
 **app/**: 包含应用程序的主要逻辑，包括数据处理流程、报告生成等核心功能 。
 **constant/:** 存储项目中使用的所有常量，如故障类型、测试场景类型、程序中特定业务参数。
 **pojo/**: 定义了简单的Python类，用于表示数据实体或业务对象。
-**static/**: 存放静态资源文件，如CSS、JavaScript、图像等，主要用于前端页面
+**static/**: 存放静态资源文件，如CSS、JavaScript、图像等，主要用于前端页面。
 **templates/**: 存储HTML模板文件，基于Jinja2模板引擎进行渲染
 **test/**: 包含单元测试和集成测试代码，确保项目功能的正确性。
 **tools/:** 提供了一系列辅助工具，用于支持数据转换、解析、报告生成、温度分析等功能。
