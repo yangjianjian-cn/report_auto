@@ -47,23 +47,27 @@ def level2_error_detection(csv_file: str, result_dicts: List[Dict]):
         preparation_2_str = result_dicts[0].get("preparation_2")
         if not preparation_2_str:
             return 2, "Level2: column 'preparation_2' not configured."
+
         df_selected[f'is_level2_{"high" if is_high else "low"}'] = df_selected.apply(
             lambda row: check_row_new(row, result_dicts, is_high), axis=1
         )
 
         df_selected_error: DataFrame = df_selected[df_selected[f'is_level2_{"high" if is_high else "low"}'] == True]
         if len(df_selected_error) == 0:
-            return 3, "Data exceeding the limit was not found"
+            high_or_low_str: str = "high" if is_high else "low"
+            return 3, f"Data exceeding the {high_or_low_str} limit was not found"
 
         return process_measurements(measurements_2_str, df_selected_error)
 
-    logging.info("超上限")
     upper_code, upper_msg = error_detection(True)
+    logging.info(f"超上限,{upper_code},{upper_msg}")
 
-    logging.info("低下限")
     lower_code, lower_msg = error_detection(False)
+    logging.info(f"低下限{lower_code},{lower_msg}")
 
     ret_msg = upper_msg if upper_msg else lower_msg
+    logging.info(f"ret_msg:{ret_msg}")
+
     # 有1个成功就成功
     if upper_code == 1 or lower_code == 1:
         return 1, ret_msg
@@ -176,7 +180,7 @@ def voltage_limit(df_selected: DataFrame, measurements_1: str, uRaw_Limit: str, 
     # Filter the DataFrame once based on the voltage limit (超上限、低下限)
     deb_filtered_df: DataFrame = df_selected[comp_op(df_selected[measurements_1], df_selected[uRaw_Limit])]
     if len(deb_filtered_df) == 0:
-        return 0, "No data exceeding the limit"
+        return 0, f"No data exceeding the {limit_type} limit"
 
     for dfc_st_var in measurements_2_list:
         # Apply the get_fifth_bit function to the filtered DataFrame

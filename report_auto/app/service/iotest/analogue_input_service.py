@@ -4,6 +4,7 @@ import logging
 from typing import List
 
 import pandas as pd
+from pandas import DataFrame
 
 from tools.utils.MathUtils import truncate_to_one_decimal_place
 
@@ -37,7 +38,7 @@ def simple_electrical_test(csv_file: str, result_dicts: List[dict]) -> str:
     if element_count > 0:
         code, msg = 1, 'passed'
     else:
-        code, msg = 2, 'failed'
+        code, msg = 2, 'The number of voltage jumps does not match'
     return code, msg
 
 
@@ -47,7 +48,7 @@ def substitute_value_reaction_test(csv_file: str, result_dicts, test_type: str) 
     # 通用部分
     df_selected = pd.read_csv(csv_file, encoding='utf8')
     uRaw = result_dicts[0].get("measurements_1")
-    logging.info(f"level1测量电压:{uRaw}")
+    logging.info(f"测量电压:{uRaw}")
     if not uRaw:
         return 2, "level1 column 'measurements_1' not configured"
 
@@ -69,22 +70,29 @@ def substitute_value_reaction_test(csv_file: str, result_dicts, test_type: str) 
 
     # level4 measurements_4 实际观测电压
     observed_voltage: str = result_dicts[0].get("measurements_4")
-    logging.info(f"level4 column 'measurements_4':{observed_voltage}")
+    logging.info(f"实时观测:{observed_voltage}")
     if not observed_voltage:
         return 2, "level4 column measurements_4 not configured"
 
     # 根据test_type决定是检查上限还是下限
     if test_type == 'high':
-        filtered_df = df_selected[df_selected[observed_voltage] > df_selected[uRawLimit]]
+        filtered_df = df_selected[df_selected[uRaw] > df_selected[uRawLimit]]
     elif test_type == 'low':
-        filtered_df = df_selected[df_selected[observed_voltage] < df_selected[uRawLimit]]
+        filtered_df = df_selected[df_selected[uRaw] < df_selected[uRawLimit]]
+    filtered_df_len_int: int = len(filtered_df)
+    logging.info("电压越限:%s", filtered_df_len_int)
 
-    test_rslt = 3, "n/a"
-    if not filtered_df.empty:
+    if filtered_df_len_int > 0:
         # 检查 'APP_uRaw1' 和 'APP_uRaw1Def_C' 是否完全相等
-        equal_values = filtered_df[filtered_df[observed_voltage] == filtered_df[uRaw1Def]]
-        if not equal_values.empty:
+        equal_values_df: DataFrame = filtered_df[filtered_df[observed_voltage].astype(int) == filtered_df[uRaw1Def].astype(int)]
+        logging.info("匹配:%s",len(equal_values_df))
+
+        if len(equal_values_df) > 0:
             test_rslt = 1, "passed"
+        else:
+            test_rslt = 2, "Default value not set"
+    else:
+        test_rslt = 3, f"{uRaw} exceed {test_type} limit not found"
     return test_rslt
 
 

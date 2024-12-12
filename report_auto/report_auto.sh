@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # 定义启动命令
-start_command="nohup gunicorn -k uvicorn.workers.UvicornWorker -w 3 -b 0.0.0.0:5000 main:main --timeout 300 > gunicorn_output.log 2>&1 & "
+start_command="nohup gunicorn  -w 3 -b 0.0.0.0:5000 main:main --timeout 300 > gunicorn_output.log 2>&1 & "
 
 # 查找名为 "main:main" 的进程
 process=$(ps -ef | grep 'main:main' | grep -v 'grep')

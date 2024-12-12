@@ -49,8 +49,11 @@ def dat_data_analysis(req_data: ReqPOJO):
     for file_path in Path(csv_path).glob('**/*.csv'):
         logging.info(f"measurement files:{file_path}")
         file_name = file_path.name.lower()
+        logging.info("文件:%s", file_name)
+
         try:
             if "level1" in file_name:
+                logging.info(">>>>>>>>level1")
                 # 模拟量输入
                 if "analogue_input" == req_data.test_scenario:
                     # 调整相应PIN脚的raw值，检查raw值能否读取且范围在0~5V内
@@ -64,8 +67,13 @@ def dat_data_analysis(req_data: ReqPOJO):
                     logging.info(f"level1:{op_code},{op_msg}")
                 level1.add(op_code)
 
+                if op_code != 1:
+                    return_msg_list.append("level1:" + op_msg)
+
             # 数字量输出
             elif "level2" in file_name:
+                logging.info(">>>>>>>>level2")
+
                 if "analogue_input" == req_data.test_scenario or "digital_output" == req_data.test_scenario or "PWM_output" == req_data.test_scenario:
                     # 模拟OL、SCG、SCB故障，检查故障能否报出，DFC_st.DFCxxx.4 = 1
                     op_code, op_msg = level2_error_detection(file_path, result_dicts)
@@ -73,23 +81,33 @@ def dat_data_analysis(req_data: ReqPOJO):
                     logging.info(f"level2:{op_code},{op_msg}")
                 level2.add(op_code)
 
+                if op_code != 1:
+                    return_msg_list.append("level2:" + op_msg)
+
             elif "level3" in file_name:
+                logging.info(">>>>>>>>level3")
+
                 if "analogue_input" == req_data.test_scenario or "digital_output" == req_data.test_scenario or "PWM_output" == req_data.test_scenario:
                     # 调整故障触发 / 恢复的时间，再次模拟OL、SCG、SCB故障，检查debouncing状态能否报出，DFC_st.DFCxxx.2 = 1
                     op_code, op_msg = level3_debouncing_error_healing(file_path, result_dicts)
                     logging.info(f"level3:{op_code},{op_msg}")
                 level3.add(op_code)
 
+                if op_code != 1:
+                    return_msg_list.append("level3:" + op_msg)
+
             elif "level4" in file_name and "analogue_input" == req_data.test_scenario:
+                logging.info(">>>>>>>>level4")
+
                 op_code, op_msg = analogue_input_level4(file_path, result_dicts)
                 level4.add(op_code)
-            if op_code != 1:
-                return_msg_list.append(op_msg)
+
+                if op_code != 1:
+                    return_msg_list.append("level4:" + op_msg)
         except Exception as e:
             raise e
             return_msg_list.append(e)
             logging.error(e)
-            continue
 
     # 3.输出文件
     output_file = os.path.join(output_path, "xlsm", "IOTest_Main_Tmplt.xlsm")
