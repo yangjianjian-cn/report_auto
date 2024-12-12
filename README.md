@@ -135,8 +135,7 @@ jdbc_mysql=IP:用户:端口:密码:数据库实例
 
 2. 加载变量
 
-![image](https://github.com/user-attachments/assets/e982143e-e863-471e-96bf-b62459dec857)
-
+![image](https://github.com/user-attachments/assets/bb97e37a-def5-4293-9bd5-b4dc5b0fae44)
 
 app/__init__.py，一个读取report_auto/.env文件，加载环境变量到系统的程序
 
