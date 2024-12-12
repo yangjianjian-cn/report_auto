@@ -190,9 +190,8 @@ tools/utils/**.py
 service模块编写业务逻辑，会存储、检索、修改、删除数据，DBOperator.py定义了一些方法，对MySQL中的数据，进行增删改查操作，此外还有其它的一些工具类、例如：MySQL连接池管理ConnectionUtils.py、相同前缀的文件名的文件合并CsvFileCombineUtil.py、日期格式转换DateUtils.py、doc合并和文件路径处理类FileUtils.py、动态生成html类HtmlGenerator.py、excel文件处理类xlsm_utils.py、数学运算处理类MathUtils.py等等
 
 6.  自动化报告模块
+![image](https://github.com/user-attachments/assets/30bd9e5a-483d-470a-be7f-6cf308147f78)
 
-report_auto/
-|  |tools/
 
 tools/dat/dat_csv.py 早前编写的基于Ui_Dialog的桌面程序 
 
