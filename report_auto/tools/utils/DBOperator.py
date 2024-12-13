@@ -155,16 +155,16 @@ def batch_insert_data(table_name: str, params: Dict, df: pd.DataFrame, batch_siz
             # 添加params中的值到每个数据行中，如果存在的话
             if params is not None and len(params) > 0:
                 for key, value in params.items():
-                    if type(value) is float:
-                        data_batch[key] = value.round(3)
-                    else:
-                        data_batch[key] = value
+                    data_batch[key] = value
 
             data_batch['timestamps'] = data_batch.index
-            data_batch = data_batch[i_columns].values.tolist()
 
+            float_columns = data_batch.select_dtypes(include=['float']).columns
+            data_batch[float_columns] = data_batch[float_columns].round(3)
+
+            i_data_batch = data_batch[i_columns].values.tolist()
             # 添加params中的值到每个数据行中，如果存在的话
-            cursor.executemany(insert_query, data_batch)
+            cursor.executemany(insert_query, i_data_batch)
             # 提交事务
             conn.commit()
 
