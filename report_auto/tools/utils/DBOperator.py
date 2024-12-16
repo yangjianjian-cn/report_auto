@@ -105,8 +105,14 @@ def insert_data(table_name, params: dict, conn=None):
 """
 
 
+# 定义一个函数，用于处理 float 类型并保留3位小数
+def round_floats(value):
+    return round(value, 3) if isinstance(value, float) else value
+
+
 @db_pool.with_connection
-def batch_insert_data(table_name: str, params: Dict, df: pd.DataFrame, batch_size: int = 5000, conn=None) -> str:
+def batch_insert_data(table_name: str, params: Dict, df: pd.DataFrame, batch_size: int = 5000,
+                      values_columns: list[str] = None, conn=None) -> str:
     ret_msg = 'success'
     cursor = conn.cursor()
     try:
@@ -124,7 +130,7 @@ def batch_insert_data(table_name: str, params: Dict, df: pd.DataFrame, batch_siz
         i_columns = i_columns + timestamp_columns
 
         # 获取需要更新的列（移除时间戳列）
-        u_columns = [col for col in all_columns if col not in timestamp_columns]
+        # u_columns = [col for col in all_columns if col not in timestamp_columns]
 
         # 动态构建插入语句
         insert_clauses = ', '.join(i_columns)
@@ -133,9 +139,9 @@ def batch_insert_data(table_name: str, params: Dict, df: pd.DataFrame, batch_siz
         logging.debug(f"insert_placeholders:{insert_placeholders}")
         logging.debug(f"params:{params}")
 
-        # 动态构建更新语句
-        update_clauses = ', '.join([f"{col}=VALUES({col})" for col in u_columns])
-        logging.debug(f"update_placeholders:{update_clauses}")
+        # # 动态构建更新语句
+        # update_clauses = ', '.join([f"{col}=VALUES({col})" for col in u_columns])
+        # logging.debug(f"update_placeholders:{update_clauses}")
 
         # 动态插入语句
         insert_query = f"""
@@ -158,11 +164,10 @@ def batch_insert_data(table_name: str, params: Dict, df: pd.DataFrame, batch_siz
                     data_batch[key] = value
 
             data_batch['timestamps'] = data_batch.index
-
-            float_columns = data_batch.select_dtypes(include=['float']).columns
+            float_columns = data_batch.select_dtypes(include=['float64']).columns
             data_batch[float_columns] = data_batch[float_columns].round(3)
-
             i_data_batch = data_batch[i_columns].values.tolist()
+
             # 添加params中的值到每个数据行中，如果存在的话
             cursor.executemany(insert_query, i_data_batch)
             # 提交事务
@@ -193,7 +198,7 @@ def batch_save(table_name: str, data: list, conn=None) -> tuple:
     placeholders = ', '.join(['%s'] * len(columns))
     columns_str = ', '.join(columns)
     insert_sql = f"INSERT INTO {table_name} ({columns_str}) VALUES ({placeholders})"
-    logging.debug(f"insert_sql: {insert_sql}")
+    logging.info(f"insert_sql: {insert_sql}")
 
     # 默认值
     if conn is None:
@@ -370,7 +375,7 @@ def delete_from_tables(table: str, param: Dict[str, Union[int, str]], conn=None)
     try:
         # 删除第一个表中的数据
         sql_delete_primary = build_delete_query(table, param)
-        logging.debug(f"sql_delete_primary: {sql_delete_primary}")
+        logging.info(f"sql_delete_primary: {sql_delete_primary}")
 
         cursor.execute(sql_delete_primary, list(param.values()))
         logging.info(f"Deleted {cursor.rowcount} rows from {table}")

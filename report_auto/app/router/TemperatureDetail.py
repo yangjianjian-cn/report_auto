@@ -54,14 +54,7 @@ def temperature_details():
     r_chip_dict: list[dict] = chip_dict_in_sql(selected_ids=selected_ids, project_type=project_type)
     logging.info(f"电子元器件字典:{r_chip_dict}")
 
-    param_val: str = get_tool_parameters(ToolConstants.WORK_CONDITION)
-    param_val_list: list[str] = param_val.split(',')
-
-    # 使用列表推导式过滤掉 label_alias_name 在 param_val_list 中的元素
-    r_chip_dict = [item for item in r_chip_dict if item['label_alias_name'] not in param_val_list]
-    logging.info(f"电子元器件字典:{r_chip_dict}")
-
-    # 3.过滤掉不存在的列
+    # 3.过滤掉不存在的列,即值为None的列
     r_chip_dict = s_get_non_empty_column_names(file_ids=selected_ids, r_chip_dict=r_chip_dict)
     if r_chip_dict is None or len(r_chip_dict) == 0:
         return render_template('error.html', failure_msg='Empty File...')
@@ -80,6 +73,16 @@ def temperature_details():
         selected_ids=selected_ids,
         kv_chip_dict=kv_chip_dict
     )
+
+    param_val: str = get_tool_parameters(ToolConstants.WORK_CONDITION)
+    logging.info(f"电子元器件特殊label:{param_val}")
+
+    for label_key, label_value in temperature_line_dict.items():
+        print(f"Line: {label_key}")
+        if label_key in param_val:
+            for i in range(len(label_value)):
+                if label_value[i] > 100:
+                    label_value[i] = label_value[i] / 100  # 直接修改列表中的元素
 
     # 下拉复选框
     multi_select_html = generate_select_options(get_measurement_file_list(fileId=None))

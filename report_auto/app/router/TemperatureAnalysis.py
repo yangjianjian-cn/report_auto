@@ -11,7 +11,7 @@ from app.service.TemperatureDatSave import validate_request, prepare_data_collec
 from app.service.TemperatureDataService import get_measurement_file_list_page, get_measurement_file_list, \
     temperature_variables_edit
 from app.service.TemperatureListAnalysisService import del_chip_temperatures
-from app.service.ToolCommonService import get_tool_dictionary_details, get_chip_dict
+from app.service.ToolCommonService import get_tool_dictionary_details
 from constant.ToolConstants import ToolConstants
 from pojo.TemperatureVariable import TemperatureVariable
 from tools.utils.DBOperator import delete_from_tables
@@ -72,7 +72,7 @@ def delete_file():
         second_table_name = 'chip_temperature'
         second_param: map = {'file_id': file_id}
 
-        result, message = delete_from_tables(db_pool, table=primary_table_name,param=primary_param)
+        result, message = delete_from_tables(db_pool, table=primary_table_name, param=primary_param)
         if result:
             result, message = delete_from_tables(db_pool, table=second_table_name, param=second_param)
             if result:
@@ -157,8 +157,8 @@ def temperature_analysis():
     if error_response:
         return error_response
 
-    measurement_file_list:list[dict] = get_measurement_file_list(fileId=str(last_id))
-    if len(measurement_file_list) == 0 :
+    measurement_file_list: list[dict] = get_measurement_file_list(fileId=str(last_id))
+    if len(measurement_file_list) == 0:
         return None, jsonify({'generate_report_failed': 'Non-existent data'})
 
     measure_file_path = measurement_file_list[0].get("save_path")
@@ -167,24 +167,29 @@ def temperature_analysis():
 
     # 数据清空，再存储
     op_rlt, op_msg = del_chip_temperatures(last_id)
+    logging.info(f"清空:{op_rlt},{op_msg}")
     if not op_rlt:
         return last_id, jsonify({'generate_report_failed': op_msg})
 
     # 2.数据采集准备
-    existing_columns, mdf = prepare_data_collection(last_id, measure_file_path)
-    if not existing_columns:
+    filtered_label_to_alias_dict, mdf, = prepare_data_collection(last_id, measure_file_path)
+    if not filtered_label_to_alias_dict:
         return mdf  # mdf here is the error response
 
-    df, error_response = collect_data(mdf, existing_columns)
+    keys_columns: list[str] = list(filtered_label_to_alias_dict.keys())
+    df, error_response = collect_data(mdf, keys_columns)
     if error_response:
         return error_response
 
     # 3.数据清洗
-    df, rename_mapping = clean_data(df)
+
+    df = clean_data(df,filtered_label_to_alias_dict)
 
     # 4.数据存储准备
-    params, columns_in_db = prepare_data_storage(db_pool, 'chip_temperature', df, last_id, "",rename_mapping)
+    params, columns_in_db = prepare_data_storage(db_pool, 'chip_temperature', df, last_id, "", filtered_label_to_alias_dict)
     if not params:
         return columns_in_db  # columns_in_db here is the error response
+
     # 5.数据存储
-    return store_data(db_pool, 'chip_temperature', params, df)
+    values_columns:list[str] = list(filtered_label_to_alias_dict.values())
+    return store_data(db_pool, 'chip_temperature', params, df,values_columns)

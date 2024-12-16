@@ -49,7 +49,7 @@ const chipOption13 = {
     grid: {
         left: '10%',
         right: '32%',
-        bottom: '3%',
+        bottom: '15%',
         top: 80,
         containLabel: true
     },
@@ -62,6 +62,22 @@ const chipOption13 = {
             restore: {}
         }
     },
+    dataZoom: [
+        {
+            show: true,
+            realtime: true,
+            start: 10,
+            end: 70,
+            xAxisIndex: [0, 1]
+        },
+        {
+            type: 'inside',
+            realtime: true,
+            start: 10,
+            end: 70,
+            xAxisIndex: [0, 1]
+        }
+    ],
     xAxis: {
         type: 'category',
         boundaryGap: false,

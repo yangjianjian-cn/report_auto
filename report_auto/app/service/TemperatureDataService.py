@@ -56,21 +56,22 @@ def batch_chip_dict_save(data: list = None, s_oem: str = None, s_measured_file_i
     logging.debug(f"i_data_list={i_data_list}")
 
     table_name: str = "chip_dict"
-    query_sql = f"select label_alias_name,chip_name from {table_name} where measured_file_name = %s"
+    query_sql = f"select label_name,label_alias_name,chip_name from {table_name} where measured_file_name = %s"
     params = (measured_file_name,)
     result_dicts: list[dict] = query_table(db_pool, query=query_sql, params=params)
     logging.debug(f"result_dicts={result_dicts}")
 
     # 创建一个集合来加速查找
-    result_set = {(d['label_alias_name'], d['chip_name']) for d in result_dicts}
+    result_set = {(d['label_name'], d['label_alias_name'], d['chip_name']) for d in result_dicts}
 
     # 筛选 i_data_list 中的元素
     filtered_i_data_list = [
         item for item in i_data_list
-        if (item['label_alias_name'], item['chip_name']) not in result_set
+        if (item['label_name'], item['label_alias_name'], item['chip_name']) not in result_set
     ]
 
     ret_msg = batch_save(db_pool, table_name, filtered_i_data_list)
+    logging.info(f"ret_msg={ret_msg}")
     operation_code = ret_msg[0]
     operation_result = ret_msg[1]
 
@@ -209,7 +210,8 @@ def modify_records(records):
 def temperature_chip(selected_columns: list, file_ids_int: list, kv_chip_dict: dict) -> Dict[str, List]:
     file_ids_str_for_query = ', '.join(map(str, file_ids_int))
     selected_columns_str = ', '.join(map(str, selected_columns))
-    result_dicts = query_table_sampling(db_pool, columns=selected_columns_str,file_ids_str_for_query=file_ids_str_for_query)
+    result_dicts = query_table_sampling(db_pool, columns=selected_columns_str,
+                                        file_ids_str_for_query=file_ids_str_for_query)
     if result_dicts is None or len(result_dicts) < 1:
         # 返回一个空的 temperature_time 字典
         new_temperature_time = {col: [] for col in selected_columns}
