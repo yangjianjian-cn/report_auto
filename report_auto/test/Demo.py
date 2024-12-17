@@ -3,7 +3,7 @@ import os
 import pandas as pd
 
 # 定义文件夹路径
-folder_path = r'C:\Users\Administrator\Downloads\output\127001\IO_Test\analogue_input\I_A_BPS\csv'
+folder_path = r'C:\Users\Administrator\Downloads\output\127001\IO_Test\analogue_input\I_A_BPS\csv\Level1.csv'
 
 # 定义已知的前缀列表
 prefixes = ['level1', 'level2', 'level3', 'level4']

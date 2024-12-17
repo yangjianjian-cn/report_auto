@@ -60,9 +60,13 @@
                     &nbsp;&nbsp;
                     <button type="button" class="layui-btn layui-btn-primary layui-btn-sm"
                             title="Please check or configure the test template" id="h_test_template">
-                        <i class="layui-icon"></i>
+                        <i class="layui-icon layui-icon-template"></i>
                     </button>
 
+                    <button type="button" class="layui-btn layui-btn-primary layui-btn-sm"
+                            title="one-click upload" id="one_key_upload">
+                        <i class="layui-icon layui-icon-upload-circle">FTP</i>
+                    </button>
                 </div>
             </td>
             <td colspan="5" style="align:right">
@@ -113,7 +117,7 @@
 <script>
     layui.use(['layer'], function () {
         const layer = layui.layer;
-        // 为锚点绑定点击事件
+        // 模板配置
         document.getElementById('h_test_template').addEventListener('click', function () {
             const index = layer.open({
                 type: 2, // iframe 模式
@@ -132,12 +136,56 @@
             });
             layer.full(index);
         });
+
+        document.getElementById('one_key_upload').addEventListener('click', function () {
+            layer.prompt(
+                {title: 'Enter the file path and confirm it.', formType: 0}
+                , function (value, index, elem) {
+                    layer.close(index);
+                    console.log(value);
+                    if (!value) {
+                        layer.msg('请输入有效的本地目录路径.', {icon: 5});
+                        return;
+                    }
+
+                    // 显示加载层
+                    const loadingIndex = layer.load(2);
+
+                    fetch('/report/iotest/oneKeyUpload', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({localDirectoryPath: value})
+                    })
+                        .then(response => response.json())
+                        .then(data => {
+                            layer.close(loadingIndex);
+                            if (data.success) {
+                                layer.msg('Upload successful!', {icon: 1});
+                            } else {
+                                layer.msg('Upload failed: ' + data.message, {icon: 5});
+                            }
+                        })
+                        .catch(error => {
+                            layer.close(loadingIndex);
+                            layer.msg('An error occurred: ' + error, {icon: 5});
+                        });
+                }
+                , function (index) {
+                    layer.close(index);
+                    layer.msg('您取消了上传操作.', {icon: 7});
+                });
+        });
+
     });
     var uploadedFileName = [];
 </script>
 <script type="text/javascript" src="/static/js/biz/io_test_uploader.js"></script>
 <script type="text/javascript" src="/static/js/selectcheckbox.js"></script>
 <script type="text/javascript" src="/static/js/index.js"></script>
+<script type="text/javascript" src="/static/js/biz/iotest/oneKeyUpload.js"></script>
+
 
 <!--
 <script type="text/javascript" src="/static/js/echarts.min.js"></script>

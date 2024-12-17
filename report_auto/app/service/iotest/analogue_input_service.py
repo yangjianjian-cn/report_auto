@@ -6,7 +6,7 @@ from typing import List
 import pandas as pd
 from pandas import DataFrame
 
-from tools.utils.MathUtils import truncate_to_one_decimal_place
+from tools.utils.MathUtils import truncate_to_one_decimal_place, scale_and_truncate
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 
@@ -25,7 +25,9 @@ def simple_electrical_test(csv_file: str, result_dicts: List[dict]) -> str:
 
     df_selected[uRaw] = df_selected[uRaw].fillna(0)
     # 选择 'APP_uRaw1unLim'列，并对每个元素执行除以 1000 取整的操作
-    result_set = set(df_selected[uRaw].apply(truncate_to_one_decimal_place))
+
+    uRaw_max = df_selected[uRaw].max()
+    result_set = set(df_selected[uRaw].apply(lambda x: scale_and_truncate(x, uRaw_max)))
     if len(result_set) == 0:
         return 3, 'n/a'
 

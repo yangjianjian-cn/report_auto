@@ -2,6 +2,7 @@ __coding__ = "utf-8"
 
 import logging
 import os
+import time
 from pathlib import Path
 
 from app.service.iotest.analogue_input_service import simple_electrical_test, analogue_input_level4
@@ -10,6 +11,7 @@ from app.service.iotest.levels_analysis_common import level1_simple_electrical_t
 from pojo.MSTReqPOJO import ReqPOJO
 from tools.conversion.iotest.analysis_tocsv import write_analysis_tocsv
 from tools.conversion.iotest.analysis_todb import IOTestDataInDB
+from tools.utils.CsvFileCombineUtil import CSVCombiner
 from tools.utils.xlsm_utils import find_first_empty_row_after_string
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
@@ -45,6 +47,14 @@ def dat_data_analysis(req_data: ReqPOJO):
     level3: set[str] = set()
     level4: set[str] = set()
     return_msg_list: list[str] = []
+
+    # 文件名前缀相同的文件，合并成一个文件
+    logging.info("合并文件...")
+    prefixes = ['level1', 'level2', 'level3', 'level4']
+    combiner = CSVCombiner(os.path.join(csv_path,'csv'), prefixes)
+    combiner.combine_csvs()
+
+    time.sleep(5)  # 线程将在这里休眠'delay'秒
 
     for file_path in Path(csv_path).glob('**/*.csv'):
         logging.info(f"measurement files:{file_path}")

@@ -1,6 +1,7 @@
 __coding__ = "utf-8"
 
 import logging
+import os
 
 from flask import render_template
 from flask import request, jsonify
@@ -8,6 +9,7 @@ from flask import request, jsonify
 from app.router import report_bp
 from app.service.IOTestReportService import get_iotest_tplt_list, iotest_tplt_batch_save, iotest_tplt_del, \
     truncate_iotest_tplt, filter_unwanted_keys, prepare_params, iotest_tplt_update
+from tools.utils.FtpUtils import FTPUploader
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 
@@ -113,3 +115,27 @@ def s_iotest_tplt_update():
     except Exception as e:
         print(e)
         return jsonify({"success": False, "message": str(e)}), 500
+
+
+# 一键上传
+@report_bp.route('/iotest/oneKeyUpload', methods=['POST'])
+def one_key_upload():
+    try:
+        data = request.get_json()
+        local_directory_path = data['localDirectoryPath']
+
+        if not os.path.isdir(local_directory_path):
+            return jsonify({'success': False, 'message': 'Invalid directory path'})
+
+        # 配置FTP服务器信息
+        ftp_host = 'your_ftp_server_address'
+        ftp_user = 'your_ftp_username'
+        ftp_password = 'your_ftp_password'
+        remote_root_dir = '/remote/directory/path'
+
+        uploader = FTPUploader(ftp_host, ftp_user, ftp_password, remote_root_dir)
+        uploader.traverse_and_upload(local_directory_path)
+
+        return jsonify({'success': True})
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)})

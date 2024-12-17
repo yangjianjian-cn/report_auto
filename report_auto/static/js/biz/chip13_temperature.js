@@ -1,5 +1,4 @@
 const temperatureTime13 = temperature_line_dict;
-console.log(temperatureTime13)
 
 const ignoredKeys = ['timestamps'];
 const legend13 = []
@@ -9,17 +8,30 @@ const series13 = [];
 Object.keys(temperatureTime13).forEach(key => {
     if (!ignoredKeys.includes(key)) {
         legend13.push(key)
-        series13.push({
-            name: key,
-            type: 'line',
-            data: temperatureTime13[key]
-        });
+        if (j_work_condition_label.includes(key)) {
+            series13.push({
+                name: key,
+                type: 'line',
+                xAxisIndex: 1,
+                yAxisIndex: 1,
+                data: temperatureTime13[key]
+            });
+        } else {
+            series13.push({
+                name: key,
+                type: 'line',
+                xAxisIndex: 0,
+                yAxisIndex: 0,
+                data: temperatureTime13[key]
+            });
+        }
+
     }
 });
 
 const chipChart13 = echarts.init(document.getElementById('chip_temperature13'), null, {
     renderer: 'canvas',
-    useDirtyRect: false
+    useDirtyRect: true
 });
 
 const chipOption13 = {
@@ -46,12 +58,27 @@ const chipOption13 = {
         },
         data: legend13
     },
-    grid: {
-        left: '10%',
-        right: '32%',
-        bottom: '15%',
-        top: 80,
-        containLabel: true
+    grid: [
+        {
+            left: '10%',
+            right: '32%',
+            height: '35%',
+            containLabel: true
+        },
+        {
+            left: '10%',
+            right: '32%',
+            height: '35%',
+            top: '58%',
+            containLabel: true
+        }
+    ],
+    axisPointer: {
+        link: [
+            {
+                xAxisIndex: 'all'
+            }
+        ]
     },
     toolbox: {
         show: true,
@@ -63,13 +90,13 @@ const chipOption13 = {
         }
     },
     dataZoom: [
-        {
-            show: true,
-            realtime: true,
-            start: 10,
-            end: 70,
-            xAxisIndex: [0, 1]
-        },
+        // {
+        //     show: true,
+        //     realtime: true,
+        //     start: 10,
+        //     end: 70,
+        //     xAxisIndex: [0, 1]
+        // },
         {
             type: 'inside',
             realtime: true,
@@ -78,24 +105,52 @@ const chipOption13 = {
             xAxisIndex: [0, 1]
         }
     ],
-    xAxis: {
-        type: 'category',
-        boundaryGap: false,
-        data: temperatureTime13.timestamps,
-        name: 'Time',
-        axisLabel: {
-            formatter: '{value} s'
+    xAxis: [
+        {
+            gridIndex: 0,
+            type: 'category',
+            boundaryGap: false,
+            name: 'Time',
+            axisLabel: {
+                formatter: '{value} s'
+            },
+            axisLine: {onZero: true},
+            data: temperatureTime13.timestamps,
         },
-        startValue: 0,
-        interval: 10
-    },
-    yAxis: {
-        type: 'value',
-        name: 'Temperature',
-        axisLabel: {
-            formatter: '{value}°C'
+        {
+            gridIndex: 1,
+            type: 'category',
+            boundaryGap: false,
+            name: '',
+            axisLabel: {
+                formatter: '{value} s'
+            },
+            axisLine: {onZero: true},
+            data: temperatureTime13.timestamps,
+            position: 'bottom'
         }
-    },
+    ],
+    yAxis: [
+        {
+            gridIndex: 0,
+            type: 'value',
+            name: 'Temperature',
+            axisLabel: {
+                formatter: '{value}°C'
+            }
+        },
+        {
+            gridIndex: 1,
+            type: 'value',
+            name: 'Work Condition',
+            axisLabel: {
+                formatter: '{value}'
+            },
+            inverse: true,
+            position: 'bottom',
+            nameLocation: 'start'
+        },
+    ],
     series: series13
 };
 

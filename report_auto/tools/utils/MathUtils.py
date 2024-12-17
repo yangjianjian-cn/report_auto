@@ -8,7 +8,7 @@ import numpy as np
 
 # 数字x除以1000，结果截取小数点后一位
 def truncate_to_one_decimal_place(x) -> float:
-    if type(x) is float:
+    if x < 10:
         s = f"{x}"
     else:
         # 将数字转换为字符串，并确保它至少有一位小数
@@ -17,6 +17,12 @@ def truncate_to_one_decimal_place(x) -> float:
     # 截取小数点后的一位数字
     truncated = float(s[:s.index('.') + 2])
     return truncated
+
+
+def scale_and_truncate(x, max_value):
+    if max_value >= 1000:
+        x = x / 1000  # 如果最大值大于等于1000，则缩放
+    return round(x, 1)  # 保留整数
 
 
 # bit4,二进制的第4位

@@ -74,15 +74,14 @@ def temperature_details():
         kv_chip_dict=kv_chip_dict
     )
 
-    param_val: str = get_tool_parameters(ToolConstants.WORK_CONDITION)
-    logging.info(f"电子元器件特殊label:{param_val}")
+    work_condition_label_str: str = get_tool_parameters(ToolConstants.WORK_CONDITION)
+    logging.info(f"电子元器件特殊label:{work_condition_label_str}")
 
-    for label_key, label_value in temperature_line_dict.items():
-        print(f"Line: {label_key}")
-        if label_key in param_val:
-            for i in range(len(label_value)):
-                if label_value[i] > 100:
-                    label_value[i] = label_value[i] / 100  # 直接修改列表中的元素
+    # 排除了工况label
+    temperature_scatter_list_new: list[dict] = []
+    for scatter_dict in temperature_scatter_list:
+        if scatter_dict.get("name") not in work_condition_label_str:
+            temperature_scatter_list_new.append(scatter_dict)
 
     # 下拉复选框
     multi_select_html = generate_select_options(get_measurement_file_list(fileId=None))
@@ -90,11 +89,12 @@ def temperature_details():
     # 渲染页面
     return render_template('temperature_details.html',
                            temperature_legend_list=temperature_legend_list,
-                           temperature_scatter_list=temperature_scatter_list,
+                           temperature_scatter_list=temperature_scatter_list_new,
                            temperature_line_dict=temperature_line_dict,
 
                            multi_select_html=multi_select_html,
                            init_selected_files=selected_ids,
                            measurement_source=measurement_source,
-                           quantitative_variable=special_columns_str
+                           quantitative_variable=special_columns_str,
+                           work_condition_label=work_condition_label_str
                            )

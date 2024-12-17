@@ -83,7 +83,14 @@ def dat_csv_conversion(dat_file: str, req_data: ReqPOJO) -> str:
 
             df = df[columns_list]
 
-            with open(csv_file, 'w', newline='') as f:
+            # 分离文件名和路径
+            path, filename = os.path.split(csv_file)
+            # 将文件名转换为小写
+            lowercase_filename = filename.lower()
+            # 重新组合路径和新的文件名
+            new_csv_file = os.path.join(path, lowercase_filename)
+
+            with open(new_csv_file, 'w', newline='') as f:
                 df.to_csv(f, index=True)
 
         elif "HTM" == req_data.test_team:
