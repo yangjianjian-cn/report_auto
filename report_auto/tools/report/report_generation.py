@@ -4,6 +4,7 @@ from typing import List
 import pandas as pd
 from pandas import DataFrame
 
+from app.service.msttest.MstTestService import get_operator_rslt
 from constant.faultType import FAULT_TYPE_MAPPING
 from pojo.MSTReqPOJO import ReqPOJO
 from tools.common.csv_column_rename import find_columns_with_dfc_err_type
@@ -182,3 +183,44 @@ def replace_variables_in_doc(replacements, fault_detection_df, signals: list, re
     # delete_file(req_data.csv_path)
     # delete_file(img_path)
     return output_path
+
+
+def convert_value(value):
+    return "√" if value == '1' else "❌" if value == '2' else ""
+
+
+# mst首页报告生成结果
+def replace_blank(header_file_path: str, clientIp: str, file_name: str) -> None:
+    try:
+        file_operator_rslt = get_operator_rslt(clientIp, file_name)
+        logging.info("Query:%s",file_operator_rslt)
+        # 定义要检查的键和结果变量的映射
+        keys_to_check = {
+            "app_pl_br_1": "file_operator_rslt_17",
+            "brk_04": "file_operator_rslt_18",
+            "brk_05": "file_operator_rslt_19",
+            "ngs_06": "file_operator_rslt_20",
+            "clth_05": "file_operator_rslt_21",
+            "clth_06": "file_operator_rslt_22"
+        }
+
+        # 初始化结果变量并应用 convert_value 函数
+        results = {result_var: convert_value(file_operator_rslt.get(key, "")) for key, result_var in
+                   keys_to_check.items()}
+        logging.info("ReplaceMent:%s",results)
+
+        # 构建替换字典，只包括实际存在的键
+        replacements = {
+            f"{{{i}}}": results[result_var] for i, result_var in enumerate(keys_to_check.values(), start=17)
+            if result_var in results
+        }
+
+        # 加载文档并替换占位符
+        header_doc = Document(header_file_path)
+        replace_placeholders_in_boa_tables(header_doc, replacements)
+
+        # 保存更新后的文档
+        header_doc.save(header_file_path)  # 或者保存到新的文件路径
+
+    except Exception as e:
+        print(f"An error occurred: {e}")

@@ -8,12 +8,6 @@
     <link rel="stylesheet" href="/static/layer/theme/default/layer.css">
     <script src="/static/layer/layer.js"></script>
     <script src="/static/layer/layui.js"></script>
-    <style>
-        .layui-table-click {
-            background-color: #f2f2f2 !important; /* 浅蓝色背景 */
-            border: 2px solid #0099CC !important; /* 蓝色边框 */
-        }
-    </style>
 </head>
 <body>
 <div class="layui-btn-group">
@@ -74,25 +68,25 @@
                 [
 
                     {field: 'checked_values', title: 'Checked Values', edit: 'textarea'},
-                    {field: 'preparation_1', title: 'Prep. 1', edit: 'textarea'},
-                    {field: 'stimulation_1', title: 'Stim. 1', edit: 'textarea'},
+                    {field: 'preparation_1', title: 'preparation.1', edit: 'textarea'},
+                    {field: 'stimulation_1', title: 'stimulation.1', edit: 'textarea'},
                     {field: 'tester', title: 'Tester', edit: 'textarea'},
-                    {field: 'measurements_1', title: 'Meas. 1', edit: 'textarea'},
+                    {field: 'measurements_1', title: 'measurements.1', edit: 'textarea'},
 
                     {field: 'checked_errors', title: 'Checked Errors', edit: 'textarea'},
-                    {field: 'preparation_2', title: 'Prep. 2', edit: 'textarea'},
-                    {field: 'stimulation_2', title: 'Stim. 2', edit: 'textarea'},
-                    {field: 'measurements_2', title: 'Meas. 2', edit: 'textarea'},
+                    {field: 'preparation_2', title: 'preparation.2', edit: 'textarea'},
+                    {field: 'stimulation_2', title: 'stimulation.2', edit: 'textarea'},
+                    {field: 'measurements_2', title: 'measurements.2', edit: 'textarea'},
 
-                    {field: 'debouncing_healing', title: 'Debouncing', edit: 'textarea'},
-                    {field: 'preparation_3', title: 'Prep. 3', edit: 'textarea'},
-                    {field: 'stimulation_3', title: 'Stim. 3', edit: 'textarea'},
-                    {field: 'measurements_3', title: 'Meas. 3', edit: 'textarea'},
+                    {field: 'debouncing_healing', title: 'debouncing_healing', edit: 'textarea'},
+                    {field: 'preparation_3', title: 'preparation.3', edit: 'textarea'},
+                    {field: 'stimulation_3', title: 'stimulation.3', edit: 'textarea'},
+                    {field: 'measurements_3', title: 'measurements.3', edit: 'textarea'},
 
-                    {field: 'error_substitute', title: 'Error Sub.', edit: 'textarea'},
-                    {field: 'preparation_4', title: 'Prep. 4', edit: 'textarea'},
-                    {field: 'stimulation_4', title: 'Stim. 4', edit: 'textarea'},
-                    {field: 'measurements_4', title: 'Meas. 4', edit: 'textarea'}
+                    {field: 'error_substitute', title: 'error substitute', edit: 'textarea'},
+                    {field: 'preparation_4', title: 'preparation.4', edit: 'textarea'},
+                    {field: 'stimulation_4', title: 'stimulation.4', edit: 'textarea'},
+                    {field: 'measurements_4', title: 'measurements.4', edit: 'textarea'}
                 ]],
             data: data
         };
@@ -248,5 +242,10 @@
         $(document).ready(loadInitialData);
     });
 </script>
-
+<style>
+    .layui-table-click {
+        background-color: #0099CC !important; /* 浅蓝色背景 */
+        border: 2px solid #696A6AFF !important; /* 蓝色边框 */
+    }
+</style>
 </html>

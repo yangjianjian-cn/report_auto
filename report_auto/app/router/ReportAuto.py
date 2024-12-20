@@ -128,11 +128,12 @@ def report_download():
     fileName = request.args.get('fileName')
     test_team = request.args.get('test_team')
 
+    clientIp = get_client_ip(request)
     output_path: str = env_output_path
-    output_path = os.path.join(output_path, get_client_ip(request))
+    output_path = os.path.join(output_path, clientIp)
 
     merge_path = env_template_path
-    merge_path = os.path.join(merge_path, get_client_ip(request))
+    merge_path = os.path.join(merge_path, clientIp)
 
     if not output_path:
         logging.error({'generate_report_fail': f'The docx_path is empty.'})
@@ -161,7 +162,8 @@ def report_download():
                 os.makedirs(merge_path)
             logging.info(f"Output path is valid and created if needed: {merge_path}")
 
-            merge_file_name, merge_file_path = docx_merge(output_path, merge_path, fileName)
+            merge_file_name, merge_file_path = docx_merge(output_path, merge_path, fileName,clientIp)
+
         elif 'IO_Test' == test_team:
             # 直接下载xlsm文件
             merge_file_name = 'IOTest_Main_Tmplt.xlsm'
@@ -248,7 +250,8 @@ def generate_report():
             test_area=test_area,
             template_path=env_template_path,
             u_files=u_files,
-            test_area_dataLabel=test_area_dataLabel
+            test_area_dataLabel=test_area_dataLabel,
+            clientIp=client_ip
         )
         ret_sucess_msg, ret_err_msg = dat_csv_docx(req_data)
     except Exception as e:

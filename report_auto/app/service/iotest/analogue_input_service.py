@@ -4,9 +4,8 @@ import logging
 from typing import List
 
 import pandas as pd
-from pandas import DataFrame
 
-from tools.utils.MathUtils import truncate_to_one_decimal_place, scale_and_truncate
+from tools.utils.MathUtils import scale_and_truncate
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 
@@ -21,13 +20,14 @@ def simple_electrical_test(csv_file: str, result_dicts: List[dict]) -> str:
     # 2.数据清洗
     # 填充 NaN 值为 0
     uRaw = result_dicts[0].get("measurements_1")
-    logging.info(f"level1 观测电压量:{uRaw}")
+    logging.info(f"level1 观测电压label:{uRaw}")
 
     df_selected[uRaw] = df_selected[uRaw].fillna(0)
     # 选择 'APP_uRaw1unLim'列，并对每个元素执行除以 1000 取整的操作
 
     uRaw_max = df_selected[uRaw].max()
     result_set = set(df_selected[uRaw].apply(lambda x: scale_and_truncate(x, uRaw_max)))
+    print(result_set)
     if len(result_set) == 0:
         return 3, 'n/a'
 
@@ -35,7 +35,7 @@ def simple_electrical_test(csv_file: str, result_dicts: List[dict]) -> str:
     # 过滤掉 0 和 5
     filtered_set = {value for value in result_set if value not in [0, 5]}
     element_count = len(filtered_set)
-    logging.info(f"level1 观测电压的取值个数:{element_count}")
+    logging.info(f"level1 观测电压取值个数:{element_count}")
 
     if element_count > 0:
         code, msg = 1, 'passed'
@@ -46,56 +46,79 @@ def simple_electrical_test(csv_file: str, result_dicts: List[dict]) -> str:
 
 # level4测试
 # 1-passed 2-failed 3-na 4-nottested
-def substitute_value_reaction_test(csv_file: str, result_dicts, test_type: str) -> str:
-    # 通用部分
-    df_selected = pd.read_csv(csv_file, encoding='utf8')
-    uRaw = result_dicts[0].get("measurements_1")
-    logging.info(f"测量电压:{uRaw}")
-    if not uRaw:
-        return 2, "level1 column 'measurements_1' not configured"
+def substitute_value_reaction_test(csv_file: str, result_dicts: list, test_type: str) -> tuple:
+    # Load the CSV file into a DataFrame
+    try:
+        df = pd.read_csv(csv_file, encoding='utf8')
+    except Exception as e:
+        logging.error(f"Failed to read CSV file {csv_file}: {e}")
+        return 2, "Failed to read CSV file"
 
-    # level2 preparation_2,电压阈值
-    preparation_2_str: str = result_dicts[0].get("preparation_2")
-    if not preparation_2_str:
-        return 2, " level2 column 'preparation_2' not configured"
-    preparation_2_list: list = preparation_2_str.splitlines()
+    # Extract and validate the necessary parameters from result_dicts
+    def get_param(key, error_msg):
+        value = result_dicts[0].get(key)
+        if not value:
+            logging.error(error_msg)
+            return None, (3, error_msg)
+        return value, None
+
+    # 实时观测电压
+    uRaw, err = get_param("measurements_1", "level1 column 'measurements_1' not configured")
+    if err: return err
+
+    # 电压阈值
+    preparation_2_str, err = get_param("preparation_2", "level2 column 'preparation_2' not configured")
+    if err: return err
+
+    # 观测结果
+    observed_voltage, err = get_param("measurements_4", "level4 column measurements_4 not configured")
+    if err: return err
+
+    # 默认电压
+    uRaw1Def, err = get_param("preparation_4", "level4 column preparation_4 not configured(Default voltage value)")
+    if err: return err
+
+    # 电压阈值，数量校验：Parse the preparation_2 string into a limit for comparison
+    preparation_2_list = preparation_2_str.splitlines()
     if len(preparation_2_list) != 2:
-        return 2, " level2 column 'preparation_2' configured error"
-    uRawLimit: str = preparation_2_list[0 if test_type == 'high' else 1]
-    logging.info(f"{'电压上限' if test_type == 'high' else '电压下限'}:{uRawLimit}")
+        logging.error("level2 column 'preparation_2' configured error")
+        return 2, "level2 column 'preparation_2' configured error"
 
-    # level4 preparation_4 默认电压
-    uRaw1Def: str = result_dicts[0].get("preparation_4")
-    logging.info(f"默认电压:{uRaw1Def}")
-    if not uRaw1Def:
-        return 2, "level4 column preparation_4 not configured(Default voltage value)"
+    # 电压阈值(Series)
+    uRawLimit = preparation_2_list[0 if test_type == 'high' else 1]
+    logging.info(f"{'电压上限' if test_type == 'high' else '电压下限'}: {uRawLimit}")
 
-    # level4 measurements_4 实际观测电压
-    observed_voltage: str = result_dicts[0].get("measurements_4")
-    logging.info(f"实时观测:{observed_voltage}")
-    if not observed_voltage:
-        return 2, "level4 column measurements_4 not configured"
+    # Convert the default voltage string into a list of floats
+    uRaw1Def_list = uRaw1Def.splitlines()
+    logging.info(f"默认电压: {uRaw1Def_list}")
 
-    # 根据test_type决定是检查上限还是下限
-    if test_type == 'high':
-        filtered_df = df_selected[df_selected[uRaw] > df_selected[uRawLimit]]
-    elif test_type == 'low':
-        filtered_df = df_selected[df_selected[uRaw] < df_selected[uRawLimit]]
-    filtered_df_len_int: int = len(filtered_df)
-    logging.info("电压越限:%s", filtered_df_len_int)
+    # Perform the test based on the test type
+    try:
+        # Ensure that the columns exist in the DataFrame
+        if uRaw not in df.columns or observed_voltage not in df.columns:
+            raise KeyError("Required columns are missing from the CSV file")
 
-    if filtered_df_len_int > 0:
-        # 检查 'APP_uRaw1' 和 'APP_uRaw1Def_C' 是否完全相等
-        equal_values_df: DataFrame = filtered_df[filtered_df[observed_voltage].astype(int) == filtered_df[uRaw1Def].astype(int)]
-        logging.info("匹配:%s",len(equal_values_df))
+        # Filter the DataFrame based on the test type
+        condition = df[uRaw] > df[uRawLimit] if test_type == 'high' else df[uRaw] < df[uRawLimit]
+        filtered_df = df[condition]
 
-        if len(equal_values_df) > 0:
-            test_rslt = 1, "passed"
-        else:
-            test_rslt = 2, "Default value not set"
-    else:
-        test_rslt = 3, f"{uRaw} exceed {test_type} limit not found"
-    return test_rslt
+        # If no rows match the condition, return a failure message
+        if filtered_df.empty:
+            return 3, f"No {test_type} voltage exceed limit found"
+
+        # Check if any of the observed voltages match the default values
+        rslt4 = 2, " Default value not set "  # If none of the default voltages matched, return a failure message
+        for one_uRaw1Def in uRaw1Def_list:
+            equal_values_df = \
+                filtered_df[
+                    filtered_df[observed_voltage].astype(float).round() == filtered_df[one_uRaw1Def].astype(float).round()
+                ]
+            if not equal_values_df.empty:
+                rslt4 = 1, "passed"
+        return rslt4
+    except Exception as e:
+        logging.error(f"An error occurred during the test: {e}")
+        return 2, "An error occurred during the test"
 
 
 def analogue_input_level4(csv_file: str, result_dicts) -> dict:

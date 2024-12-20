@@ -1,6 +1,7 @@
 import glob
 import logging
 import os
+import time
 from concurrent.futures import ThreadPoolExecutor
 
 import pandas as pd
@@ -61,6 +62,11 @@ class CSVCombiner:
                 combined_df.to_csv(output_file_path, index=False)
 
                 logging.info(f'Successfully combined CSV files with prefix "{prefix}" into "{output_file_path}".')
+
+                # 等待一段时间再删除原始文件
+                delay = 5  # 休眠10秒
+                logging.info(f'Waiting for {delay} seconds before deleting original files...')
+                time.sleep(delay)
 
                 # 删除原始的CSV文件
                 self.delete_files(file_paths)

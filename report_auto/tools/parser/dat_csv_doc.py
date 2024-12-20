@@ -8,13 +8,14 @@ from pojo.MSTReqPOJO import ReqPOJO
 from tools.common.dat_csv_common import dat_csv_conversion
 from tools.conversion.iotest.analysis_dat import dat_data_analysis
 from tools.conversion.msttest.mst_report_generation import mst_report, mst_header_page_docx
+from tools.report.report_generation import replace_blank
 from tools.utils.CustomException import CustomException
 from tools.utils.FileUtils import get_filename_without_extension, merge_docs
 
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 
 
-def docx_merge(output_path: str, merge_path: str, file_name: str):
+def docx_merge(output_path: str, merge_path: str, file_name: str, clientIp: str):
     # 构建完整的 ZIP 文件路径
     merge_file_name = 'RBCD_L1_ECUMST_Test_Case_V03.docx'
     merge_docx_path = os.path.join(merge_path, merge_file_name)
@@ -22,6 +23,8 @@ def docx_merge(output_path: str, merge_path: str, file_name: str):
     docx_file_paths = []
     header_file_path: str = os.path.join(output_path, 'mst_header.docx')
     if os.path.exists(header_file_path):
+        # 报告生成结果
+        replace_blank(header_file_path, clientIp, file_name)
         docx_file_paths.append(header_file_path)
 
     # 遍历目录及其子目录
@@ -102,10 +105,12 @@ def dat_csv_docx(req_data: ReqPOJO):
             if not return_msg_str:
                 success_messages.append('Successfully: %s, %s' % (req_data.test_area, req_data.test_area_dataLabel))
             else:
-                success_messages.append('UnSuccessfully: %s, %s,%s' % (req_data.test_area, req_data.test_area_dataLabel, return_msg_str))
+                success_messages.append(
+                    'UnSuccessfully: %s, %s,%s' % (req_data.test_area, req_data.test_area_dataLabel, return_msg_str))
         except Exception as e:
             error_messages.clear()
-            success_messages.append('UnSuccessfully: {}, {}, {}'.format(req_data.test_area, req_data.test_area_dataLabel, str(e)))
+            success_messages.append(
+                'UnSuccessfully: {}, {}, {}'.format(req_data.test_area, req_data.test_area_dataLabel, str(e)))
             logging.error(f"report generation exception:{str(e)}")
 
         html_success = join_with_br(success_messages)

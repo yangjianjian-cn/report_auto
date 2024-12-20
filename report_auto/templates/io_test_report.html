@@ -36,37 +36,41 @@
         <tr>
             <td colspan="5" style="text-align: left;">
                 <div class="inline-flex">
-                    <p class="type-label" style="margin-left: 10px;">
-                        <strong> test project:
-                            <span style="color: blue; "> {{ test_project_type_name }} </span>
-                        </strong>
+                    <!-- PIN 三个下拉列表框-->
+                    <p id="select1-p" class="type-label"><span
+                            style="color: red; ">*</span><strong>PIN:</strong>
                     </p>
+                    <select id="select0" style="width: 250px;">
+                        <option value="" data-label="">--Project--</option>
+                    </select>
                     <span>&nbsp;&nbsp;</span>
-                    <p id="select1-p" class="type-label" style="margin-right: 10px;"><span
-                            style="color: red; ">*</span><strong>test scenario:</strong>
-                    </p>
+
                     <select id="select1" name="inputType" onchange="updateSelectCheck2()"
-                            style="margin-right: 10px;width: 200px;">
-                        <option value="">--Please select--</option>
+                            style="margin-right: 10px;width: 250px;">
+                        <option value="">--Scenario--</option>
                         {% for one_dict_type in tool_dictionary_dict_list %}
                             <option value="{{ one_dict_type.dict_value }}">{{ one_dict_type.dict_name }}</option>
                         {% endfor %}
                     </select>
+                    <span>&nbsp;&nbsp;</span>
 
                     <select id="select2" name="inputType" style="width: 250px;">
-                        <option value="" data-label="">--Please select--</option>
+                        <option value="" data-label="">--Pin--</option>
                     </select>
+                    <span>&nbsp;&nbsp;</span>
 
-                    &nbsp;&nbsp;
+                    <!--PIN角模板配置-->
                     <button type="button" class="layui-btn layui-btn-primary layui-btn-sm"
                             title="Please check or configure the test template" id="h_test_template">
                         <i class="layui-icon layui-icon-template"></i>
                     </button>
 
-                    <button type="button" class="layui-btn layui-btn-primary layui-btn-sm"
-                            title="one-click upload" id="one_key_upload">
-                        <i class="layui-icon layui-icon-upload-circle">FTP</i>
-                    </button>
+                    <!--
+                        <button type="button" class="layui-btn layui-btn-primary layui-btn-sm"
+                                title="one-click upload" id="one_key_upload">
+                            <i class="layui-icon layui-icon-upload-circle">FTP</i>
+                        </button>
+                     -->
                 </div>
             </td>
             <td colspan="5" style="align:right">
@@ -136,48 +140,6 @@
             });
             layer.full(index);
         });
-
-        document.getElementById('one_key_upload').addEventListener('click', function () {
-            layer.prompt(
-                {title: 'Enter the file path and confirm it.', formType: 0}
-                , function (value, index, elem) {
-                    layer.close(index);
-                    console.log(value);
-                    if (!value) {
-                        layer.msg('请输入有效的本地目录路径.', {icon: 5});
-                        return;
-                    }
-
-                    // 显示加载层
-                    const loadingIndex = layer.load(2);
-
-                    fetch('/report/iotest/oneKeyUpload', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify({localDirectoryPath: value})
-                    })
-                        .then(response => response.json())
-                        .then(data => {
-                            layer.close(loadingIndex);
-                            if (data.success) {
-                                layer.msg('Upload successful!', {icon: 1});
-                            } else {
-                                layer.msg('Upload failed: ' + data.message, {icon: 5});
-                            }
-                        })
-                        .catch(error => {
-                            layer.close(loadingIndex);
-                            layer.msg('An error occurred: ' + error, {icon: 5});
-                        });
-                }
-                , function (index) {
-                    layer.close(index);
-                    layer.msg('您取消了上传操作.', {icon: 7});
-                });
-        });
-
     });
     var uploadedFileName = [];
 </script>

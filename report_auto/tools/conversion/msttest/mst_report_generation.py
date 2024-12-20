@@ -6,6 +6,7 @@ __author__ = "xxx team"
 import logging
 import os
 
+from app.service.msttest.MstTestService import insert_report_statistics
 from constant.TestCaseType import TestCaseType
 from pojo.MSTReqPOJO import ReqPOJO
 from tools.conversion.brake_override_accelerator_parser import brake_override_accelerator
@@ -58,6 +59,9 @@ def mst_report(req_data: ReqPOJO) -> str:
         doc_output_path = plausibility_check_of_clth_stuck_bottom(req_data)
 
     logging.info(f"报告生成结束: {doc_output_path}")
+
+    insert_report_statistics(req_data, doc_output_path, csv_file_name)
+
     return doc_output_path
 
 

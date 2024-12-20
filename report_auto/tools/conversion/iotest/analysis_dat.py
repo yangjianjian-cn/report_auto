@@ -2,7 +2,6 @@ __coding__ = "utf-8"
 
 import logging
 import os
-import time
 from pathlib import Path
 
 from app.service.iotest.analogue_input_service import simple_electrical_test, analogue_input_level4
@@ -51,14 +50,15 @@ def dat_data_analysis(req_data: ReqPOJO):
     # 文件名前缀相同的文件，合并成一个文件
     logging.info("合并文件...")
     prefixes = ['level1', 'level2', 'level3', 'level4']
-    combiner = CSVCombiner(os.path.join(csv_path,'csv'), prefixes)
+    combiner = CSVCombiner(os.path.join(csv_path, 'csv'), prefixes)
     combiner.combine_csvs()
 
-    time.sleep(5)  # 线程将在这里休眠'delay'秒
-
+    target_files = {'level1.csv', 'level2.csv', 'level3.csv', 'level4.csv'}
     for file_path in Path(csv_path).glob('**/*.csv'):
-        logging.info(f"measurement files:{file_path}")
         file_name = file_path.name.lower()
+        # 如果文件名不在目标文件集合中，跳过该文件并继续下一个循环
+        if file_name not in target_files:
+            continue
         logging.info("文件:%s", file_name)
 
         try:
@@ -80,15 +80,10 @@ def dat_data_analysis(req_data: ReqPOJO):
                 if op_code != 1:
                     return_msg_list.append("level1:" + op_msg)
 
-            # 数字量输出
             elif "level2" in file_name:
                 logging.info(">>>>>>>>level2")
-
-                if "analogue_input" == req_data.test_scenario or "digital_output" == req_data.test_scenario or "PWM_output" == req_data.test_scenario:
-                    # 模拟OL、SCG、SCB故障，检查故障能否报出，DFC_st.DFCxxx.4 = 1
-                    op_code, op_msg = level2_error_detection(file_path, result_dicts)
-                    # level2.add(high_level2_str)
-                    logging.info(f"level2:{op_code},{op_msg}")
+                op_code, op_msg = level2_error_detection(file_path, result_dicts)
+                logging.info(f"level2:{op_code},{op_msg}")
                 level2.add(op_code)
 
                 if op_code != 1:
@@ -96,17 +91,14 @@ def dat_data_analysis(req_data: ReqPOJO):
 
             elif "level3" in file_name:
                 logging.info(">>>>>>>>level3")
-
-                if "analogue_input" == req_data.test_scenario or "digital_output" == req_data.test_scenario or "PWM_output" == req_data.test_scenario:
-                    # 调整故障触发 / 恢复的时间，再次模拟OL、SCG、SCB故障，检查debouncing状态能否报出，DFC_st.DFCxxx.2 = 1
-                    op_code, op_msg = level3_debouncing_error_healing(file_path, result_dicts)
-                    logging.info(f"level3:{op_code},{op_msg}")
+                op_code, op_msg = level3_debouncing_error_healing(file_path, result_dicts)
+                logging.info(f"level3:{op_code},{op_msg}")
                 level3.add(op_code)
 
                 if op_code != 1:
                     return_msg_list.append("level3:" + op_msg)
 
-            elif "level4" in file_name and "analogue_input" == req_data.test_scenario:
+            elif "level4" in file_name:
                 logging.info(">>>>>>>>level4")
 
                 op_code, op_msg = analogue_input_level4(file_path, result_dicts)
@@ -114,6 +106,7 @@ def dat_data_analysis(req_data: ReqPOJO):
 
                 if op_code != 1:
                     return_msg_list.append("level4:" + op_msg)
+
         except Exception as e:
             raise e
             return_msg_list.append(e)
@@ -142,5 +135,17 @@ def dat_data_analysis(req_data: ReqPOJO):
     else:
         return_msg_str: str = ''
 
-    write_analysis_tocsv(output_file, insert_rownum, levels, result_dicts)
+    o_file: str = write_analysis_tocsv(output_file, insert_rownum, levels, result_dicts)
+    if o_file:
+        for file_path in Path(csv_path).glob('**/*.csv'):  # 遍历所有匹配的CSV文件并删除
+            try:
+                if file_path.is_file():  # 确保我们只删除文件，而不是目录
+                    file_path.unlink()  # 删除文件
+                    logging.info(f"Deleted: {file_path}")
+                else:
+                    logging.info((f"Skipped directory: {file_path}"))
+            except Exception as e:
+                raise e
+                logging.error(f"Failed to delete {file_path}. Reason: {e}")
+
     return return_msg_str

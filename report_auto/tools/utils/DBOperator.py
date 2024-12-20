@@ -70,6 +70,32 @@ def create_table(table_name, df: DataFrame, conn=None) -> str:
     return ret_msg, columns
 
 
+# 传入一个对象,插入数据库
+@db_pool.with_connection
+def insert_entity(table_name:str,report_entity, conn=None):
+    """插入报告数据"""
+    params = report_entity.to_dict()
+    placeholders = ', '.join(['%s'] * len(params))
+    columns = ', '.join(params.keys())
+    insert_sql = f"INSERT INTO {table_name} ({columns}) VALUES ({placeholders})"
+    logging.info(f"insert_sql: {insert_sql}")
+
+    cursor = conn.cursor()
+    try:
+        cursor.execute(insert_sql, list(params.values()))
+        last_id = cursor.lastrowid
+        conn.commit()
+        ret_msg = ('success', last_id)
+    except Exception as e:
+        conn.rollback()
+        logging.error(f"An error occurred during data insertion: {str(e)}")
+        ret_msg = (str(e), None)
+    finally:
+        cursor.close()
+
+    return ret_msg
+
+
 @db_pool.with_connection
 def insert_data(table_name, params: dict, conn=None):
     logging.info(f'table_name:{table_name}')
