@@ -97,7 +97,7 @@ def dat_csv_docx(req_data: ReqPOJO):
         return html_success, html_error
 
     # 3.IOTest生成报告
-    elif 'IO_Test' == req_data.test_team:
+    else:
         try:
             return_msg_str = dat_data_analysis(req_data)
             updateCounter(req_data)

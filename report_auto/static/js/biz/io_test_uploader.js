@@ -464,7 +464,7 @@
         };
         // 文件上传请求发送之前
         uploader.onUploadBeforeSend = function (object, data, headers) {
-            let test_team = $('#test_project_type_val').val();
+            let test_team = $('#select0').val();
             let test_scenario = $('#select1').val();
 
             let test_area = $('#select2').val();

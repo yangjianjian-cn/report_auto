@@ -39,7 +39,7 @@ $("#report_generation").on("click", function () {
 // ---------- 下载报告 ----------
 $("#report_download").on("click", function () {
     // 测试项目
-    const selectedValue0 = $('#test_project_type_val').val();
+    const selectedValue0 = $('#select0').val();
     const filenames = uploadedFileName.join(',');
     if (filenames != '') {
         window.location.href = '/report/report_download?test_team=' + selectedValue0 + '&fileName=' + filenames
@@ -83,7 +83,7 @@ $('#Clth_06_SPAN').on('mouseenter', function () {
 function back_page() {
     $('#report_generation').prop('disabled', true);
 
-    let selectedValue0 = $('#test_project_type_val').val();
+    let selectedValue0 = $('#select0').val();
 
     let selectedValue1 = $('#select1').val();
     if (selectedValue1 == 'undefined' || selectedValue1 == undefined) {

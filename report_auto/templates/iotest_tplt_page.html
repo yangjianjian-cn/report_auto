@@ -10,18 +10,39 @@
     <script src="/static/layer/layui.js"></script>
 </head>
 <body>
+
 <div class="layui-btn-group">
     <button type="button" class="layui-btn layui-btn-sm" id="addRowButton" title="Add Row"><i class="layui-icon"></i>
     </button>
+
     <button type="button" class="layui-btn layui-btn-sm" id="delRowButton" title="Delete selection Rows"><i
             class="layui-icon"></i></button>
+
     <button type="button" class="layui-btn layui-btn-sm" id="submitTableButton" title="Submit"><i
             class="layui-icon"></i></button>
 </div>
-<table id="iotest_tplt_table" lay-filter="iotest_tplt_table"></table>
+
+<span>&nbsp;&nbsp;</span> <span style="float: right"><input type="text" id="new-link" placeholder="A new test module"/></span>
+<span class="layui-breadcrumb" lay-separator="|" style="float: right" id="nav-links">
+      {% if result_dicts_list is not none and result_dicts_list|length > 0 %}
+          {% for result_dict in result_dicts_list %}
+              <a href="#" data-module="{{ result_dict.module_name }}"
+                 data-id="{{ result_dict.id }}">{{ result_dict.module_name }}</a>
+          {% endfor %}
+          <span>  |  </span>
+      {% endif %}
+</span>
+
+<div>
+    <table id="iotest_tplt_table" lay-filter="iotest_tplt_table"></table>
+</div>
 </body>
 <script>
-    layui.use(['table', 'jquery', 'layer'], function () {
+    const project_type = "{{ project_type }}";
+    let module_type = "{{ module_name }}";
+    let moduleId = 0;
+
+    layui.use(['table', 'jquery', 'layer', 'element'], function () {
         const table = layui.table;
         const $ = layui.jquery;
         const layer = layui.layer;
@@ -97,7 +118,7 @@
         // 加载初始数据
         function loadInitialData() {
             $.ajax({
-                url: '/report/iotest/tplt/page/data',
+                url: '/report/iotest/tplt/page/data?project_type=' + project_type + '&module_type=' + module_type,
                 method: 'GET',
                 success: (res) => {
                     if (res.code === 200) {
@@ -210,7 +231,7 @@
 
             // 发送POST请求以提交数据
             $.ajax({
-                url: '/report/iotest/tplt/page/submit',
+                url: '/report/iotest/tplt/page/submit?project_type=' + project_type + '&module_name=' + module_type,
                 method: 'POST',
                 contentType: 'application/json',
                 data: JSON.stringify({data: tableData}), // 将数据转换为JSON格式
@@ -232,16 +253,75 @@
             });
         }
 
-
         // 绑定按钮点击事件
         $('#addRowButton').on('click', addRow);
         $('#delRowButton').on('click', deleteSelectedRows);
         $('#submitTableButton').on('click', submitTableData);
 
         // 页面加载时初始化数据
-        $(document).ready(loadInitialData);
+        $(document).ready(function () {
+            loadInitialData();
+
+            const inputElement = $('#new-link');
+            const navLinks = $('#nav-links');
+
+            function handleNewLink(event) {
+                if (event.key === 'Enter') {
+                    const newValue = $.trim(inputElement.val());
+                    if (newValue) {
+                        const newA = $(`<a href="#" data-module="${newValue}" data-id="0">  ${newValue}  </a>`);
+
+                        // 使用事件委托处理点击事件
+                        newA.on('click', handleClick);
+
+                        // 添加分隔符并插入新的链接
+                        if (navLinks.children().length > 0) {
+                            $('<span> | </span>').appendTo(navLinks);
+                        }
+                        newA.appendTo(navLinks);
+
+                        inputElement.val('');
+                        event.preventDefault();
+
+                        const jsonData = {"project_type": project_type, "module_name": newValue};
+                        $.ajax({
+                            url: '/report/save/pro_module',
+                            type: 'POST',
+                            dataType: 'json',
+                            data: JSON.stringify(jsonData),
+                            contentType: 'application/json; charset=utf-8',
+                            success: function (response) {
+                                if (response.success) {
+                                    layer.msg("save successful...", {icon: 6})
+                                    moduleId = response.recordId;
+                                } else {
+                                    layer.msg(response.message, {icon: 5})
+                                }
+                            },
+                            error: function (error) {
+                                layer.msg('save error:' + error, {icon: 5})
+                            }
+                        })
+                    }
+                }
+            }
+
+            function handleClick(event) {
+                const moduleName = $(this).data('module');
+                moduleId = $(this).data('id');
+                module_type = moduleName;
+                loadInitialData();
+            }
+
+            // 监听输入框的按键事件
+            inputElement.on('keydown', handleNewLink);
+
+            // 为已存在的链接绑定点击事件
+            navLinks.on('click', 'a[data-module]', handleClick);
+        });
     });
 </script>
+
 <style>
     .layui-table-click {
         background-color: #0099CC !important; /* 浅蓝色背景 */

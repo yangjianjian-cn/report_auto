@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Test Report</title>
+
+    <link rel="stylesheet" type="text/css" href="/static/css/webuploader.css">
+    <link rel="stylesheet" type="text/css" href="/static/css/bootstrap.min.css">
+    <link rel="stylesheet" type="text/css" href="/static/css/style.css?v=1">
+    <link rel="stylesheet" type="text/css" href="/static/css/io_test_uploader.css">
+    <link rel="stylesheet" type="text/css" href="/static/layer/theme/default/layer.css">
+    <link rel="stylesheet" type="text/css" href="/static/layer/theme/default/layui.css">
+
+    <script type="text/javascript" src="/static/js/jquery.min.js"></script>
+    <script type="text/javascript" src="/static/layer/layer.js"></script>
+    <script type="text/javascript" src="/static/layer/layui.js"></script>
+    <script type="text/javascript" src="/static/js/webuploader.min.js"></script>
+</head>
+<body>
+<div class="site-demo-button" style="margin-bottom: 0;">
+    <button class="layui-btn layui-btn-sm site-demo-active" data-type="tabAdd">Add a new Tab item</button>
+    <button class="layui-btn layui-btn-sm site-demo-active" data-type="tabDelete" id="delete-tab-btn" disabled>Delete a
+        Tab item
+    </button>
+</div>
+<br/>
+<ul id="demo" class="layui-tab-title"></ul>
+<div class="layui-tab-content" id="LAY_demo_tabcontent"></div>
+<script>
+    layui.use('element', function () {
+        const element = layui.element;
+        const $ = layui.jquery;
+
+        // 初始化标签页数据
+        let tabs = [
+            {title: 'ALL', content: 'Content of ALL'}
+        ];
+
+        // 渲染初始标签页
+        function renderTabs() {
+            $('#demo').empty();
+            $('#LAY_demo_tabcontent').empty();
+            tabs.forEach(function (tab, index) {
+                var liClass = index === 0 ? 'layui-this' : '';
+                var titleElement = `<span class="tab-title">${tab.title}</span>`;
+                var editButton = `<i class="layui-icon layui-icon-edit tab-edit-btn" data-index="${index}"></i>`;
+                $('#demo').append(`<li lay-id="${index}" class="${liClass}">${titleElement} ${editButton}</li>`);
+                $('#LAY_demo_tabcontent').append(`<div class="layui-tab-item ${index === 0 ? 'layui-show' : ''}">${tab.content}</div>`);
+            });
+            element.init();
+            bindEditEvents();
+        }
+
+        // 更新tabs数组
+        function updateTabs() {
+            tabs = [];
+            $('#demo li').each(function (index) {
+                var title = $(this).find('.tab-title').text();
+                var content = $('#LAY_demo_tabcontent .layui-tab-item').eq(index).text();
+                tabs.push({title: title, content: content});
+            });
+        }
+
+        // 检查是否有多个标签页
+        function checkTabCount() {
+            if (tabs.length > 1) {
+                $('#delete-tab-btn').prop('disabled', false);
+            } else {
+                $('#delete-tab-btn').prop('disabled', true);
+            }
+        }
+
+        // 添加新标签页
+        function addTab() {
+            var newTabIndex = tabs.length;
+            var newTitle = `New Tab ${newTabIndex + 1}`;
+            var newContent = `Content of ${newTitle}`;
+
+            tabs.push({title: newTitle, content: newContent});
+            renderTabs();
+            element.tabChange('demo', newTabIndex);
+            checkTabCount();
+        }
+
+        // 删除当前选中的标签页
+        function deleteTab() {
+            var currentTabLi = $('#demo .layui-this');
+            var currentTabId = currentTabLi.attr('lay-id');
+
+            if (currentTabId !== undefined && tabs.length > 1) {
+                element.tabDelete('demo', currentTabId);
+
+                // 切换到前一个或后一个标签页
+                const remainingTabs = $('#demo li:not(.layui-hide)');
+                let currentIndex = remainingTabs.index(currentTabLi);
+                if (currentIndex >= remainingTabs.length) {
+                    currentIndex = Math.max(0, currentIndex - 1);
+                }
+                const nextTab = remainingTabs.eq(currentIndex);
+                if (nextTab.length) {
+                    element.tabChange('demo', nextTab.attr('lay-id'));
+                }
+
+                tabs.splice(currentTabId, 1);
+                renderTabs();
+                checkTabCount();
+            } else {
+                layer.msg('Cannot delete the last tab.');
+            }
+        }
+
+        // 编辑标签页名称
+        function editTabTitle(index) {
+            var tabLi = $('#demo li[lay-id="' + index + '"]');
+            var titleSpan = tabLi.find('.tab-title');
+            var oldTitle = titleSpan.text();
+
+            // 替换为输入框
+            var input = $('<input type="text" class="tab-title-input" value="' + oldTitle + '">');
+            titleSpan.replaceWith(input);
+            input.select().focus();
+
+            // 监听输入框的 blur 和 enter 事件以保存或取消编辑
+            input.on('blur keydown', function (event) {
+                if (event.type === 'blur' || event.key === 'Enter') {
+                    var newTitle = $(this).val().trim();
+                    if (newTitle) {
+                        tabs[index].title = newTitle;
+                        renderTabs(); // 重新渲染以应用更改
+                    } else {
+                        layer.msg('Title cannot be empty.');
+                        setTimeout(() => {
+                            editTabTitle(index); // 如果标题为空，允许用户再次尝试编辑
+                        }, 0);
+                    }
+                    $(this).off('blur keydown'); // 移除事件监听器
+                } else if (event.key === 'Escape') {
+                    // 取消编辑并恢复原始标题
+                    renderTabs();
+                    $(this).off('blur keydown'); // 移除事件监听器
+                }
+            });
+        }
+
+        // 绑定编辑按钮事件
+        function bindEditEvents() {
+            $('.tab-edit-btn').off('click').on('click', function () {
+                var index = $(this).data('index');
+                editTabTitle(index);
+            });
+        }
+
+        // 初始化渲染
+        renderTabs();
+        checkTabCount();
+
+        // 绑定按钮点击事件
+        $('.site-demo-active').on('click', function () {
+            var type = $(this).data('type');
+            if (type === 'tabAdd') {
+                addTab();
+            } else if (type === 'tabDelete') {
+                deleteTab();
+            }
+        });
+    });
+</script>
+</body>
+</html>

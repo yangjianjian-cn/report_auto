@@ -1,4 +1,34 @@
+$(document).ready(function () {
+    $('#select0').change(function () {
+        var projectFile = $(this).val();
+        if (projectFile) {
+            $.ajax({
+                url: '/report/iotest/scenario',
+                data: {
+                    'projectFile': projectFile
+                },
+                success: function (response) {
+                    // 清空 select1
+                    $('#select1').empty();
+                    // 添加默认选项
+                    $('#select1').append('<option value="">--Scenario--</option>');
+                    // 添加新的选项
+                    $.each(response.record_list, function (index, module_obj) {
+                        $('#select1').append($('<option></option>').attr('value', module_obj.moduleName).text(module_obj.moduleName));
+                    });
+                    // 如果有需要，调用 updateSelectCheck2 函数
+                    updateSelectCheck2();
+                }
+            });
+        } else {
+            // 如果没有选择项目，清空 select1
+            $('#select1').empty().append('<option value="">--Scenario--</option>');
+        }
+    });
+});
+
 function updateSelectCheck2() {
+    const select0 = document.getElementById("select0");
     const select1 = document.getElementById("select1");
     const select2 = document.getElementById("select2");
 
@@ -7,8 +37,9 @@ function updateSelectCheck2() {
         select2.removeChild(select2.firstChild);
     }
 
-    const dict_value = select1.value;
-    const jsonData = {"dict_value": dict_value}
+    const project_file = select0.value;
+    const module_name = select1.value;
+    const jsonData = {"project_file": project_file, "module_name": module_name}
     $.ajax({
         url: '/report/2/dict_type/items',
         type: 'POST',

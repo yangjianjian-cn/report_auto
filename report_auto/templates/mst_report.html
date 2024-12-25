@@ -93,7 +93,7 @@
             <td colspan="10">
                 <input type="hidden" id="test_project_type_id" value="{{ test_project_type_id }}"/>
                 <input type="hidden" id="test_project_type_name" value="{{ test_project_type_name }}"/>
-                <input type="hidden" id="test_project_type_val" value="{{ test_project_type_val }}"/>
+                <input type="hidden" id="select0" value="{{ test_project_type_val }}"/>
             </td>
         </tr>
     </table>
@@ -190,7 +190,7 @@
         let fileSizeStr = WebUploader.Base.formatSize(fileSize);
 
         // 测试项目
-        const selectedValue0 = $('#test_project_type_val').val();
+        const selectedValue0 = $('#select0').val();
 
         // 测试场景
         let selectedValue1 = $('#select1').val();

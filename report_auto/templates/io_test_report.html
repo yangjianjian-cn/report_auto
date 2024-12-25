@@ -36,26 +36,33 @@
         <tr>
             <td colspan="5" style="text-align: left;">
                 <div class="inline-flex">
-                    <!-- PIN 三个下拉列表框-->
+                    <!-- 三个下拉列表框 -->
                     <p id="select1-p" class="type-label"><span
                             style="color: red; ">*</span><strong>PIN:</strong>
                     </p>
+
+                    <!--测试项目下拉列表-->
                     <select id="select0" style="width: 250px;">
-                        <option value="" data-label="">--Project--</option>
+                        <option value="">--Project--</option>
+                        {% for project_type in project_types %}
+                            <option value="{{ project_type.project_file }}">{{ project_type.project_file }}</option>
+                        {% endfor %}
                     </select>
+                    <button type="button" class="layui-btn layui-btn-primary layui-btn-sm"
+                            title="Manually add a project." id="add_project">
+                        <i class="layui-icon layui-icon-add-circle"></i>
+                    </button>
                     <span>&nbsp;&nbsp;</span>
 
+                    <!--测试场景下拉列表-->
                     <select id="select1" name="inputType" onchange="updateSelectCheck2()"
                             style="margin-right: 10px;width: 250px;">
                         <option value="">--Scenario--</option>
-                        {% for one_dict_type in tool_dictionary_dict_list %}
-                            <option value="{{ one_dict_type.dict_value }}">{{ one_dict_type.dict_name }}</option>
-                        {% endfor %}
                     </select>
                     <span>&nbsp;&nbsp;</span>
 
+                    <!--PIN脚下拉列表-->
                     <select id="select2" name="inputType" style="width: 250px;">
-                        <option value="" data-label="">--Pin--</option>
                     </select>
                     <span>&nbsp;&nbsp;</span>
 
@@ -64,13 +71,6 @@
                             title="Please check or configure the test template" id="h_test_template">
                         <i class="layui-icon layui-icon-template"></i>
                     </button>
-
-                    <!--
-                        <button type="button" class="layui-btn layui-btn-primary layui-btn-sm"
-                                title="one-click upload" id="one_key_upload">
-                            <i class="layui-icon layui-icon-upload-circle">FTP</i>
-                        </button>
-                     -->
                 </div>
             </td>
             <td colspan="5" style="align:right">
@@ -83,7 +83,6 @@
             <td colspan="10">
                 <input type="hidden" id="test_project_type_id" value="{{ test_project_type_id }}"/>
                 <input type="hidden" id="test_project_type_name" value="{{ test_project_type_name }}"/>
-                <input type="hidden" id="test_project_type_val" value="{{ test_project_type_val }}"/>
             </td>
         </tr>
     </table>
@@ -123,15 +122,16 @@
         const layer = layui.layer;
         // 模板配置
         document.getElementById('h_test_template').addEventListener('click', function () {
+            const j_project = $("#select0").val();
             const index = layer.open({
                 type: 2, // iframe 模式
-                title: 'IOTest Test Report Template', // 弹出层标题
+                title: 'PIN Test Template( ' + j_project + ' )', // 弹出层标题
                 shadeClose: false, // 点击遮罩不关闭弹出层
                 shade: 0, // 不显示遮罩
                 anim: 5, // 弹出层动画类型
                 maxmin: true, // 开启最大化最小化按钮
                 area: ['893px', '600px'], // 弹出层大小
-                content: '/report/iotest/tplt/page', // iframe 的 URL，包含查询参数
+                content: '/report/iotest/tplt/page?j_project=' + j_project, // iframe 的 URL，包含查询参数
                 scrollbar: false, // 显式设置允许显示滚动条
                 success: function (layero, index) {
                 },
@@ -141,17 +141,53 @@
             layer.full(index);
         });
     });
+
+    document.addEventListener('DOMContentLoaded', function () {
+        // 获取元素
+        var selectElement = document.getElementById('select0');
+        var addProjectButton = document.getElementById('add_project');
+
+        // 添加点击事件监听器
+        addProjectButton.addEventListener('click', function () {
+            // 使用 Layui 的 layer.prompt 方法弹出对话框
+            layer.prompt({
+                formType: 0, // 输入框类型，0 表示文本
+                title: 'Enter Project Name', // 自定义对话框标题
+                placeholder: 'Only letters and numbers are allowed',
+                maxlength: 50, // 设置最大输入长度
+            }, function (value, index, elem) {
+                // 校验文本内容
+                if (/^[A-Za-z0-9_]+$/.test(value)) {
+                    // 创建新的选项
+                    var newOption = new Option(value, value);
+                    // 将新选项添加到下拉列表中
+                    selectElement.add(newOption);
+                    // 设置下拉列表的value和显示文本
+                    selectElement.value = value;
+                    // 关闭对话框
+                    layer.close(index);
+
+                    const select1 = document.getElementById("select1");
+                    const select2 = document.getElementById("select2");
+
+                    while (select1.firstChild) {
+                        select1.removeChild(select1.firstChild);
+                    }
+                    // 清空select2
+                    while (select2.firstChild) {
+                        select2.removeChild(select2.firstChild);
+                    }
+
+                } else { // 用户输入了内容但不符合要求
+                    layer.msg('Invalid input! Only letters and numbers are allowed.', {icon: 2});
+                }
+            });
+        });
+    });
     var uploadedFileName = [];
 </script>
 <script type="text/javascript" src="/static/js/biz/io_test_uploader.js"></script>
 <script type="text/javascript" src="/static/js/selectcheckbox.js"></script>
 <script type="text/javascript" src="/static/js/index.js"></script>
 <script type="text/javascript" src="/static/js/biz/iotest/oneKeyUpload.js"></script>
-
-
-<!--
-<script type="text/javascript" src="/static/js/echarts.min.js"></script>
-<script type="text/javascript" src="/static/js/IOTestPiechart.js?v=1"></script>
--->
-
 </html>

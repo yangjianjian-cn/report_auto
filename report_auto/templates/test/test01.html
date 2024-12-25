@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>项目管理</title>
+    <link rel="stylesheet" type="text/css" href="/static/css/webuploader.css">
+    <link rel="stylesheet" type="text/css" href="/static/css/bootstrap.min.css">
+    <link rel="stylesheet" type="text/css" href="/static/css/style.css?v=1">
+    <link rel="stylesheet" type="text/css" href="/static/css/io_test_uploader.css">
+    <link rel="stylesheet" type="text/css" href="/static/layer/theme/default/layer.css">
+    <link rel="stylesheet" type="text/css" href="/static/layer/theme/default/layui.css">
+
+    <script type="text/javascript" src="/static/js/jquery.min.js"></script>
+    <script type="text/javascript" src="/static/layer/layer.js"></script>
+    <script type="text/javascript" src="/static/layer/layui.js"></script>
+    <script type="text/javascript" src="/static/js/webuploader.min.js"></script>
+
+    <style>
+        .container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1em;
+        }
+
+        #newItemText {
+            width: 200px;
+        }
+
+        .breadcrumb-container {
+            margin-top: 1em;
+        }
+
+        .button-group {
+            margin-top: 1em;
+        }
+
+        table {
+            width: 100%;
+            margin-top: 1em;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                flex-direction: column;
+            }
+
+            #newItemText,
+            button {
+                width: 100%;
+                margin-bottom: 0.5em;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <form id="itemForm">
+        <input type="text" id="newItemText" placeholder="输入新的项目文本" required aria-label="输入新的项目文本">
+        <button type="button" onclick="addItem()" aria-label="添加新项目">添加项目</button>
+        <button type="button" onclick="removeLastItem()" aria-label="删除最后一个项目">删除最后一个项目</button>
+    </form>
+</div>
+
+<div class="breadcrumb-container">
+    <ul class="layui-breadcrumb" id="breadcrumb-container">
+        <li class="clickable-item" data-action="refreshTable" role="button" tabindex="0" aria-label="娱乐分类">娱乐</li>
+        <li class="clickable-item" data-action="refreshTable" role="button" tabindex="0" aria-label="八卦分类">八卦</li>
+        <li class="clickable-item" data-action="refreshTable" role="button" tabindex="0" aria-label="体育分类">体育</li>
+        <li class="clickable-item" data-action="refreshTable" role="button" tabindex="0" aria-label="搞笑分类">搞笑</li>
+    </ul>
+</div>
+
+<div class="button-group">
+    <button type="button" class="layui-btn layui-btn-sm" id="addRowButton" title="添加行" aria-label="添加行"><i
+            class="layui-icon"></i></button>
+    <button type="button" class="layui-btn layui-btn-sm" id="delRowButton" title="删除选中的行" aria-label="删除选中的行"><i
+            class="layui-icon"></i></button>
+    <button type="button" class="layui-btn layui-btn-sm" id="submitTableButton" title="提交表格" aria-label="提交表格"><i
+            class="layui-icon"></i></button>
+</div>
+
+<div>
+    <table id="iotest_tplt_table" lay-filter="iotest_tplt_table"></table>
+</div>
+<script>
+    // 假设这里是你定义 addItem 和 removeLastItem 函数的地方
+    function addItem() {
+        // 添加项目的逻辑
+    }
+
+    function removeLastItem() {
+        // 删除最后一个项目的逻辑
+    }
+</script>
+
+</body>
+</html>

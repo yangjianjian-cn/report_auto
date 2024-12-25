@@ -10,6 +10,7 @@ from flask import request, jsonify
 from app import env_template_path, env_output_path, env_input_path
 from app.router import report_bp
 from app.router.DataCache import getDictType, getDictTypeDetail
+from app.service.IOTestReportService import get_iotest_projectType, s_qry_report_auto_pro
 from pojo.MSTReqPOJO import ReqPOJO
 from tools.common.dat_csv_common import counter_report
 from tools.parser.dat_csv_doc import docx_merge, mst_header_page, dat_csv_docx
@@ -36,22 +37,27 @@ def index(test_type):
     # 报告统计器
     merged_dict = counter_report(env_template_path)
 
+    project_types:list=[]
     tool_dictionary_dict_list: dict = {}
     page = 'mst_report.html'
     if '1' == test_project_type:
         page = 'mst_report.html'
     elif '2' == test_project_type:
         tool_dictionary_dict_list: list = getDictType('signal_type')
+        # 测试项目:下拉列表
+        project_types: list = get_iotest_projectType()
         page = 'io_test_report.html'
-
     # 渲染模板
     return render_template(
         page,
         test_project_type_id=test_project_type,
+
         test_project_type_val=test_project_type_info['val'],
         test_project_type_name=test_project_type_info['name'],
+
         counters=merged_dict,  # 不展开字典
-        tool_dictionary_dict_list=tool_dictionary_dict_list
+        tool_dictionary_dict_list=tool_dictionary_dict_list,
+        project_types=project_types
     )
 
 
@@ -80,8 +86,20 @@ def mst_header_submit():
 def dict_type_items():
     try:
         data = request.get_json()
-        dict_value = data["dict_value"]
-        tool_dictionary_detail_list: list = getDictTypeDetail(dict_value)
+
+        project_file: str = data["project_file"]
+        module_name: str = data["module_name"]
+        params_dict: dict = {
+            "project_file": project_file,
+            "module_name": module_name
+        }
+        result_dicts_list: list[dict] = s_qry_report_auto_pro(params_dict)
+        if len(result_dicts_list) > 0:
+            moduleId: int = result_dicts_list[0].get("id")
+        else:
+            moduleId: int = 0
+
+        tool_dictionary_detail_list: list = getDictTypeDetail(moduleId)
         return jsonify(tool_dictionary_detail_list), 200
     except Exception as e:
         return jsonify({'error': str(e)}), 500
@@ -145,7 +163,7 @@ def report_download():
 
     if 'MST_Test' == test_team:
         output_path = os.path.join(output_path, 'docx')
-    elif 'IO_Test' == test_team:
+    else:
         output_path = os.path.join(output_path, 'xlsm')
 
     # 检查 output_path 是否存在
@@ -162,9 +180,9 @@ def report_download():
                 os.makedirs(merge_path)
             logging.info(f"Output path is valid and created if needed: {merge_path}")
 
-            merge_file_name, merge_file_path = docx_merge(output_path, merge_path, fileName,clientIp)
+            merge_file_name, merge_file_path = docx_merge(output_path, merge_path, fileName, clientIp)
 
-        elif 'IO_Test' == test_team:
+        else:
             # 直接下载xlsm文件
             merge_file_name = 'IOTest_Main_Tmplt.xlsm'
             merge_file_path = os.path.join(output_path, merge_file_name)

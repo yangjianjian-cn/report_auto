@@ -58,7 +58,7 @@ def dat_csv_conversion(dat_file: str, req_data: ReqPOJO) -> str:
             with open(csv_file, 'w', newline='') as f:
                 df.to_csv(f, index=True)
 
-        elif 'IO_Test' == req_data.test_team:
+        else:
             # IO Test测量数据
             mdf = MDF(filepath)
             df = mdf.to_dataframe()
@@ -67,12 +67,13 @@ def dat_csv_conversion(dat_file: str, req_data: ReqPOJO) -> str:
             df.rename(columns=alias_column_names, inplace=True)
 
             ioTestDataInDB = IOTestDataInDB()
-            result_dicts: dict = ioTestDataInDB.get_io_test_data(test_area=req_data.test_area,
+            result_dicts: dict = ioTestDataInDB.get_io_test_data(test_project=req_data.test_team,
+                                                                 test_scenario=req_data.test_scenario,
                                                                  test_area_dataLabel=req_data.test_area_dataLabel)
-            db_columns_list:list = ioTestDataInDB.csv_needed_columns(result_dicts)
+            db_columns_list: list = ioTestDataInDB.csv_needed_columns(result_dicts)
             logging.info(f"columns_to_include_list:{db_columns_list}")
 
-            file_column_list:list = df.columns.tolist()
+            file_column_list: list = df.columns.tolist()
             logging.info(f"file_column_list:{file_column_list}")
 
             # 将 db_columns_list 转换为小写并存储在一个集合中
@@ -92,9 +93,6 @@ def dat_csv_conversion(dat_file: str, req_data: ReqPOJO) -> str:
 
             with open(new_csv_file, 'w', newline='') as f:
                 df.to_csv(f, index=True)
-
-        elif "HTM" == req_data.test_team:
-            pass
 
         return csv_file
     except FileNotFoundError:

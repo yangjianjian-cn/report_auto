@@ -37,7 +37,9 @@ def dat_data_analysis(req_data: ReqPOJO):
 
     # 1.引脚测试报告输出模板
     ioTestDataInDB = IOTestDataInDB()
-    result_dicts = ioTestDataInDB.get_io_test_data(test_area=test_area, test_area_dataLabel=test_area_dataLabel)
+    result_dicts: dict = ioTestDataInDB.get_io_test_data(test_project=req_data.test_team,
+                                                         test_scenario=req_data.test_scenario,
+                                                         test_area_dataLabel=req_data.test_area_dataLabel)
     logging.info(f"result_dicts:{result_dicts}")
 
     # 2.分析测量文件 1-passed 2-failed 3-na 4-nottested

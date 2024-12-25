@@ -72,7 +72,7 @@ def create_table(table_name, df: DataFrame, conn=None) -> str:
 
 # 传入一个对象,插入数据库
 @db_pool.with_connection
-def insert_entity(table_name:str,report_entity, conn=None):
+def insert_entity(table_name: str, report_entity, conn=None):
     """插入报告数据"""
     params = report_entity.to_dict()
     placeholders = ', '.join(['%s'] * len(params))
@@ -562,9 +562,11 @@ def execute_ddl_sql(sql: str, conn=None) -> Tuple[bool, str]:
     cursor = conn.cursor()
     try:
         cursor.execute(sql)
+        conn.commit()  # Ensure the changes are saved to the database
         logging.info(f"Executed SQL: {sql}")
         return True, "SQL execution successful"
     except Exception as e:
+        conn.rollback()  # Rollback in case of error
         logging.error(f"SQL execution error: {e}")
         return False, str(e)
     finally:
