@@ -271,18 +271,17 @@ def iotest_report_inherit():
 def iotest_report_inherit_submit():
     parent_project = request.form.get("parent_project", "")
     parent_project_version = request.form.get("version", "")
-    # return jsonify({"success": True, "message": "model test"})
-
     remark = request.form.get("remark", "")
     current_project = request.form.get("current_project_type")
 
-    param: dict[str, str] = {"current_project": current_project, "remark": remark,
+    param: dict[str, str] = {"current_project": current_project,
+                             "remark": remark,
                              "parent_project": parent_project,
                              "parent_project_version": parent_project_version}
     logging.info(f"{param}")
 
     # 为避免单击确定按钮，重复保存，需要先清空一下
-    sqlParam: dict[str, str] = {"current_project": current_project}
+    sqlParam: dict[str, str] = {"project_file": current_project}
     db_rslt, db_msg, db_data = clean_ioTestChecklistData(sqlParam)
     if db_rslt:
         clean_reportAuto_Data(sqlParam)
