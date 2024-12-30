@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en" style="height: 100%;">
+<head>
+    <meta charset="UTF-8">
+    <title>IoTest Report</title>
+
+    <link rel="stylesheet" type="text/css" href="/static/layer/theme/default/layer.css">
+    <link rel="stylesheet" type="text/css" href="/static/layer/theme/default/layui.css">
+    <script type="text/javascript" src="/static/js/jquery.min.js"></script>
+    <script type="text/javascript" src="/static/layer/layer.js"></script>
+    <script type="text/javascript" src="/static/layer/layui.js"></script>
+</head>
+<body>
+<form class="layui-form" action="" lay-filter="h_parent_project" id="h_parent_project">
+    <div class="layui-form-item">
+        <label class="layui-form-label"> Project:</label>
+        <div class="layui-input-block">
+            <select name="parent_project" lay-filter="parent_project" id="parent_project">
+                <option value="">--Please Select--</option>
+                {% for project_type in project_types %}
+                    <option value="{{ project_type.project_file }}">{{ project_type.project_file }}</option>
+                {% endfor %}
+            </select>
+        </div>
+    </div>
+    <div class="layui-form-item layui-form-text">
+        <label class="layui-form-label">Remark:</label>
+        <div class="layui-input-block">
+            <textarea placeholder="Please enter the content." class="layui-textarea" name="remark"
+                      id="remark"></textarea>
+        </div>
+    </div>
+    <div class="layui-form-item">
+        <div class="layui-input-block">
+            <input type="hidden" id="current_project_type" name="current_project_type"
+                   value="{{ current_project_type }}"/>
+            <button type="button" class="layui-btn" onclick="submitForm()">OK</button>
+            <button type="button" class="layui-btn layui-btn-normal" onclick="closeForm()">CLOSE</button>
+        </div>
+    </div>
+</form>
+</body>
+<script>
+    // OK按钮的点击事件处理
+    function submitForm() {
+        // 表单验证逻辑（此处省略具体实现）
+        if (!validateForm()) {
+            return;
+        }
+
+        // 获取表单数据
+        const formData = new FormData(document.getElementById('h_parent_project'));
+
+        // 异步提交表单数据
+        $.ajax({
+            url: '/report/iotest_report_inherit/ok', // 替换为实际的API端点
+            type: 'POST',
+            data: formData,
+            processData: false, // 不要处理数据，因为是FormData对象
+            contentType: false, // 不设置内容类型
+            success: function (response) {
+                if (!response.success) {
+                    layer.msg(response.message, {icon: 2});
+                } else {
+                    layer.msg('Submit Success', {icon: 1});
+                    // 获取当前iframe的索引
+                    const index = parent.layer.getFrameIndex(window.name);
+                    // 关闭当前iframe
+                    layer.close(index);
+                    // 刷新父页面
+                    window.parent.location.reload()
+                }
+            },
+            error: function (xhr, status, error) {
+                layer.msg('Submit Failed', {icon: 2});
+                console.error('Error:', error);
+            }
+        });
+    }
+
+    // CLOSE按钮的点击事件处理
+    function closeForm() {
+        // 关闭当前的弹出层
+        const index = parent.layer.getFrameIndex(window.name); // 获取当前窗口索引
+        parent.layer.close(index); // 关闭当前弹出层
+    }
+
+    // 表单验证逻辑
+    function validateForm() {
+        const selectedProject = $('#parent_project').val();
+        const remark = $('#remark').val();
+
+        if (!selectedProject || !remark.trim()) {
+            layer.msg('Please fill in all required fields.', {icon: 5});
+            return false;
+        }
+        return true;
+    }
+</script>
+</html>

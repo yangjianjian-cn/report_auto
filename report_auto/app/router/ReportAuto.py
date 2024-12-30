@@ -38,12 +38,10 @@ def index(test_type):
     merged_dict = counter_report(env_template_path)
 
     project_types:list=[]
-    tool_dictionary_dict_list: dict = {}
     page = 'mst_report.html'
     if '1' == test_project_type:
         page = 'mst_report.html'
     elif '2' == test_project_type:
-        tool_dictionary_dict_list: list = getDictType('signal_type')
         # 测试项目:下拉列表
         project_types: list = get_iotest_projectType()
         page = 'io_test_report.html'
@@ -51,12 +49,8 @@ def index(test_type):
     return render_template(
         page,
         test_project_type_id=test_project_type,
-
         test_project_type_val=test_project_type_info['val'],
         test_project_type_name=test_project_type_info['name'],
-
-        counters=merged_dict,  # 不展开字典
-        tool_dictionary_dict_list=tool_dictionary_dict_list,
         project_types=project_types
     )
 

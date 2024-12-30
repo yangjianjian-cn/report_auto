@@ -20,6 +20,11 @@
 
     <button type="button" class="layui-btn layui-btn-sm" id="submitTableButton" title="Submit"><i
             class="layui-icon"></i></button>
+
+    <button type="button" class="layui-btn layui-btn-primary layui-btn-sm" title="Inherit other projects."
+            id="h_extends_template">
+        <i class="layui-icon layui-icon-templeate-1"></i>
+    </button>
 </div>
 
 <span>&nbsp;&nbsp;</span> <span style="float: right"><input type="text" id="new-link" placeholder="A new test module"/></span>
@@ -29,24 +34,31 @@
               <a href="#" data-module="{{ result_dict.module_name }}"
                  data-id="{{ result_dict.id }}">{{ result_dict.module_name }}</a>
           {% endfor %}
-          <span>  |  </span>
       {% endif %}
 </span>
 
 <div>
     <table id="iotest_tplt_table" lay-filter="iotest_tplt_table"></table>
 </div>
+
 </body>
+<!-- 自定义上下文菜单 -->
+<div id="customContextMenu"
+     style="display: none; position: absolute; background-color: white; border: 1px solid #ccc; padding: 5px;">
+    <ul>
+        <li><a href="#" id="renameMenuItem">Modify</a></li>
+        <li><a href="#" id="deleteMenuItem">Delete</a></li>
+    </ul>
+</div>
 <script>
     const project_type = "{{ project_type }}";
     let module_type = "{{ module_name }}";
     let moduleId = 0;
 
-    layui.use(['table', 'jquery', 'layer', 'element'], function () {
+    layui.use(['table', 'jquery', 'layer'], function () {
         const table = layui.table;
         const $ = layui.jquery;
         const layer = layui.layer;
-
         let data = []; // 本地数据数组
 
         // 初始化表格配置
@@ -137,6 +149,33 @@
         table.on('row(iotest_tplt_table)', function (obj) {
             //标注选中样式
             obj.tr.addClass('layui-table-click').siblings().removeClass('layui-table-click');
+        });
+
+        // 单元格编辑后的事件
+        table.on('edit(iotest_tplt_table)', function (obj) {
+            const data = obj.data;
+            const field = obj.field;
+            const value = obj.value;
+            const dataId = data.id
+
+            const jsonData = JSON.stringify({id: dataId, field: field, value: value});
+            $.ajax({
+                url: '/report/iotest/tplt/page/update',
+                type: 'POST',
+                contentType: 'application/json',
+                data: jsonData,
+                success: function (response) {
+                    if (response.success) {
+                        layer.msg('Update successful.');
+                    } else {
+                        layer.msg('Update failed: ' + response.message);
+                    }
+                },
+                error: function (xhr, status, error) { // 请求失败时的回调函数
+                    layer.msg('Request error: ' + error);
+                }
+            });
+
         });
 
         // 更新表格数据
@@ -258,10 +297,22 @@
         $('#delRowButton').on('click', deleteSelectedRows);
         $('#submitTableButton').on('click', submitTableData);
 
-        // 页面加载时初始化数据
-        $(document).ready(function () {
+        // 暴露 loadInitialData 到父窗口作用域
+        // window.loadInitialData = loadInitialData;
+
+
+        // 确保 DOM 完全加载后执行
+        $(function () {
+            // 检查 Layui 是否加载
+            if (typeof layer === 'undefined') {
+                alert('Layui layer module is not loaded.');
+                return;
+            }
+
+            // 页面加载时初始化数据
             loadInitialData();
 
+            // -------------------------------------------------------------测试模块添加、查询 -----------------------------------
             const inputElement = $('#new-link');
             const navLinks = $('#nav-links');
 
@@ -269,8 +320,7 @@
                 if (event.key === 'Enter') {
                     const newValue = $.trim(inputElement.val());
                     if (newValue) {
-                        const newA = $(`<a href="#" data-module="${newValue}" data-id="0">  ${newValue}  </a>`);
-
+                        const newA = $(`<a href="#" data-module="${newValue}" data-id="${Date.now()}">${newValue}</a>`);
                         // 使用事件委托处理点击事件
                         newA.on('click', handleClick);
 
@@ -292,16 +342,16 @@
                             contentType: 'application/json; charset=utf-8',
                             success: function (response) {
                                 if (response.success) {
-                                    layer.msg("save successful...", {icon: 6})
+                                    layer.msg("Save successful...", {icon: 6});
                                     moduleId = response.recordId;
                                 } else {
-                                    layer.msg(response.message, {icon: 5})
+                                    layer.msg(response.message, {icon: 5});
                                 }
                             },
                             error: function (error) {
-                                layer.msg('save error:' + error, {icon: 5})
+                                layer.msg('Save error: ' + error, {icon: 5});
                             }
-                        })
+                        });
                     }
                 }
             }
@@ -318,10 +368,160 @@
 
             // 为已存在的链接绑定点击事件
             navLinks.on('click', 'a[data-module]', handleClick);
+
+            // 绑定打开模板 iframe 的按钮
+            $('#h_extends_template').on('click', function () {
+                openTemplateIframe('/report/iotest_report_inherit?project_type=' + encodeURIComponent(project_type));
+            });
+
+            // -------------------------------------------------------------选择所有 #nav-links 下的 <a> 标签并绑定右键点击事件 -----------------------------------
+            $('#nav-links a').on('contextmenu', function (event) {
+                event.preventDefault(); // 阻止默认的右键菜单行为
+
+                const currentLinkId = $(this).data('id');
+                $('#customContextMenu').data('currentLinkId', currentLinkId);
+
+                // 设置自定义菜单的位置
+                const menu = $('#customContextMenu');
+                menu.css({
+                    left: event.pageX + 'px',
+                    top: event.pageY + 'px'
+                });
+
+                // 显示自定义菜单
+                menu.show();
+
+                // 确保其他地方点击会隐藏菜单
+                $(document).one('click', function () {
+                    menu.hide();
+                });
+            });
+
+            // 监听修改名称菜单项的点击
+            $('#renameMenuItem').on('click', function (event) {
+                event.preventDefault();
+                event.stopPropagation(); // 防止触发文档点击事件隐藏菜单
+
+                const currentLinkId = $('#customContextMenu').data('currentLinkId');
+                const link = $(`#nav-links a[data-id="${currentLinkId}"]`);
+                const moduleName = link.data('module');
+
+                // 弹出输入框让用户修改名称
+                const newModuleName = prompt('Please enter a new module name:', moduleName);
+                if (newModuleName !== null && newModuleName.trim() !== '') {
+                    // 更新 <a> 元素的文本和 data-module 属性
+                    link.text(newModuleName).data('module', newModuleName);
+                    executeUpdate(link)
+                }
+                // 隐藏自定义菜单
+                $('#customContextMenu').hide();
+            });
+
+            // 监听删除菜单项的点击
+            $('#deleteMenuItem').on('click', function (event) {
+                event.preventDefault();
+                event.stopPropagation(); // 防止触发文档点击事件隐藏菜单
+
+                const currentLinkId = $('#customContextMenu').data('currentLinkId');
+                const link = $(`#nav-links a[data-id="${currentLinkId}"]`);
+
+                // 确认用户是否真的想要删除
+                if (confirm('Delete Module Name and Pin?')) {
+                    // 执行删除操作
+                    executeDelete(link);
+                }
+
+                // 隐藏自定义菜单
+                $('#customContextMenu').hide();
+            });
+
+            // 打开模板 iframe 的函数
+            function openTemplateIframe(url) {
+                if (typeof layer === 'undefined') {
+                    layer.msg('Layui layer module is not loaded.', {icon: 2});
+                    return false;
+                }
+                if (project_type == '') {
+                    layer.msg('Please Select the project name of the current project.', {icon: 2});
+                    return false;
+                }
+                layer.open({
+                    type: 2,
+                    title: "Inherit the parent project.",
+                    area: ['700px', '450px'],
+                    fixed: false,
+                    maxmin: true,
+                    content: url
+                });
+            }
+
+            // 执行删除操作的函数
+            function executeDelete(link) {
+                const moduleId = link.data('id');
+                const moduleName = link.data('module');
+
+                // 使用 fetch API 发送 DELETE 请求到服务器
+                fetch('/report/iotest/del/pro_module', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        project_type: project_type,
+                        id: moduleId,
+                        module_name: moduleName
+                    })
+                })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            layer.msg('Delete successfully.', {icon: 1});
+                            // 如果删除成功，移除对应的 <a> 元素及其前后的分隔符
+                            link.closest('span').prev('span.separator').addBack().remove();
+                            window.location.reload();
+                        } else {
+                            layer.alert('An error occurred during the deletion process: ' + data.message, {icon: 2});
+                        }
+                    })
+                    .catch((error) => {
+                        layer.alert('An error occurred during the deletion process: ' + error, {icon: 2});
+                    });
+            }
+
+            // 执行修改操作的函数
+            function executeUpdate(link) {
+                const moduleId = link.data('id');
+                const moduleName = link.data('module');
+
+                fetch('/report/iotest/modify/pro_module', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        project_type: project_type,
+                        moduleId: moduleId,
+                        module_name: moduleName
+                    })
+                })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            layer.msg('Modify successfully.', {icon: 1});
+
+                            module_type = moduleName;
+                            loadInitialData();
+                        } else {
+                            layer.alert('An error occurred during the modification process: ' + data.message, {icon: 2});
+                        }
+                    })
+                    .catch((error) => {
+                        layer.alert('An error occurred during the modification process: ' + error, {icon: 2});
+                    });
+            }
         });
     });
 </script>
-
 <style>
     .layui-table-click {
         background-color: #0099CC !important; /* 浅蓝色背景 */

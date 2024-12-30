@@ -2,15 +2,18 @@ __coding__ = "utf-8"
 
 import logging
 import os
-from typing import Tuple
+from collections import defaultdict
+from typing import Tuple, Dict, List, Any
 
 from flask import render_template
 from flask import request, jsonify
 
 from app.router import report_bp
 from app.service.IOTestReportService import get_iotest_tplt_list, iotest_tplt_batch_save, iotest_tplt_del, \
-    truncate_iotest_tplt, filter_unwanted_keys, prepare_params, iotest_tplt_update, s_get_iotest_pins, \
-    s_get_iotest_scenario, s_get_report_auto_pro, s_save_report_auto_pro, s_qry_report_auto_pro
+    truncate_iotest_tplt, filter_unwanted_keys, prepare_params, s_get_iotest_pins, \
+    s_get_iotest_scenario, s_get_report_auto_pro, s_save_report_auto_pro, s_qry_report_auto_pro, iotest_tplt_update, \
+    get_iotest_projectType, qry_rpr_auto_pro, s_get_iotest_checklist_columns, save_iotest_checklist, save_rpr_auto_pro, \
+    clean_ioTestChecklistData, clean_reportAuto_Data, modify_rpr_auto_pro
 from tools.utils.FtpUtils import FTPUploader
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
@@ -35,6 +38,11 @@ def s_iotest_tplt_page():
 def s_iotest_tplt_page_data():
     project_file = request.args.get("project_type", "")
     module_name = request.args.get("module_type", "")
+    if not module_name:
+        result_dicts: list[dict] = s_get_report_auto_pro(project_file)
+        if len(result_dicts) > 0:
+            module_name_dict = result_dicts[0]
+            module_name = module_name_dict.get("module_name", "")
 
     params: dict = {"project_file": project_file, "module_name": module_name}
     recode_list: list[dict] = s_qry_report_auto_pro(params)
@@ -141,14 +149,18 @@ def s_iotest_tplt_update():
     table: str = "io_test_checklist"
     try:
         data = request.get_json()
-        id = request.args.get("id")
-        set_params: data = {}
-        where_params: dict = {"id", id}
+        dataId: int = data['id']
+        field: str = data['field']
+        value: str = data['value']
+
+        set_params: dict[str, str] = {field: value}
+        where_params: dict[str, int] = {"id": dataId}
+
         ope_rlt, ope_msg = iotest_tplt_update(table=table, set_params=set_params, where_params=where_params)
-        return jsonify({"success": ope_rlt, "message": ope_msg}), 200 if ope_rlt else 500
+        return jsonify({"success": ope_rlt, "message": ope_msg})
     except Exception as e:
         print(e)
-        return jsonify({"success": False, "message": str(e)}), 500
+        return jsonify({"success": False, "message": str(e)})
 
 
 # 一键上传
@@ -211,3 +223,100 @@ def save_report_auto_pro():
         "message": ist_msg,
         "recordId": last_id
     })
+
+
+@report_bp.route('/iotest/del/pro_module', methods=['POST'])
+def del_module_pin():
+    pro_module_json = request.get_json()
+
+    project_file: str = pro_module_json["project_type"]
+    module_name: str = pro_module_json["module_name"]
+
+    sqlParam: dict[str, str] = {"project_file": project_file, "module_name": module_name}
+    db_rslt, db_msg, db_data = clean_ioTestChecklistData(sqlParam)
+    if db_rslt:
+        clean_reportAuto_Data(sqlParam)
+    logging.info("%s,%s,%s", db_rslt, db_msg, db_data)
+
+    return jsonify({"success": db_rslt, "message": db_msg, "data": db_data})
+
+
+@report_bp.route('/iotest/modify/pro_module', methods=['POST'])
+def modify_module_pin():
+    pro_module_json = request.get_json()
+
+    project_file: str = pro_module_json["project_type"]
+    module_name: str = pro_module_json["module_name"]
+    moduleId: str = pro_module_json["moduleId"]
+
+    sqlParam: dict[str, str] = {"project_file": project_file, "module_name": module_name, "moduleId": moduleId}
+    db_rslt, db_msg = modify_rpr_auto_pro(sqlParam)
+    logging.info("%s,%s,%s", db_rslt, db_msg)
+
+    return jsonify({"success": db_rslt, "message": db_msg})
+
+
+@report_bp.route('/iotest_report_inherit', methods=['GET'])
+def iotest_report_inherit():
+    current_project_type: str = request.args.get("project_type", "")
+    project_types: list[dict] = get_iotest_projectType()
+    # 列表project_types移除current_project_type
+    if current_project_type:
+        project_types[:] = [project for project in project_types if project['project_file'] != current_project_type]
+    return render_template("iotest_report_inherit.html", project_types=project_types,
+                           current_project_type=current_project_type)
+
+
+@report_bp.route('/iotest_report_inherit/ok', methods=['POST'])
+def iotest_report_inherit_submit():
+    parent_project = request.form.get("parent_project", "")
+    parent_project_version = request.form.get("version", "")
+    # return jsonify({"success": True, "message": "model test"})
+
+    remark = request.form.get("remark", "")
+    current_project = request.form.get("current_project_type")
+
+    param: dict[str, str] = {"current_project": current_project, "remark": remark,
+                             "parent_project": parent_project,
+                             "parent_project_version": parent_project_version}
+    logging.info(f"{param}")
+
+    # 为避免单击确定按钮，重复保存，需要先清空一下
+    sqlParam: dict[str, str] = {"current_project": current_project}
+    db_rslt, db_msg, db_data = clean_ioTestChecklistData(sqlParam)
+    if db_rslt:
+        clean_reportAuto_Data(sqlParam)
+    logging.info("%s,%s,%s", db_rslt, db_msg, db_data)
+
+    # 保存项目 和 测试模块
+    db_rslt, db_msg, db_rows = save_rpr_auto_pro(param)
+    if not db_rslt:
+        return jsonify({"success": db_rslt, "message": db_msg, "rows": db_rows})
+
+    # 查询已保存的项目和模块
+    result_dicts: list[dict] = qry_rpr_auto_pro(param)
+    # 使用defaultdict来分组
+    grouped_by_project_file = defaultdict(list)
+
+    for item in result_dicts:
+        project_file = item['project_file']
+        grouped_by_project_file[project_file].append(item)
+
+    # 将defaultdict转换为普通字典（可选）
+    grouped_by_project_file_dict = dict(grouped_by_project_file)
+
+    def get_ids_list_by_project(grouped_data: Dict[str, List[Dict[str, Any]]], project_file: str) -> List[int]:
+        return [item['id'] for item in grouped_data.get(project_file, [])]
+
+    # 获取CS162_P2154_V100_IO分组的所有模块对应的id列表
+    parent_project_ids_list = get_ids_list_by_project(grouped_by_project_file_dict, parent_project)
+    logging.info(f"{parent_project}: {parent_project_ids_list}")
+
+    # 获取RBBB分组的所有模块对应的id列表
+    current_project_ids_list = get_ids_list_by_project(grouped_by_project_file_dict, current_project)
+    logging.info(f"{current_project}: {current_project_ids_list}")
+
+    table_name: str = "io_test_checklist"
+    column_names: list[str] = s_get_iotest_checklist_columns(table_name)
+    db_rslt, db_msg = save_iotest_checklist(parent_project_ids_list, current_project_ids_list, column_names, table_name)
+    return jsonify({"success": db_rslt, "message": db_msg})

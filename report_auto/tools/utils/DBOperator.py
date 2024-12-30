@@ -515,7 +515,7 @@ def update_table(table: str, set_params: Mapping[str, any], where_params: Mappin
         columns_set = ', '.join([f"{k}=%s" for k in set_params.keys()])
         columns_where = ' AND '.join([f"{k}=%s" for k in where_params.keys()])
         sql_update = f"UPDATE {table} SET {columns_set} WHERE {columns_where}"
-        logging.debug(f"sql_update: {sql_update}")
+        logging.info(f"sql_update: {sql_update}")
 
         # 执行更新操作
         values = list(set_params.values()) + list(where_params.values())
@@ -526,6 +526,7 @@ def update_table(table: str, set_params: Mapping[str, any], where_params: Mappin
         conn.commit()
         return True, "Update successful"
     except Exception as e:
+        print(e)
         logging.error(f"An error occurred: {e}")
         conn.rollback()  # 回滚事务
         return False, str(e)
@@ -571,3 +572,44 @@ def execute_ddl_sql(sql: str, conn=None) -> Tuple[bool, str]:
         return False, str(e)
     finally:
         cursor.close()
+
+
+@db_pool.with_connection
+def execute_dml_sql(sql: str, param: list[str], conn=None) -> Tuple[bool, str, int]:
+    cursor = None
+    try:
+        cursor = conn.cursor()
+        cursor.execute(sql, param)
+        conn.commit()
+        affected_rows = cursor.rowcount
+        logging.info(f"Executed SQL: {sql} with params: {param}. Affected rows: {affected_rows}")
+        return True, "SQL execution successful", affected_rows
+    except Exception as e:
+        conn.rollback()
+        logging.error(f"SQL execution error: {e}. SQL: {sql}, Params: {param}")
+        return False, str(e), 0
+    finally:
+        if cursor:
+            cursor.close()
+
+
+@db_pool.with_connection
+def getAllColsOfTable(table_name: str, conn=None) -> Tuple[bool, str, List[str]]:
+    cursor = None
+    try:
+        cursor = conn.cursor()
+        # 使用 DESCRIBE 命令获取表结构
+        sql = f"DESC {table_name}"
+        cursor.execute(sql)
+        # 获取所有列信息
+        columns_info = cursor.fetchall()
+        # 提取列名
+        column_names = [column[0] for column in columns_info]
+        logging.info(f"Fetched column names from table {table_name}: {column_names}")
+        return True, "Columns fetched successfully", column_names
+    except Exception as e:
+        logging.error(f"Error fetching columns from table {table_name}: {e}")
+        return False, str(e), []
+    finally:
+        if cursor:
+            cursor.close()

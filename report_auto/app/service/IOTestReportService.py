@@ -1,12 +1,15 @@
 __coding__ = "utf-8"
 
 # io_test测试模板列表
+import logging
 from typing import Any, Dict, List
 from typing import Mapping, Union
 
 from app import db_pool
 from tools.utils.DBOperator import query_table, batch_save, execute_ddl_sql, \
-    delete_from_tables_by_list, update_table, insert_data
+    delete_from_tables_by_list, update_table, insert_data, execute_dml_sql, getAllColsOfTable
+
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 
 
 def filter_unwanted_keys(item, unwanted_keys):
@@ -147,3 +150,156 @@ def s_qry_report_auto_pro(params_dict: dict):
     query: str = "select id from report_auto_pro where project_file=%s and module_name = %s"
     params_list: list = list(params_dict.values())
     return query_table(db_pool, query=query, params=params_list)
+
+
+# 获取指定版本的report_auto_pro
+def s_get_report_auto_pro_byVer(project_file: str):
+    query_sql = " SELECT id,module_name FROM report_auto_pro WHERE project_file = %s ORDER BY create_time"
+    params_list: list = [project_file]
+    result_dicts: list[dict] = query_table(db_pool, query=query_sql, params=params_list)
+    return result_dicts
+
+
+def save_rpr_auto_pro(param: dict[str, Any]):
+    sql, params = s_rpr_auto_pro_sql(param)
+    return execute_dml_sql(db_pool, sql, params)
+
+
+# rpr_auto_pro表的SQL拼装
+def s_rpr_auto_pro_sql(param: dict[str, Any]):
+    required_params = ['current_project', 'remark', 'parent_project', 'parent_project_version']
+    if not all(key in param for key in required_params):
+        raise ValueError("Missing one or more required parameters")
+
+    sql = """
+        INSERT INTO report_auto_pro (project_file, module_name, version, remark)
+        SELECT %s, module_name, %s, %s
+        FROM report_auto_pro
+        WHERE project_file = %s
+    """
+
+    # 也继承了父项目的版本号
+    params = [
+        param['current_project'],  # 当前项目名称
+        param['parent_project_version'],  # 父项目模块
+        param['remark'],  # 备注
+        param['parent_project'],  # 父项目名称
+    ]
+
+    if 'parent_project_version' in param and param['parent_project_version']:
+        sql += " AND version = %s"
+        params.append(param['parent_project_version'])  # 父项目版本号
+
+    return sql, params
+
+
+def qry_rpr_auto_pro(param: dict[str, Any]):
+    qry_list: list[str] = []
+    qry_list.append(param['parent_project'])
+    qry_list.append(param['current_project'])
+
+    query: str = "select id,project_file,module_name from report_auto_pro where project_file in (%s,%s) order by project_file, module_name"
+    return query_table(db_pool, query=query, params=qry_list)
+
+
+def modify_rpr_auto_pro(sqlParam: dict[str, Any]):
+    moduleId = sqlParam.get("moduleId")
+    module_name = sqlParam.get("module_name")
+
+    table: str = "report_auto_pro"
+    set_params: dict = {"module_name": module_name, "id": moduleId}
+    where_params: dict = {"id": moduleId}
+
+    return update_table(db_pool, table=table, set_params=set_params, where_params=where_params)
+
+
+# 获取表table_name中的所有列名
+def s_get_iotest_checklist_columns(table_name: str) -> list[str]:
+    db_rslt, db_msg, db_data = getAllColsOfTable(db_pool, table_name)
+    # 定义要移除的条目
+    columns_to_remove = {'id', 'create_time', 'update_time', 'module_id'}
+    # 使用列表推导式移除指定条目
+    filtered_column_names = [col for col in db_data if col not in columns_to_remove]
+    return filtered_column_names
+
+
+# iotest_checklist中填充数据
+def save_iotest_checklist(parent_project_ids_list: list[int], current_project_ids_list: list[int],
+                          column_names: list[str], table_name: str):
+    # 构建所有列名字符串，添加 module_id 列
+    i_all_columns = ','.join(column_names + ['module_id'])
+
+    # 生成并执行插入语句
+    for i, (parent_module_id, current_module_id) in enumerate(zip(parent_project_ids_list, current_project_ids_list)):
+        # 构建当前行的列名字符串，不包括 module_id
+        i_cur_columns = ','.join([f"{col}" for col in column_names])
+
+        # 构建完整的 SQL 插入语句
+        iSQL = f"""
+        INSERT INTO {table_name} ({i_all_columns})
+        SELECT {i_cur_columns}, %s 
+        FROM {table_name} 
+        WHERE module_id = %s;
+        """
+
+        # 使用参数化查询防止 SQL 注入
+        params = (current_module_id, parent_module_id)
+
+        # 打印或执行 SQL 语句（这里假设有一个 db_pool 或类似的数据库连接池）
+        logging.info(iSQL % params)  # 仅用于调试，实际使用时应执行 SQL 而不是打印
+
+        # 假设你有一个 execute_sql 函数来执行 SQL 语句
+        db_rslt, db_msg, db_data = execute_dml_sql(db_pool, iSQL, params)
+        if not db_rslt:
+            logging.error(f"Failed to execute SQL: {db_msg}")
+            return False, db_msg
+
+    return db_rslt, "All insertions successful"
+
+
+# 清空io_test_checklist表中匹配条件的数据
+def clean_ioTestChecklistData(sqlParam: dict[str, str]):
+    current_project = sqlParam.get("project_file")
+    module_name = sqlParam.get("module_name")
+
+    del_sql = """
+    DELETE FROM io_test_checklist  
+    WHERE module_id IN ( 
+        SELECT id FROM report_auto_pro  WHERE project_file = %s
+    """
+    params = (current_project,)
+
+    if module_name is not None:
+        del_sql += " AND module_name = %s "
+        params = (current_project, module_name)
+    del_sql += " )"
+
+    try:
+        db_rslt, db_msg, db_data = execute_dml_sql(db_pool, del_sql, params)
+        return db_rslt, db_msg, db_data
+    except Exception as e:
+        logging.error(f"Error executing SQL: {e}")
+        raise
+
+
+# 清空表report_auto_pro中匹配条件的数据
+def clean_reportAuto_Data(sqlParam: dict[str, str]):
+    current_project = sqlParam.get("project_file")
+    module_name = sqlParam.get("module_name")
+
+    del_sql = """ 
+        DELETE FROM report_auto_pro 
+        WHERE project_file = %s 
+    """
+    params = (current_project,)
+
+    if module_name is not None:
+        del_sql += " AND module_name = %s"
+        params = (current_project, module_name)
+
+    try:
+        db_rslt, db_msg, db_data = execute_dml_sql(db_pool, del_sql, params)
+        return db_rslt, db_msg, db_data
+    except Exception as e:
+        logging.error(f"Error executing SQL in clean_reportAuto_Data: {e}")
+        raise
