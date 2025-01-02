@@ -51,7 +51,8 @@ def index(test_type):
         test_project_type_id=test_project_type,
         test_project_type_val=test_project_type_info['val'],
         test_project_type_name=test_project_type_info['name'],
-        project_types=project_types
+        project_types=project_types,
+        counters=merged_dict  # 不展开字典
     )
 
 
