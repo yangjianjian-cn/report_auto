@@ -1,0 +1,7 @@
+name: report  # 环境名称
+channels:
+  - defaults  # 默认频道
+  - conda-forge  # 可选：添加conda-forge频道以获取更多包
+dependencies:
+  - pip: # 使用pip安装的包
+      - -r requirements.txt  # 从requirements.txt文件中读取并安装所有pip包

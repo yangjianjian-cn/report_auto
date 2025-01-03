@@ -1,0 +1,33 @@
+version: '3.9'
+
+services:
+  web:
+    build: .
+    container_name: report_web
+    ports:
+      - "5000:5000"
+    environment:
+      - FLASK_APP=main.py # 根据你的入口文件调整
+      - FLASK_DEBUG=0
+      - MYSQL_HOST=db
+      - MYSQL_USER=ba
+      - MYSQL_PASSWORD=${MYSQL_ROOT_PASSWORD}
+      - MYSQL_DB=${MYSQL_DATABASE}
+    depends_on:
+      - db
+
+  db:
+    image: mysql:8.0.22
+    container_name: report_db
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_USER: ba
+      MYSQL_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+    ports:
+      - "3306:3306"
+    volumes:
+      - db_data:/var/lib/mysql
+
+volumes:
+  db_data:
