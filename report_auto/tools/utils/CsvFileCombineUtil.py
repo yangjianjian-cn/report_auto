@@ -64,7 +64,7 @@ class CSVCombiner:
                 logging.info(f'Successfully combined CSV files with prefix "{prefix}" into "{output_file_path}".')
 
                 # 等待一段时间再删除原始文件
-                delay = 5  # 休眠10秒
+                delay = 2 # 休眠10秒
                 logging.info(f'Waiting for {delay} seconds before deleting original files...')
                 time.sleep(delay)
 
@@ -72,9 +72,3 @@ class CSVCombiner:
                 self.delete_files(file_paths)
             else:
                 logging.warning(f'No files were successfully read for the prefix "{prefix}".')
-# # 示例用法
-# if __name__ == "__main__":
-#     folder_path = r'C:\Users\Administrator\Downloads\output\127001\IO_Test\analogue_input\I_A_BPS\csv'
-#     prefixes = ['level1', 'level2', 'level3', 'level4']
-#     combiner = CSVCombiner(folder_path, prefixes)
-#     combiner.combine_csvs()

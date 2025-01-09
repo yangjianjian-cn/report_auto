@@ -49,12 +49,6 @@ def dat_data_analysis(req_data: ReqPOJO):
     level4: set[str] = set()
     return_msg_list: list[str] = []
 
-    # 文件名前缀相同的文件，合并成一个文件
-    logging.info("合并文件...")
-    prefixes = ['level1', 'level2', 'level3', 'level4']
-    combiner = CSVCombiner(os.path.join(csv_path, 'csv'), prefixes)
-    combiner.combine_csvs()
-
     target_files = {'level1.csv', 'level2.csv', 'level3.csv', 'level4.csv'}
     for file_path in Path(csv_path).glob('**/*.csv'):
         file_name = file_path.name.lower()

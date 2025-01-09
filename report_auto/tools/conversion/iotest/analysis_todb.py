@@ -28,8 +28,8 @@ class IOTestDataInDB(object):
             params.append(test_area_dataLabel)
 
         # 执行查询并获取结果
-        result_dicts: dict = query_table(db_pool, query=query, params=params)
-        return result_dicts
+        result_list_dicts: list[dict] = query_table(db_pool, query=query, params=params)
+        return result_list_dicts
 
     def csv_needed_columns(self, result_dicts: dict) -> list[str]:
         columns_set: set[str] = set()

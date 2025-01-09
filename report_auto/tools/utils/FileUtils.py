@@ -130,3 +130,17 @@ def extract_prefix(file_path: str):
     file_name = os.path.basename(base_name)
 
     return file_name
+
+
+def get_folder_path(file_path):
+    # 去掉路径末尾的斜杠（如果有）
+    file_path = file_path.rstrip(os.sep)
+
+    # 使用 os.path.dirname 获取文件夹路径
+    folder_path = os.path.dirname(file_path)
+
+    # 确保路径以斜杠结尾（可选）
+    if folder_path and not folder_path.endswith(os.sep):
+        folder_path += os.sep
+
+    return folder_path

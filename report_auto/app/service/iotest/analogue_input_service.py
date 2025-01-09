@@ -59,7 +59,7 @@ def substitute_value_reaction_test(csv_file: str, result_dicts: list, test_type:
         value = result_dicts[0].get(key)
         if not value:
             logging.error(error_msg)
-            return None, (3, error_msg)
+            return 3, error_msg
         return value, None
 
     # 实时观测电压
@@ -96,7 +96,7 @@ def substitute_value_reaction_test(csv_file: str, result_dicts: list, test_type:
     try:
         # Ensure that the columns exist in the DataFrame
         if uRaw not in df.columns or observed_voltage not in df.columns:
-            raise KeyError("Required columns are missing from the CSV file")
+            raise KeyError(f"Required column {uRaw} or {observed_voltage} missing from the CSV file")
 
         # Filter the DataFrame based on the test type
         condition = df[uRaw] > df[uRawLimit] if test_type == 'high' else df[uRaw] < df[uRawLimit]
@@ -111,14 +111,15 @@ def substitute_value_reaction_test(csv_file: str, result_dicts: list, test_type:
         for one_uRaw1Def in uRaw1Def_list:
             equal_values_df = \
                 filtered_df[
-                    filtered_df[observed_voltage].astype(float).round() == filtered_df[one_uRaw1Def].astype(float).round()
-                ]
+                    filtered_df[observed_voltage].astype(float).round() == filtered_df[one_uRaw1Def].astype(
+                        float).round()
+                    ]
             if not equal_values_df.empty:
                 rslt4 = 1, "passed"
         return rslt4
     except Exception as e:
         logging.error(f"An error occurred during the test: {e}")
-        return 2, "An error occurred during the test"
+        return 500, f"{csv_file}:{e}"
 
 
 def analogue_input_level4(csv_file: str, result_dicts) -> dict:
@@ -131,8 +132,8 @@ def analogue_input_level4(csv_file: str, result_dicts) -> dict:
     results_low_code, results_low_msg = results['low']
 
     # 如果需要日志记录，可以在下面添加
-    logging.info(f"Level4 High Test Result: {results_high_code},{results_high_msg}")
-    logging.info(f"Level4 Low Test Result: {results_low_code},{results_low_msg}")
+    logging.info(f"Level4 High: {results_high_code},{results_high_msg}")
+    logging.info(f"Level4 Low: {results_low_code},{results_low_msg}")
 
     if results_high_code == 1 or results_low_code == 1:
         return 1, "success"
@@ -144,3 +145,5 @@ def analogue_input_level4(csv_file: str, result_dicts) -> dict:
     elif results_high_code == 4 and results_low_code == 4:
         results_msg = results_high_msg if results_high_msg else results_low_msg
         return 4, results_msg
+    elif results_high_code == 500 or results_low_code == 500:
+        return 2, results_high_msg if results_high_msg is not None else results_low_msg

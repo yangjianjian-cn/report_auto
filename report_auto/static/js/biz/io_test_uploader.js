@@ -1,6 +1,6 @@
 (function ($) {
     $(function () {
-        var $wrap = $('#uploader'),
+        let $wrap = $('#uploader'),
 
             // 图片容器
             $queue = $('<ul class="filelist"></ul>').appendTo($wrap.find('.queueList')),
@@ -37,114 +37,30 @@
 
             // 所有文件的进度信息，key为file id
             percentages = {},
-
-            // 检测是否已经安装flash，检测flash的版本
-            flashVersion = (function () {
-                var version;
-                try {
-                    version = navigator.plugins['Shockwave Flash'];
-                    version = version.description;
-                } catch (ex) {
-                    try {
-                        version = new ActiveXObject('ShockwaveFlash.ShockwaveFlash')
-                            .GetVariable('$version');
-                    } catch (ex2) {
-                        version = '0.0';
-                    }
-                }
-                version = version.match(/\d+/g);
-                return parseFloat(version[0] + '.' + version[1], 10);
-            })(),
-
-            supportTransition = (function () {
-                var s = document.createElement('p').style,
-                    r = 'transition' in s ||
-                        'WebkitTransition' in s ||
-                        'MozTransition' in s ||
-                        'msTransition' in s ||
-                        'OTransition' in s;
-                s = null;
-                return r;
-            })(),
-
             // WebUploader实例
-            uploader;
+            uploader = WebUploader.create({
+                pick: {
+                    id: '#filePicker',
+                    label: '点击选择文件'
+                },
+                dnd: '#uploader .queueList',
+                paste: '#uploader',
+                swf: '/static/swf/Uploader.swf',
+                chunked: false, //此处禁用了分块
+                chunkSize: 512 * 1024,
+                server: '/report/iotest/upload',
+                accept: {
+                    title: 'Measurement files',
+                    extensions: 'dat'
+                },
 
-        if (!WebUploader.Uploader.support('flash') && WebUploader.browser.ie) {
-
-            // flash 安装了但是版本过低。
-            if (flashVersion) {
-                (function (container) {
-                    window['expressinstallcallback'] = function (state) {
-                        switch (state) {
-                            case 'Download.Cancelled':
-                                alert('您取消了更新！')
-                                break;
-
-                            case 'Download.Failed':
-                                alert('安装失败')
-                                break;
-
-                            default:
-                                alert('安装已成功，请刷新！');
-                                break;
-                        }
-                        delete window['expressinstallcallback'];
-                    };
-
-                    var swf = './expressInstall.swf';
-                    // insert flash object
-                    var html = '<object type="application/' +
-                        'x-shockwave-flash" data="' + swf + '" ';
-
-                    if (WebUploader.browser.ie) {
-                        html += 'classid="clsid:d27cdb6e-ae6d-11cf-96b8-444553540000" ';
-                    }
-
-                    html += 'width="100%" height="100%" style="outline:0">' +
-                        '<param name="movie" value="' + swf + '" />' +
-                        '<param name="wmode" value="transparent" />' +
-                        '<param name="allowscriptaccess" value="always" />' +
-                        '</object>';
-
-                    container.html(html);
-
-                })($wrap);
-
-                // 压根就没有安转。
-            } else {
-                $wrap.html('<a href="http://www.adobe.com/go/getflashplayer" target="_blank" border="0"><img alt="get flash player" src="http://www.adobe.com/macromedia/style_guide/images/160x41_Get_Flash_Player.jpg" /></a>');
-            }
-
-            return;
-        } else if (!WebUploader.Uploader.support()) {
-            alert('Web Uploader 不支持您的浏览器！');
-            return;
-        }
-        // 实例化
-        uploader = WebUploader.create({
-            pick: {
-                id: '#filePicker',
-                label: '点击选择文件'
-            },
-            dnd: '#uploader .queueList',
-            paste: '#uploader',
-            swf: '/static/swf/Uploader.swf',
-            chunked: false, //此处禁用了分块
-            chunkSize: 512 * 1024,
-            server: '/report/upload',
-            accept: {
-                title: 'Measurement files',
-                extensions: 'dat'
-            },
-
-            // 禁掉全局的拖拽功能。这样不会出现图片拖进页面的时候，把图片打开。
-            disableGlobalDnd: true,
-            fileNumLimit: 0,
-            fileSizeLimit: 0,    // 200 M = 200 * 1024 * 1024
-            fileSingleSizeLimit: 50 * 1024 * 1024,    // 50 M
-            directories: true
-        });
+                // 禁掉全局的拖拽功能。这样不会出现图片拖进页面的时候，把图片打开。
+                disableGlobalDnd: true,
+                fileNumLimit: 0,
+                fileSizeLimit: 0,    // 200 M = 200 * 1024 * 1024
+                fileSingleSizeLimit: 50 * 1024 * 1024,    // 50 M
+                directories: true
+            });
         // uploader初始化...
         uploader.onReady = function () {
             window.uploader = uploader;
@@ -210,10 +126,10 @@
         });
 
         // 添加“添加文件”的按钮，
-        uploader.addButton({
-            id: '#filePicker2',
-            label: '&nbsp;&nbsp;&nbsp;&nbsp;Keep adding&nbsp;&nbsp;&nbsp;&nbsp;'
-        });
+        //uploader.addButton({
+            //id: '#filePicker2',
+            //label: '&nbsp;&nbsp;&nbsp;&nbsp;Keep adding&nbsp;&nbsp;&nbsp;&nbsp;'
+       // });
 
         // 当有文件添加进来时执行，负责view的创建
         function addFile(file) {
@@ -262,7 +178,28 @@
                     $wrap.empty().append(img);
 
                     if (error) {
-                        $wrap.text('不能预览');
+                        let relativePath_yl = file.source?.source?.webkitRelativePath ?? file.source?.webkitRelativePath ?? '';
+                        // 假设路径分隔符是斜杠 '/'
+                        const separator = '/';
+
+                        // 分割路径为各部分，并过滤掉空的部分
+                        const pathParts = relativePath_yl.split(separator).filter(part => part.length > 0);
+
+                        // 检查是否以文件扩展名结尾
+                        const hasExtension = /\.[^/.]+$/.test(pathParts[pathParts.length - 1]);
+
+                        // 计算目录层数，不包括文件名
+                        const directoryLevels = pathParts.length - (hasExtension ? 1 : 0);
+
+                        // 如果目录层数大于3，则从右往左取第3层目录名称
+                        let thirdFromRight;
+                        if (directoryLevels > 3) {
+                            thirdFromRight = pathParts[pathParts.length - 3];
+                        } else {
+                            thirdFromRight = '路径层数不大于3';
+                        }
+
+                        $wrap.text(thirdFromRight);
                         return;
                     }
                 }, thumbnailWidth, thumbnailHeight);
@@ -308,7 +245,7 @@
             });
 
             $btns.on('click', 'span', function () {
-                var index = $(this).index(),
+                let index = $(this).index(),
                     deg;
 
                 switch (index) {
@@ -324,18 +261,6 @@
                         file.rotation -= 90;
                         break;
                 }
-
-                if (supportTransition) {
-                    deg = 'rotate(' + file.rotation + 'deg)';
-                    $wrap.css({
-                        '-webkit-transform': deg,
-                        '-mos-transform': deg,
-                        '-o-transform': deg,
-                        'transform': deg
-                    });
-                } else {
-                    $wrap.css('filter', 'progid:DXImageTransform.Microsoft.BasicImage(rotation=' + (~~((file.rotation / 90) % 4 + 4) % 4) + ')');
-                }
             });
 
             $li.appendTo($queue);
@@ -343,7 +268,7 @@
 
         // 负责view的销毁
         function removeFile(file) {
-            var $li = $('#' + file.id);
+            const $li = $('#' + file.id);
 
             delete percentages[file.id];
             updateTotalProgress();
@@ -351,7 +276,7 @@
         }
 
         function updateTotalProgress() {
-            var loaded = 0,
+            let loaded = 0,
                 total = 0,
                 spans = $progress.children(),
                 percent;
@@ -370,7 +295,7 @@
         }
 
         function updateStatus() {
-            var text = '', stats;
+            let text = '', stats;
 
             if (state === 'ready') {
                 text = '选中' + fileCount + '个文件，共' + WebUploader.formatSize(fileSize) + '。';
@@ -396,7 +321,7 @@
         }
 
         function setState(val) {
-            var file, stats;
+            let file, stats;
 
             if (val === state) {
                 return;
@@ -463,30 +388,23 @@
         uploader.onUploadStart = function (file) {
         };
         // 文件上传请求发送之前
-        uploader.onUploadBeforeSend = function (object, data, headers) {
+        uploader.on('uploadBeforeSend', function (object, data, headers) {
+            // 获取文件对象和自定义数据
+            let file = object.file;
+
+            // 直接从 file.source 中获取 relativePath
+            let relativePath = file.source?.source?.webkitRelativePath ?? file.source?.webkitRelativePath ?? '';
+
+            // 获取测试团队信息
             let test_team = $('#select0').val();
-            let test_scenario = $('#select1').val();
 
-            let test_area = $('#select2').val();
-            let selecteDataLabel = $('#select2').find('option:selected').attr('data-label');
-
+            // 将相对路径和测试团队信息添加到请求的 formData 中
             data.test_team = test_team;
-            data.test_scenario = test_scenario;
-            data.test_area = test_area;
-            data.test_area_dataLabel = selecteDataLabel;
-        };
-        // 文件上传中
-        uploader.onUploadProgress = function (file, percentage) {
-            var $li = $('#' + file.id),
-                $percent = $li.find('.progress span');
+            data.relativePath = relativePath;
+        });
 
-            $percent.css('width', percentage * 100 + '%');
-            percentages[file.id][1] = percentage;
-            updateTotalProgress();
-        };
         uploader.onUploadSuccess = function (file, response) {
-            uploadedFileName.push(file.name)
-            console.log(response)
+            uploadedFileName.push(file.name);
         };
 
         uploader.on('all', function (type) {
@@ -527,7 +445,6 @@
                     console.log('Error: ' + text)
             }
         };
-
         $upload.on('click', function () {
             if ($(this).hasClass('disabled')) {
                 return false;
@@ -552,7 +469,7 @@
         $upload.addClass('state-' + state);
         updateTotalProgress();
 
-        $('#select2').on('change', function () {
+        $('#select0').on('change', function () {
             fileCount = 0;
             fileSize = 0;
             $queue.hide();
@@ -573,18 +490,23 @@
 
 
 document.getElementById('filePicker').addEventListener('change', function (event) {
-    var files = event.target.files;
-    for (var i = 0; i < files.length; i++) {
-        uploader.addFile(files[i]);
+    const files = event.target.files;
+    // 清空之前的文件列表
+    uploader.reset();
+
+    for (let i = 0; i < files.length; i++) {
+        let file = files[i];
+        let relativePath = file.webkitRelativePath;
+        // 将相对路径和其他自定义数据作为自定义属性传递给 WebUploader
+        uploader.addFile(file, {relativePath: relativePath});
     }
 });
 
 // 文件选择器的 change 事件
 document.getElementById('customFilePicker').addEventListener('click', function () {
-    let test_scenario = $('#select1').val();
-    let test_area = $('#select2').val();
-    if (test_scenario == '' || test_area == '') {
-        layer.alert('Please select a test scenario or test_area', {icon: 3})
+    let select0_val = $('#select0').val();
+    if (select0_val == '') {
+        layer.alert('Please select project', {icon: 3})
         return false;
     }
     document.getElementById('filePicker').click();

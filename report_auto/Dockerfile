@@ -2,7 +2,7 @@
 FROM continuumio/miniconda3
 
 # 设置工作目录
-WORKDIR /app
+WORKDIR /app/tools
 
 # 将当前目录的内容复制到容器的/app目录中
 COPY . .

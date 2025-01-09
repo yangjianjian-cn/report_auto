@@ -21,7 +21,7 @@ def level1_simple_electrical_test(csv_file: str, result_dicts: List[dict]) -> st
     uRaw = result_dicts[0].get("measurements_1")
     logging.info(f"实时电压观测量:{uRaw}")
     if not uRaw:
-        return 2, "Level1 column 'measurements_1' not configured"
+        return 3, f"Level1 column 'measurements_1' not configured:{csv_file}"
 
     df_selected[uRaw] = df_selected[uRaw].fillna(0)
     result_set = set(df_selected[uRaw])
@@ -30,8 +30,6 @@ def level1_simple_electrical_test(csv_file: str, result_dicts: List[dict]) -> st
     if len(result_set) > 1:
         return 1, "success"
     elif len(result_set) == 0:
-        return 3, "n/a"
-    else:
         return 2, "The voltage value has not changed"
 
 
@@ -43,11 +41,11 @@ def level2_error_detection(csv_file: str, result_dicts: List[Dict]):
         measurements_2_str = get_measurements_2(result_dicts)
         logging.info("measurements_2:%s", measurements_2_str)
         if not measurements_2_str:
-            return 3, "Level2 observation 'measurements_2' not configured"
+            return 3, f"Level2 observation 'measurements_2' not configured:{csv_file}"
 
         preparation_2_str = result_dicts[0].get("preparation_2")
         if not preparation_2_str:
-            return 3, "Level2: column 'preparation_2' not configured."
+            return 3, f"Level2: column 'preparation_2' not configured:{csv_file}"
         logging.info("preparation_2:%s", preparation_2_str)
 
         df_selected[f'is_level2_{"high" if is_high else "low"}'] = df_selected.apply(
@@ -55,21 +53,30 @@ def level2_error_detection(csv_file: str, result_dicts: List[Dict]):
         )
 
         df_selected_error: DataFrame = df_selected[df_selected[f'is_level2_{"high" if is_high else "low"}'] == True]
-        logging.info("超限数据:%s:%s",is_high,len(df_selected_error))
+        logging.info("超限数据:%s:%s", is_high, len(df_selected_error))
 
         if len(df_selected_error) == 0:
             high_or_low_str: str = "high" if is_high else "low"
-            return 4, f"Data exceeding the {high_or_low_str} limit was not found"
+            return 4, f"Data exceeding the {high_or_low_str} limit was not found:{csv_file}"
 
         return process_measurements(measurements_2_str, df_selected_error)
 
-    upper_code, upper_msg = error_detection(True)
+    upper_code, upper_msg = None, None
+    try:
+        upper_code, upper_msg = error_detection(True)
+    except Exception as e:
+        upper_code, upper_msg = 500, str(e)
     logging.info(f"超上限,{upper_code},{upper_msg}")
 
-    lower_code, lower_msg = error_detection(False)
+    lower_code, lower_msg = None, None
+    try:
+        lower_code, lower_msg = error_detection(False)
+    except Exception as e:
+        lower_code, lower_msg = 500, str(e)
+
     logging.info(f"低下限{lower_code},{lower_msg}")
 
-    return get_code_and_message(upper_code, lower_code, upper_msg, lower_msg)
+    return get_code_and_message(upper_code, lower_code, upper_msg, lower_msg, csv_file)
 
 
 # #########数字量输出-level2
@@ -114,16 +121,16 @@ def process_measurements(measurements_2_str: str, df_selected: pd.DataFrame):
 
 # ######### 数字量输出-level3,函数入口
 # 1-passed 2-failed 3-na 4-not tested
-def level3_debouncing_error_healing(csv_file: str, result_dicts: List[dict]):
+def level3_debouncing_error_healing(csv_file: str, result_dicts: List[dict], upper_code=None):
     measurements_1: str = result_dicts[0].get("measurements_1")
     logging.info('实时观测量:%s', measurements_1)
     if not measurements_1:
-        return 3, "Level1 observation 'measurements_1' not configured"
+        return 3, f"Level1 observation 'measurements_1' not configured:{csv_file}"
 
     # 观测量阈值
     preparation_2_str: str = result_dicts[0].get("preparation_2")
     if not preparation_2_str:
-        return 3, "Level2: column 'preparation_2' not configured."
+        return 3, f"Level2: column 'preparation_2' not configured:{csv_file}"
     preparation_2_list: list = preparation_2_str.splitlines()
     uRaw_High = preparation_2_list[0]
     uRaw_Low = preparation_2_list[1]
@@ -132,27 +139,37 @@ def level3_debouncing_error_healing(csv_file: str, result_dicts: List[dict]):
     # 故障激活、触发时间
     preparation_3_str: str = result_dicts[0].get("preparation_3")
     if not preparation_3_str:
-        return 3, "Level3: column 'preparation_3' not configured."
+        return 3, f"Level3: column 'preparation_3' not configured:{csv_file}"
     preparation_3_list: list = preparation_3_str.splitlines()
     logging.info(f"去抖时间label:{preparation_3_list}")
 
     # 故障状态量
     measurements_3_str: str = result_dicts[0].get("measurements_3")
     if not measurements_3_str:
-        return 3, "Level3: column 'measurements_3' not configured."
+        return 3, f"Level3: column 'measurements_3' not configured:{csv_file}"
     measurements_3_list: list = measurements_3_str.splitlines()
     logging.info("故障状态量:%s", measurements_3_list)
     if len(preparation_3_list) == 0:
-        return 2, "Level3: column 'measurements_3' configured error."
+        return 2, f"Level3: column 'measurements_3' configured error:{csv_file}"
 
     df_selected: DataFrame = pd.read_csv(csv_file, encoding='utf8')
     # 电压超上限
-    upper_code, upper_msg = voltage_limit(df_selected, measurements_1, uRaw_High, 'upper', measurements_3_list)
+    upper_code, upper_msg = None, None
+    try:
+        upper_code, upper_msg = voltage_limit(df_selected, measurements_1, uRaw_High, 'upper', measurements_3_list)
+    except Exception as e:
+        upper_code, upper_msg = 500, str(e)
+
     # 电压低下限
-    lower_code, lower_msg = voltage_limit(df_selected, measurements_1, uRaw_Low, 'lower', measurements_3_list)
+    lower_code, lower_msg = None, None
+    try:
+        voltage_limit(df_selected, measurements_1, uRaw_Low, 'lower', measurements_3_list)
+    except Exception as e:
+        upper_code, upper_msg = 500, str(e)
+
     logging.info("upper_code:%s,lower_code:%s", upper_code, lower_code)
 
-    return get_code_and_message(upper_code, lower_code, upper_msg, lower_msg)
+    return get_code_and_message(upper_code, lower_code, upper_msg, lower_msg, csv_file)
 
 
 # 数据集,实时观测量、阈值label、操作符, level3观测状态label
@@ -205,15 +222,17 @@ def voltage_limit(df_selected: DataFrame, measurements_1: str, uRaw_Limit: str, 
     return rslt_3
 
 
-def get_code_and_message(upper_code, lower_code, upper_msg, lower_msg):
+def get_code_and_message(upper_code: int, lower_code: int, upper_msg: str, lower_msg: str, csv_file: str):
+    # 假设 csv_file, upper_msg, 和 lower_msg 已经被定义
+    result_msg: str = f"{csv_file}:{upper_msg or lower_msg or 'default_value'}"
     if upper_code == 1 or lower_code == 1:
-        return 1, upper_msg if upper_code == 1 else lower_msg
+        return 1, "success"
     elif upper_code == 2 or lower_code == 2:
-        return 2, upper_msg if upper_code == 2 else lower_msg
+        return 2, "failure"
     elif upper_code == 0 and lower_code == 0:
-        return 3, upper_msg if upper_msg else lower_msg
+        return 3, result_msg
     elif upper_code == 4 and lower_code == 4:
-        return 4, lower_msg if not lower_msg else upper_msg
-    else:
+        return 4, result_msg
+    elif upper_code == 500 or lower_code == 500:
         # 如果没有匹配的情况，可以返回一个默认值或抛出异常
-        return None, "No matching condition found"
+        return 2, result_msg

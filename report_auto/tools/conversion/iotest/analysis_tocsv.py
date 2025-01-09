@@ -11,7 +11,7 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(level
 
 def write_analysis_tocsv(output_file: str, insert_rownum: int, levels: map, result_dicts: dict):
     # level_map初始化
-    # {'level1': {1}, 'level2': {1, 3}, 'level3': {1, 3}, 'level4': {1}}
+    # levels: {'level1': {1}, 'level2': {1, 3}, 'level3': {1, 3}, 'level4': {1}}
     level_map: map = {}
     # level_map赋值
     for level, status_set in levels.items():
@@ -37,6 +37,8 @@ def write_analysis_tocsv(output_file: str, insert_rownum: int, levels: map, resu
 
                 if map_idx in level_map:
                     ordered_result[new_key] = level_map[map_idx]
+                else:
+                    ordered_result[new_key] = "not tested"
 
             ordered_result[key] = result[key]
 
@@ -45,7 +47,6 @@ def write_analysis_tocsv(output_file: str, insert_rownum: int, levels: map, resu
         result.update(ordered_result)
 
     # 按指定行号写入文件内容
-    logging.info(result_dicts)
     wb = load_workbook(filename=output_file, keep_vba=True)
     ws = wb['IO Checklist']
     # 将数据写入指定行

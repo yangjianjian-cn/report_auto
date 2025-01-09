@@ -23,8 +23,6 @@ $("#report_generation").on("click", function () {
             area: ['893px', '600px'],
             content: '/report/1/mst_header_page',
             success: function (layero, index) {
-                console.log(layero);
-                console.log(index);
             },
             end: function () {
                 back_page();
@@ -127,20 +125,17 @@ function back_page() {
 
             ret_report_success = response.generate_report_success
             if (ret_report_success != undefined && ret_report_success != '') {
-                report_success = true
                 $("#report_pro_text").append('<span style="color: black;">' + response.generate_report_success + '</span>')
                 layer.msg('Report generated successfully', {icon: 1})
             }
 
             ret_report_failed = response.generate_report_failed
             if (ret_report_failed != undefined && ret_report_failed != '') {
-                report_success = false
                 $("#report_pro_text").append('<span style="color: indianred;">' + response.generate_report_failed + '</span>')
                 layer.msg('Report generated unsuccessfully', {icon: 5})
             }
         },
         error: function (error) {
-            report_success = false
             $("#report_pro_text").append("Report generation error:" + error.msg())
             layer.msg('generate_report_error', {icon: 2})
             layer.close(index);
