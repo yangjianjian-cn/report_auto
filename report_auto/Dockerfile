@@ -1,25 +1,19 @@
-# 使用Anaconda镜像
-FROM continuumio/miniconda3
+# 使用精简版的Python 3.9镜像作为基础镜像
+FROM python:3.9-slim
 
 # 设置工作目录
-WORKDIR /app/tools
+WORKDIR /app
 
-# 将当前目录的内容复制到容器的/app目录中
-COPY . .
-
-# 创建并激活新的Conda环境
-RUN conda env create -f environment.yml
-SHELL ["conda", "run", "-n", "report", "/bin/bash", "-c"]
-
-# 安装Python依赖
+# 复制依赖文件并安装依赖
+COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# 暴露端口
-EXPOSE 5000
+# 复制应用代码到镜像中
+COPY . .
 
 # 设置环境变量
 ENV FLASK_ENV=production
 ENV FLASK_APP=main.py
 
-# 运行Flask应用
-CMD ["conda", "run", "-n", "report", "flask", "run", "--host=0.0.0.0"]
+# 使用Gunicorn来启动Flask应用
+CMD ["gunicorn", "--workers", "3", "--bind", "0.0.0.0:5000", "main:app", "--timeout", "300"]
