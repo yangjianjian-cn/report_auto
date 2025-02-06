@@ -6,7 +6,8 @@ WORKDIR /app
 
 # 复制依赖文件并安装依赖
 COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+#RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install -i https://pypi.tuna.tsinghua.edu.cn/simple --no-cache-dir -r requirements.txt
 
 # 复制应用代码到镜像中
 COPY . .
@@ -16,4 +17,4 @@ ENV FLASK_ENV=production
 ENV FLASK_APP=main.py
 
 # 使用Gunicorn来启动Flask应用
-CMD ["gunicorn", "--workers", "3", "--bind", "0.0.0.0:5000", "main:app", "--timeout", "300"]
+CMD ["gunicorn", "--workers", "3", "--bind", "0.0.0.0:5000", "main:main", "--timeout", "300"]
