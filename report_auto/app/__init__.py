@@ -15,14 +15,22 @@ from tools.utils.ConnectionUtils import DatabasePool
 # jdbc_mysql=sh-cynosdbmysql-grp-rykty3lm.sql.tencentcdb.com:ba:26338:1qazxsw2:measurement
 
 # 创建全局数据库连接池实例
-jdbc_mysql: str = os.getenv('jdbc_mysql')
-jdbc_mysql_arr = jdbc_mysql.split(":")
+# jdbc_mysql: str = os.getenv('jdbc_mysql')
+# jdbc_mysql_arr = jdbc_mysql.split(":")
+# mysql_config = {
+#     'host': jdbc_mysql_arr[0],
+#     'user': jdbc_mysql_arr[1],
+#     'port': int(jdbc_mysql_arr[2]),
+#     'password': jdbc_mysql_arr[3],
+#     'database': jdbc_mysql_arr[4],
+#     'charset': 'utf8mb4'
+# }
 mysql_config = {
-    'host': jdbc_mysql_arr[0],
-    'user': jdbc_mysql_arr[1],
-    'port': int(jdbc_mysql_arr[2]),
-    'password': jdbc_mysql_arr[3],
-    'database': jdbc_mysql_arr[4],
+    'host': os.getenv('MYSQL_HOST'),
+    'user': os.getenv('MYSQL_USER'),
+    'port': int(os.getenv('MYSQL_PORT')),
+    'password': os.getenv('MYSQL_PASSWORD'),
+    'database': os.getenv('MYSQL_DATABASE'),
     'charset': 'utf8mb4'
 }
 db_pool = DatabasePool(max_connections=20, min_cached=6, max_cached=10, max_shared=0, **mysql_config)
