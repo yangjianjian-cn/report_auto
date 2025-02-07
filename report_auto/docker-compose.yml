@@ -7,18 +7,17 @@ services:
     environment:
       - FLASK_APP=main.py # 根据你的入口文件调整
       - FLASK_DEBUG=0
-      - MYSQL_HOST=db
+      - MYSQL_HOST=report_db
       - MYSQL_USER=${MYSQL_USER}
       - MYSQL_PASSWORD=${MYSQL_PASSWORD}
       - MYSQL_DB=${MYSQL_DATABASE}
     depends_on:
-      - db
+      - report_db
 
-  db:
+  report_db:
     image: mysql:8.0.22
     container_name: report_db
     environment:
-      MYSQL_HOST: ${MYSQL_HOST}
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
       MYSQL_DATABASE: ${MYSQL_DATABASE}
       MYSQL_USER: ${MYSQL_USER}
