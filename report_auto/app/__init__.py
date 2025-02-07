@@ -26,7 +26,7 @@ from tools.utils.ConnectionUtils import DatabasePool
 #     'charset': 'utf8mb4'
 # }
 mysql_config = {
-    'host': os.getenv('MYSQL_HOST'),
+    'host': os.getenv('MYSQL_HOST', 'report_db'),
     'user': os.getenv('MYSQL_USER'),
     'port': int(os.getenv('MYSQL_PORT')),
     'password': os.getenv('MYSQL_PASSWORD'),
