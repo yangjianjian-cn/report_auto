@@ -1,6 +1,5 @@
 # 使用官方的 CentOS 镜像作为基础镜像
-FROM centos:7
-
+#FROM centos:7
 # 使用精简版的Python 3.9镜像作为基础镜像
 FROM python:3.9-slim
 
@@ -10,8 +9,9 @@ WORKDIR /app
 # 复制依赖文件并安装依赖
 COPY requirements.txt .
 #RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install --upgrade pip
 RUN pip install -i https://pypi.tuna.tsinghua.edu.cn/simple --no-cache-dir -r requirements.txt
-
+RUN pip install -i https://pypi.tuna.tsinghua.edu.cn/simple cryptography
 # 复制应用代码到镜像中
 COPY . .
 
