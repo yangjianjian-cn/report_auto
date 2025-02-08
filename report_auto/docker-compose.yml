@@ -1,5 +1,5 @@
 services:
-  web:
+  report_web:
     build: .
     container_name: report_web
     ports:
