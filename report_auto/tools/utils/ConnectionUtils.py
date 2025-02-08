@@ -1,42 +1,63 @@
 import logging
+import time
 
 import pymysql
 from dbutils.pooled_db import PooledDB
+
 
 # 配置日志
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
 
 class DatabasePool:
-    def __init__(self, max_connections=60, min_cached=20, max_cached=20, max_shared=0, **db_config):
+    def __init__(self, max_connections=60, min_cached=20, max_cached=20, max_shared=0, retry_attempts=3, retry_delay=5, **db_config):
         """
         初始化数据库连接池
         :param max_connections: 最大连接数
         :param min_cached: 初始化时，连接池中最小的连接数
         :param max_cached: 连接池中最多闲置的连接数
         :param max_shared: 连接池中最多共享的连接数
+        :param retry_attempts: 重试次数
+        :param retry_delay: 重试延迟时间（秒）
         :param db_config: 数据库连接配置
         """
         self.max_connections = max_connections
         self.min_cached = min_cached
         self.max_cached = max_cached
         self.max_shared = max_shared
+        self.retry_attempts = retry_attempts
+        self.retry_delay = retry_delay
         self.db_config = db_config
 
-        self.pool = PooledDB(
-            creator=pymysql,  # 使用 pymysql 模块
-            maxconnections=self.max_connections,  # 最大连接数
-            mincached=self.min_cached,  # 初始化时，链接池至少创建的空闲的链接
-            maxcached=self.max_cached,  # 链接池中最多闲置的链接
-            maxshared=self.max_shared,  # 链接池中最多共享的链接数量
-            blocking=True,  # 连接池中如果没有可用连接后，是否阻塞等待。True，等待；False，报错。
-            maxusage=None,  # 一个链接最多被重复使用的次数，None 表示无限制
-            setsession=[],  # 开始会话前执行的命令列表
-            ping=2,  # ping MySQL 服务端，检查是否服务可用。2 表示在每次从池中获取连接时检查连接的有效性
-            **self.db_config  # 数据库连接配置
-        )
-        self._pre_warm_connections()
-        logging.info("Database pool initialized with %d initial connections", self.min_cached)
+        self.pool = None
+        self._initialize_pool()
+
+    def _initialize_pool(self):
+        attempt = 0
+        while attempt < self.retry_attempts:
+            try:
+                self.pool = PooledDB(
+                    creator=pymysql,  # 使用 pymysql 模块
+                    maxconnections=self.max_connections,  # 最大连接数
+                    mincached=self.min_cached,  # 初始化时，链接池至少创建的空闲的链接
+                    maxcached=self.max_cached,  # 链接池中最多闲置的链接
+                    maxshared=self.max_shared,  # 链接池中最多共享的链接数量
+                    blocking=True,  # 连接池中如果没有可用连接后，是否阻塞等待。True，等待；False，报错。
+                    maxusage=None,  # 一个链接最多被重复使用的次数，None 表示无限制
+                    setsession=[],  # 开始会话前执行的命令列表
+                    ping=2,  # ping MySQL 服务端，检查是否服务可用。2 表示在每次从池中获取连接时检查连接的有效性
+                    **self.db_config  # 数据库连接配置
+                )
+                self._pre_warm_connections()
+                logging.info("Database pool initialized with %d initial connections", self.min_cached)
+                return
+            except pymysql.err.OperationalError as e:
+                attempt += 1
+                logging.warning(f"Attempt {attempt} failed to initialize database pool: {str(e)}")
+                if attempt >= self.retry_attempts:
+                    logging.critical("Failed to initialize database pool after multiple attempts")
+                    raise
+                time.sleep(self.retry_delay)
 
     def _pre_warm_connections(self):
         """
