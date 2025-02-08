@@ -7,22 +7,22 @@ services:
     environment:
       - FLASK_APP=main.py # 根据你的入口文件调整
       - FLASK_DEBUG=0
-#    depends_on:
-#      - report_db
+    depends_on:
+      - report_db
 
-#  report_db:
-#    image: mysql:8.0.22
-#    container_name: report_db
-#    environment:
-#      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
-#      MYSQL_DATABASE: ${MYSQL_DATABASE}
-#      MYSQL_USER: ${MYSQL_USER}
-#      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
-#    ports:
-#      - "3306:3306"
-#    volumes:
-#      - db_data:/var/lib/mysql
-#      - /root/datasets/sql_file:/docker-entrypoint-initdb.d
+  report_db:
+    image: mysql:8.0.22
+    container_name: report_db
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+    ports:
+      - "3306:3306"
+    volumes:
+      - db_data:/var/lib/mysql
+      - /root/datasets/sql_file:/docker-entrypoint-initdb.d
 
-#volumes:
-#  db_data:
+volumes:
+  db_data:
