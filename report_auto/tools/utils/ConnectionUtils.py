@@ -4,13 +4,13 @@ import time
 import pymysql
 from dbutils.pooled_db import PooledDB
 
-
 # 配置日志
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
 
 class DatabasePool:
-    def __init__(self, max_connections=60, min_cached=20, max_cached=20, max_shared=0, retry_attempts=3, retry_delay=5, **db_config):
+    def __init__(self, max_connections=60, min_cached=20, max_cached=20, max_shared=0, retry_attempts=3, retry_delay=5,
+                 **db_config):
         """
         初始化数据库连接池
         :param max_connections: 最大连接数
@@ -28,7 +28,7 @@ class DatabasePool:
         self.retry_attempts = retry_attempts
         self.retry_delay = retry_delay
         self.db_config = db_config
-        logging.info("db_config:%s",db_config)
+        logging.info("db_config:%s", db_config)
         self.pool = None
         self._initialize_pool()
 
