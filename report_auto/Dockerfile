@@ -1,3 +1,6 @@
+# 使用官方的 CentOS 镜像作为基础镜像
+FROM centos:7
+
 # 使用精简版的Python 3.9镜像作为基础镜像
 FROM python:3.9-slim
 
