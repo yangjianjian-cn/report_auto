@@ -28,7 +28,7 @@ class DatabasePool:
         self.retry_attempts = retry_attempts
         self.retry_delay = retry_delay
         self.db_config = db_config
-
+        logging.info("db_config:%s",db_config)
         self.pool = None
         self._initialize_pool()
 
