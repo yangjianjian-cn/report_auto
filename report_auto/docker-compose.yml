@@ -7,6 +7,8 @@ services:
     environment:
       - FLASK_APP=main.py # 根据你的入口文件调整
       - FLASK_DEBUG=0
+    volumes:
+      - /root/datasets/template:/app/template # 挂载宿主机目录到容器内
     depends_on:
       - report_db
 
