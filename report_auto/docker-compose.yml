@@ -5,8 +5,14 @@ services:
     ports:
       - "5000:5000"
     environment:
-      - FLASK_APP=main.py # 根据你的入口文件调整
-      - FLASK_DEBUG=0
+      FLASK_APP: main.py
+      FLASK_DEBUG: 1
+      MYSQL_HOST: ${MYSQL_HOST}
+      MYSQL_PORT: ${MYSQL_PORT}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
     volumes:
       - /root/datasets/template:/datasets/template # 挂载宿主机目录(模板)到容器内
     depends_on:
