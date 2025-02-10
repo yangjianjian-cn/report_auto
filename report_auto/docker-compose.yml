@@ -1,26 +1,22 @@
 services:
   report_web:
     build: .
-    container_name: report_web
+    container_name: report_auto_web
     ports:
       - "5000:5000"
     environment:
       FLASK_APP: main.py
       FLASK_DEBUG: 1
-      MYSQL_HOST: ${MYSQL_HOST}
-      MYSQL_PORT: ${MYSQL_PORT}
-      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
-      MYSQL_DATABASE: ${MYSQL_DATABASE}
-      MYSQL_USER: ${MYSQL_USER}
-      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
     volumes:
       - /root/datasets/template:/datasets/template # 挂载宿主机目录(模板)到容器内
     depends_on:
       - report_db
+    networks:
+      - report_auto_net
 
   report_db:
     image: mysql:8.0.22
-    container_name: report_db
+    container_name: report_auto_db
     environment:
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
       MYSQL_DATABASE: ${MYSQL_DATABASE}
@@ -31,6 +27,11 @@ services:
     volumes:
       - db_data:/var/lib/mysql
       - /root/datasets/sql_file:/docker-entrypoint-initdb.d
+    networks:
+      - report_auto_net
 
 volumes:
   db_data:
+networks:
+  report_auto_net:
+    driver: bridge
