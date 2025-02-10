@@ -15,7 +15,7 @@ services:
     depends_on:
       - report_db
     networks:
-      - report_auto_net
+      - rnet
 
   report_db:
     image: mysql:8.0.22
@@ -31,10 +31,10 @@ services:
       - db_data:/var/lib/mysql
       - /root/datasets/sql_file:/docker-entrypoint-initdb.d
     networks:
-      - report_auto_net
+      - rnet
 
 volumes:
   db_data:
 networks:
-  report_auto_net:
+  rnet:
     driver: bridge
