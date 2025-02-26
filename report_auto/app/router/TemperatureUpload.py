@@ -108,7 +108,7 @@ def todb():
     if error_response:
         return error_response
 
-    df, rename_mapping = clean_data(df)
+    df, rename_mapping = clean_data(df,existing_columns)
 
     params, columns_in_db = prepare_data_storage(db_pool, 'chip_temperature', df, last_id, file_source,rename_mapping)
     if not params:
