@@ -355,19 +355,23 @@ def iotest_verification():
     logging.info("测试文件:%s", project_file)
     result_dicts: list[dict] = s_get_report_auto_pro_byVer(project_file)
     if len(result_dicts) == 0:
-        response_data['generate_report_failed'].append(f"Project file does not exist:{project_file}<br>")
+        response_data['generate_report_failed'].append(f"The first-level directory does not configured: {project_file} <br>")
         return response_data
 
     # 2. 测试模块是否存在
     iotest_project_path: str = os.path.join(env_output_path, "iotest", get_client_ip(request), project_file)
+    # 文件
     module_folder_name: list[str] = [item.name for item in Path(iotest_project_path).iterdir() if item.is_dir()]
+    # 数据库
     module_db_name: list[str] = [item['module_name'] for item in result_dicts]
 
+    # 在数据库中已经配置的二级目录
     module_common_elements = [item for item in module_folder_name if item in module_db_name]
+    # 未配置的二级目录
     unique_to_module_folder_name = [item for item in module_folder_name if item not in module_common_elements]
     for m in unique_to_module_folder_name:
         iotest_module_path: str = os.path.join(iotest_project_path, m)
-        iotest_dat_module_err: str = f"Test Module path and configuration do not match:{iotest_module_path}"
+        iotest_dat_module_err: str = f"The secondary-level directory does not configured.:{iotest_module_path}"
         response_data['generate_report_failed'].append(iotest_dat_module_err + "<br>")
 
     # 3.测试PIN角是否配置
@@ -379,15 +383,17 @@ def iotest_verification():
         result_list_dicts: list[dict] = ioTestDataInDB.get_io_test_data(test_project=project_file,
                                                                         test_scenario=module,
                                                                         test_area_dataLabel=None)
+        # 在数据库中已经配置的三级目录
         pin_db_name: list[str] = [item['hw_pin'] for item in result_list_dicts]
+        # 文件服务器中的三级目录
         pin_folder_name: list[str] = [item.name for item in Path(iotest_module_path).iterdir() if item.is_dir()]
 
         pin_common_elements = [item for item in pin_folder_name if item in pin_db_name]
         unique_to_pin_folder_name = [item for item in pin_folder_name if item not in pin_common_elements]
-
+        # 文件中的三级目录未在数据库中配置
         for pin_name in unique_to_pin_folder_name:
             iotest_pin_path: str = os.path.join(iotest_module_path, pin_name)
-            iotest_dat_pin_err: str = f"PIN angular path and configuration do not match:{iotest_pin_path}"
+            iotest_dat_pin_err: str = f"The third-level directory does not configed:{iotest_pin_path}"
             response_data['generate_report_failed'].append(iotest_dat_pin_err + "<br>")
 
         for pin in pin_common_elements:
@@ -455,10 +461,12 @@ def iotest_report_generate():
         return response_data
 
     ioTestDataInDB = IOTestDataInDB()
+    # 一级目录
     iotest_project_path: str = os.path.join(env_output_path, "iotest", get_client_ip(request), project_file)
 
     for module in result_dicts:
         module_name = module['module_name']
+        # 二级目录
         iotest_module_path: str = os.path.join(iotest_project_path, module_name)
         if not os.path.exists(iotest_module_path):
             response_data['generate_report_failed'].append(
@@ -472,10 +480,10 @@ def iotest_report_generate():
                                                                         test_area_dataLabel=None)
         for one_pin in result_list_dicts:
             hw_pin = one_pin['hw_pin']
+            # 三级目录
             iotest_pin_path: str = os.path.join(iotest_module_path, hw_pin)
             if not os.path.exists(iotest_pin_path):
-                response_data['generate_report_failed'].append(
-                    f"Path does not match the Configuration: {iotest_pin_path}.<br>")
+                response_data['generate_report_failed'].append(f"Path does not match the Configuration: {iotest_pin_path}.<br>")
                 continue
             # 4.PIN角文件存在，分析测量数据，输出测试报告
             try:
