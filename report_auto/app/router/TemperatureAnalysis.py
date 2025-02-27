@@ -192,4 +192,4 @@ def temperature_analysis():
 
     # 5.数据存储
     values_columns:list[str] = list(filtered_label_to_alias_dict.values())
-    return store_data(db_pool, 'chip_temperature', params, df,values_columns)
+    return store_data(db_pool, 'chip_temperature', params, df)

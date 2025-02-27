@@ -138,7 +138,7 @@ def round_floats(value):
 
 @db_pool.with_connection
 def batch_insert_data(table_name: str, params: Dict, df: pd.DataFrame, batch_size: int = 5000,
-                      values_columns: list[str] = None, conn=None) -> str:
+                      conn=None) -> str:
     ret_msg = 'success'
     cursor = conn.cursor()
     try:

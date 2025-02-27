@@ -125,8 +125,8 @@ def prepare_data_storage(db_pool, table_name, df, last_id, file_source, rename_m
 
 
 # 数据存储
-def store_data(db_pool, table_name, params, df, values_columns: list[str]):
-    i_ret_msg = batch_insert_data(db_pool, table_name=table_name, params=params, df=df, values_columns=values_columns)
+def store_data(db_pool, table_name, params, df):
+    i_ret_msg = batch_insert_data(db_pool, table_name=table_name, params=params, df=df)
     if i_ret_msg != 'success':
         return jsonify({'generate_report_failed': i_ret_msg})
     return jsonify({'generate_report_failed': ''})
