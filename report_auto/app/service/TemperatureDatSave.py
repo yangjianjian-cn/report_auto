@@ -99,12 +99,12 @@ def clean_data(df, filtered_label_to_alias_dict: dict[str, str]):
     df.rename(columns=rename_mapping, inplace=True)  # 重命名列名
 
     df.sort_values(by='timestamps', inplace=True)
-    logging.debug(f"数据排序:{len(df)}")
+    logging.info(f"数据排序:{len(df)}")
 
     df.drop_duplicates(keep='first', inplace=True)
-    logging.debug(f"数据去重:{len(df)}")
+    logging.info(f"数据去重:{len(df)}")
 
-    return df
+    return df,rename_mapping
 
 
 # 数据存储准备
